@@ -9,6 +9,29 @@ import (
 	"strconv"
 )
 
+type AdminPeers struct {
+	ID      string   `json:"id,omitempty"`
+	Name    string   `json:"name,omitempty"`
+	Caps    []string `json:"caps,omitempty"`
+	Network Network `json:"network,omitempty"`
+	Protocols Protocols `json:"protocols,omitempty"`
+}
+
+type Protocols struct {
+	Eth Eth `json:"eth,omitempty"`
+}
+
+type Eth struct {
+	Version    int    `json:"version,omitempty"`
+	Difficulty int    `json:"difficulty,omitempty"`
+	Head       string `json:"head,omitempty"`
+}
+
+type Network struct {
+	LocalAddress  string `json:"localAddress,omitempty"`
+	RemoteAddress string `json:"remoteAddress,omitempty"`
+}
+
 type BlockDetailsResponse struct {
 	Number           string                       `json:"number"`
 	Hash             string                       `json:"hash"`
@@ -106,12 +129,12 @@ func (ec *EthClient) GetBlockInfoHandler(w http.ResponseWriter, r *http.Request)
 
 func (ec *EthClient) GetPendingTransactions() ([]TransactionDetailsResponse) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
-	response, err1 := rpcClient.Call("eth_pendingTransactions")
-	if err1 != nil {
-		fmt.Println(err1)
+	response, err := rpcClient.Call("eth_pendingTransactions")
+	if err != nil {
+		fmt.Println(err)
 	}
 	pendingtxresponse := []TransactionDetailsResponse{}
-	err := response.GetObject(&pendingtxresponse)
+	err = response.GetObject(&pendingtxresponse)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -120,6 +143,33 @@ func (ec *EthClient) GetPendingTransactions() ([]TransactionDetailsResponse) {
 
 func (ec *EthClient) GetPendingTransactionsHandler(w http.ResponseWriter, r *http.Request) {
 	response := ec.GetPendingTransactions()
+	fmt.Print(response)
+	json.NewEncoder(w).Encode(response)
+}
+
+func (ec *EthClient) GetOtherPeer(peerid string) (AdminPeers) {
+	rpcClient := jsonrpc.NewRPCClient(ec.Url)
+	response, err := rpcClient.Call("admin_peers")
+	if err != nil {
+		fmt.Println(err)
+	}
+	otherpeersresponse := []AdminPeers{}
+	err = response.GetObject(&otherpeersresponse)
+	if err != nil {
+		fmt.Println(err)
+	}
+	for _, item := range otherpeersresponse {
+		if item.ID == peerid {
+			peerresponse := item
+			return peerresponse
+		}
+	}
+	return AdminPeers{}
+}
+
+func (ec *EthClient) GetOtherPeerHandler(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	response := ec.GetOtherPeer(params["id"])
 	fmt.Print(response)
 	json.NewEncoder(w).Encode(response)
 }

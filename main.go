@@ -31,6 +31,7 @@ func main() {
 	router.HandleFunc("/txn/{id}", ethclient.GetTransactionInfoHandler).Methods("GET")
 	router.HandleFunc("/txn/pending", ethclient.GetPendingTransactionsHandler).Methods("GET")
 	router.HandleFunc("/block/{id}", ethclient.GetBlockInfoHandler).Methods("GET")
+	router.HandleFunc("/peer/{id}", ethclient.GetOtherPeerHandler).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(listenPort, router))
 }
