@@ -6,16 +6,31 @@ import (
 	"net/http"
 	"synechron.com/quorum-manager/service"
 	"synechron.com/quorum-manager/client"
+	"os"
+	"fmt"
 )
 
+var nodeUrl = "http://localhost:22000"
+var listenPort = ":8000"
+
 func main() {
+
+	if len(os.Args) > 1 {
+		nodeUrl = os.Args[1]
+	}
+
+	if len(os.Args) > 2 {
+		listenPort = ":"  + os.Args[2]
+	}
+
 	router := mux.NewRouter()
 	nodeService := service.NodeServiceImpl{}
-	ethclient:=client.EthClient{}
-	ethclient.Url= "http://10.34.14.243:22000"
+	ethclient:= client.EthClient{nodeUrl}
+
 	router.HandleFunc("/joinNetwork", nodeService.JoinNetworkHandler).Methods("POST")
 	router.HandleFunc("/txn/{id}", ethclient.GetTransactionInfoHandler).Methods("GET")
 	router.HandleFunc("/txn/pending", ethclient.GetPendingTransactionsHandler).Methods("GET")
 	router.HandleFunc("/block/{id}", ethclient.GetBlockInfoHandler).Methods("GET")
-	log.Fatal(http.ListenAndServe(":8000", router))
+
+	log.Fatal(http.ListenAndServe(listenPort, router))
 }
