@@ -8,70 +8,60 @@ import (
 	"github.com/gorilla/mux"
 	"strconv"
 )
+
 type BlockDetailsResponse struct {
-	Hash             string `json:"hash,omitempty"`
-	Nonce            string `json:"nonce,omitempty"`
-	BlockHash        string `json:"blockHash,omitempty"`
-	BlockNumber      string `json:"blockNumber,omitempty"`
-	TransactionIndex string `json:"transactionIndex,omitempty"`
-	From             string `json:"from,omitempty"`
-	To               string `json:"to,omitempty"`
-	Value            string `json:"value,omitempty"`
-	Gas              string `json:"gas,omitempty"`
-	GasPrice         string `json:"gasPrice,omitempty"`
-	Input            string `json:"input,omitempty"`
+	Number           string                       `json:"number"`
+	Hash             string                       `json:"hash"`
+	ParentHash       string                       `json:"parentHash"`
+	Nonce            string                       `json:"nonce"`
+	Sha3Uncles       string                       `json:"sha3Uncles"`
+	LogsBloom        string                       `json:"logsBloom"`
+	TransactionsRoot string                       `json:"transactionsRoot"`
+	StateRoot        string                       `json:"stateRoot"`
+	Miner            string                       `json:"miner"`
+	Difficulty       string                       `json:"difficulty"`
+	TotalDifficulty  string                       `json:"totalDifficulty"`
+	ExtraData        string                       `json:"extraData"`
+	Size             string                       `json:"size"`
+	GasLimit         string                       `json:"gasLimit"`
+	GasUsed          string                       `json:"gasUsed"`
+	Timestamp        string                       `json:"timestamp"`
+	Transactions     []TransactionDetailsResponse `json:"transactions"`
+	Uncles           []string                     `json:"uncles"`
 }
 
 type TransactionDetailsResponse struct {
-	BlockHash        string      `json:"blockHash,omitempty"`
+	BlockHash        string `json:"blockHash,omitempty"`
 	BlockNumber      string `json:"blockNumber,omitempty"`
-	From             string      `json:"from,omitempty"`
-	Gas              string      `json:"gas,omitempty"`
-	GasPrice         string      `json:"gasPrice,omitempty"`
-	Hash             string      `json:"hash,omitempty"`
-	Input            string      `json:"input,omitempty"`
-	Nonce            string      `json:"nonce,omitempty"`
-	To               string      `json:"to,omitempty"`
+	From             string `json:"from,omitempty"`
+	Gas              string `json:"gas,omitempty"`
+	GasPrice         string `json:"gasPrice,omitempty"`
+	Hash             string `json:"hash,omitempty"`
+	Input            string `json:"input,omitempty"`
+	Nonce            string `json:"nonce,omitempty"`
+	To               string `json:"to,omitempty"`
 	TransactionIndex string `json:"transactionIndex,omitempty"`
-	Value            string      `json:"value,omitempty"`
-	V                string      `json:"v,omitempty"`
-	R                string      `json:"r,omitempty"`
-	S                string      `json:"s,omitempty"`
+	Value            string `json:"value,omitempty"`
+	V                string `json:"v,omitempty"`
+	R                string `json:"r,omitempty"`
+	S                string `json:"s,omitempty"`
 }
 
 type EthClient struct {
 	Url string
 }
 
-//func (ec *EthClient) GetCoinbaseAddress() (string, error) {
-//	rpcClient := jsonrpc.NewRPCClient(ec.Url)
-//
-//	response, _ :=rpcClient.Call("eth_coinbase")
-//
-//	return response.GetString()
-//}
-//
-//func (ec *EthClient) AddRaftPeer(enodeId string) (string, error){
-//	rpcClient := jsonrpc.NewRPCClient(ec.Url)
-//
-//	response, err :=rpcClient.Call("admin_addPeer", enodeId)
-//
-//	fmt.Print(response)
-//
-//	if err != nil {
-//		fmt.Println(err)
-//	}
-//	return response.GetString()
-//}
-
-func (ec *EthClient) GetTransactionInfo(txno string) (TransactionDetailsResponse){
+func (ec *EthClient) GetTransactionInfo(txno string) (TransactionDetailsResponse) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
-	response, err1 :=rpcClient.Call("eth_getTransactionByHash", txno)
-	if err1 != nil {
-		fmt.Println(err1)
+	response, err := rpcClient.Call("eth_getTransactionByHash", txno)
+
+	if err != nil {
+		fmt.Println(err)
 	}
+
 	txresponse := TransactionDetailsResponse{}
-	err := response.GetObject(&txresponse)
+
+	err = response.GetObject(&txresponse)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -85,16 +75,18 @@ func (ec *EthClient) GetTransactionInfoHandler(w http.ResponseWriter, r *http.Re
 	json.NewEncoder(w).Encode(response)
 }
 
-func (ec *EthClient) GetBlockInfo(blockno int64) (BlockDetailsResponse){
+func (ec *EthClient) GetBlockInfo(blockno int64) (BlockDetailsResponse) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
-	var blocknohex	string = strconv.FormatInt(blockno, 16)
-	bnohex := fmt.Sprint("0x",blocknohex)
-	response, err1 :=rpcClient.Call("eth_getBlockByNumber", bnohex,true)
-	if err1 != nil {
-		fmt.Println(err1)
+	blocknohex  := strconv.FormatInt(blockno, 16)
+	bnohex := fmt.Sprint("0x", blocknohex)
+
+	response, err := rpcClient.Call("eth_getBlockByNumber", bnohex, true)
+	if err != nil {
+		fmt.Println(err)
 	}
+
 	blockresponse := BlockDetailsResponse{}
-	err := response.GetObject(&blockresponse)
+	err = response.GetObject(&blockresponse)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -103,7 +95,7 @@ func (ec *EthClient) GetBlockInfo(blockno int64) (BlockDetailsResponse){
 
 func (ec *EthClient) GetBlockInfoHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	block,err := strconv.ParseInt(params["id"], 10, 64)
+	block, err := strconv.ParseInt(params["id"], 10, 64)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -112,9 +104,9 @@ func (ec *EthClient) GetBlockInfoHandler(w http.ResponseWriter, r *http.Request)
 	json.NewEncoder(w).Encode(response)
 }
 
-func (ec *EthClient) GetPendingTransactions() ([]TransactionDetailsResponse){
+func (ec *EthClient) GetPendingTransactions() ([]TransactionDetailsResponse) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
-	response, err1 :=rpcClient.Call("eth_pendingTransactions")
+	response, err1 := rpcClient.Call("eth_pendingTransactions")
 	if err1 != nil {
 		fmt.Println(err1)
 	}
