@@ -27,11 +27,15 @@ func main() {
 	nodeService := service.NodeServiceImpl{}
 	ethclient:= client.EthClient{nodeUrl}
 
-	router.HandleFunc("/joinNetwork", nodeService.JoinNetworkHandler).Methods("POST")
 	router.HandleFunc("/txn/{id}", ethclient.GetTransactionInfoHandler).Methods("GET")
 	router.HandleFunc("/txn/pending", ethclient.GetPendingTransactionsHandler).Methods("GET")
 	router.HandleFunc("/block/{id}", ethclient.GetBlockInfoHandler).Methods("GET")
+	router.HandleFunc("/genesis", nodeService.GetGenesisHandler).Methods("GET")
+	//router.HandleFunc("/sendGenesis", nodeService.GetGenesisHandler).Methods("GET")
 	router.HandleFunc("/peer/{id}", ethclient.GetOtherPeerHandler).Methods("GET")
+	router.HandleFunc("/peer", nodeService.JoinNetworkHandler).Methods("POST")
+	//router.HandleFunc("/joinNetwork", nodeService.JoinNetworkHandler).Methods("POST")
+	router.HandleFunc("/peer", ethclient.GetCurrentNodeHandler).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(listenPort, router))
 }

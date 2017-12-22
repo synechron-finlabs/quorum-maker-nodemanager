@@ -9,6 +9,21 @@ import (
 	"strconv"
 )
 
+type AdminInfo struct {
+	ID   		string 		`json:"id,omitempty"`
+	Name 		string 		`json:"name,omitempty"`
+	Enode 		string 		`json:"enode,omitempty"`
+	IP 			string 		`json:"ip,omitempty"`
+	Ports 		Ports 		`json:"ports,omitempty"`
+	ListenAddr 	string 		`json:"listenAddr,omitempty"`
+	Protocols 	Protocols	`json:"protocols,omitempty"`
+}
+
+type Ports struct {
+	Discovery int `json:"discovery,omitempty"`
+	Listener  int `json:"listener,omitempty"`
+}
+
 type AdminPeers struct {
 	ID      string   `json:"id,omitempty"`
 	Name    string   `json:"name,omitempty"`
@@ -22,8 +37,10 @@ type Protocols struct {
 }
 
 type Eth struct {
-	Version    int    `json:"version,omitempty"`
+	Network    int	  `json:"network,omitempty"`
+ 	Version    int    `json:"version,omitempty"`
 	Difficulty int    `json:"difficulty,omitempty"`
+	Genesis    string `json:"genesis,omitempty"`
 	Head       string `json:"head,omitempty"`
 }
 
@@ -170,6 +187,23 @@ func (ec *EthClient) GetOtherPeer(peerid string) (AdminPeers) {
 func (ec *EthClient) GetOtherPeerHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	response := ec.GetOtherPeer(params["id"])
+	fmt.Print(response)
+	json.NewEncoder(w).Encode(response)
+}
+
+func (ec *EthClient) GetCurrentNode () (AdminInfo) {
+	rpcClient := jsonrpc.NewRPCClient(ec.Url)
+	response, err := rpcClient.Call("admin_nodeInfo")
+	if err != nil {
+		fmt.Println(err)
+	}
+	thisnoderesponse := AdminInfo{}
+	err = response.GetObject(&thisnoderesponse)
+	return thisnoderesponse
+}
+
+func (ec *EthClient) GetCurrentNodeHandler(w http.ResponseWriter, r *http.Request) {
+	response := ec.GetCurrentNode()
 	fmt.Print(response)
 	json.NewEncoder(w).Encode(response)
 }
