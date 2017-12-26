@@ -16,6 +16,6 @@ raft_id="$(echo -e "${raftID[0]}" | sed -e 's/[[:space:]]*$//')"
 rm -rf scriptAddPeer.js
 rm -rf addedPeer
 
-#RaftID is outputted to file to be read by Java Service
+#RaftID is outputted to file to be read by Go Service
 echo $raft_id
 
