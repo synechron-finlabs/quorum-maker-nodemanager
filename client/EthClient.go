@@ -7,7 +7,28 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"strconv"
+	"os/exec"
+	"bytes"
+	"log"
+	"io/ioutil"
+	"strings"
 )
+
+type NodeInfo struct {
+	ConnectionInfo  ConnectionInfo	`json:"connectionInfo,omitempty"`
+	RaftRole 		string 			`json:"raftRole,omitempty"`
+	RaftID 			int      		`json:"raftID,omitempty"`
+	BlockNumber 	int64			`json:"blockNumber,omitempty"`
+	PendingTxCount 	int 			`json:"pendingTxCount"`
+	Genesis 		string			`json:"genesis,omitempty"`
+	AdminInfo		AdminInfo		`json:"adminInfo,omitempty"`
+}
+
+type ConnectionInfo struct {
+	IP 		string 	`json:"ip,omitempty"`
+	Port 	int 	`json:"port,omitempty"`
+	Enode 	string 	`json:"enode,omitempty"`
+}
 
 type AdminInfo struct {
 	ID   		string 		`json:"id,omitempty"`
@@ -25,11 +46,11 @@ type Ports struct {
 }
 
 type AdminPeers struct {
-	ID      string   `json:"id,omitempty"`
-	Name    string   `json:"name,omitempty"`
-	Caps    []string `json:"caps,omitempty"`
-	Network Network `json:"network,omitempty"`
-	Protocols Protocols `json:"protocols,omitempty"`
+	ID      	string   	`json:"id,omitempty"`
+	Name    	string   	`json:"name,omitempty"`
+	Caps    	[]string 	`json:"caps,omitempty"`
+	Network 	Network 	`json:"network,omitempty"`
+	Protocols 	Protocols 	`json:"protocols,omitempty"`
 }
 
 type Protocols struct {
@@ -191,15 +212,101 @@ func (ec *EthClient) GetOtherPeerHandler(w http.ResponseWriter, r *http.Request)
 	json.NewEncoder(w).Encode(response)
 }
 
-func (ec *EthClient) GetCurrentNode () (AdminInfo) {
+func (ec *EthClient) GetCurrentNode () (NodeInfo) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("admin_nodeInfo")
 	if err != nil {
 		fmt.Println(err)
 	}
-	thisnoderesponse := AdminInfo{}
-	err = response.GetObject(&thisnoderesponse)
-	return thisnoderesponse
+	thisadmininfo := AdminInfo{}
+	err = response.GetObject(&thisadmininfo)
+	enode := thisadmininfo.Enode
+	
+	rpcClient = jsonrpc.NewRPCClient(ec.Url)
+	response, err = rpcClient.Call("eth_pendingTransactions")
+	if err != nil {
+		fmt.Println(err)
+	}
+	pendingtxresponse := []TransactionDetailsResponse{}
+	err = response.GetObject(&pendingtxresponse)
+	pendingtxcount := len(pendingtxresponse)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	rpcClient = jsonrpc.NewRPCClient(ec.Url)
+	response, err = rpcClient.Call("eth_blockNumber")
+	if err != nil {
+		fmt.Println(err)
+	}
+	var blocknumber string;
+	err = response.GetObject(&blocknumber)
+	if err != nil {
+		fmt.Println(err)
+	}
+	blocknumber = strings.TrimSuffix(blocknumber, "\n")
+	blocknumber = strings.TrimPrefix(blocknumber, "0x")
+	blocknumberInt, err := strconv.ParseInt(blocknumber, 16, 64)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	cmd := exec.Command("./raft_id.sh")
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+	raftid := out.String()
+	raftid = strings.TrimSuffix(raftid, "\n")
+	raftidInt, err := strconv.Atoi(raftid)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var out1 bytes.Buffer
+	cmd = exec.Command("./raft_role.sh")
+	cmd.Stdout = &out1
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+	raftrole := out1.String()
+	raftrole = strings.TrimSuffix(raftrole, "\n")
+
+	var out2 bytes.Buffer
+	cmd = exec.Command("./get_rpc.sh")
+	cmd.Stdout = &out2
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+	rpcport := out2.String()
+	rpcport = strings.TrimSuffix(rpcport, "\n")
+	rpcportInt, err := strconv.Atoi(rpcport)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var out3 bytes.Buffer
+	cmd = exec.Command("./get_ipaddr.sh")
+	cmd.Stdout = &out3
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+	ipaddr := out3.String()
+	ipaddr = strings.TrimSuffix(ipaddr, "\n")
+	b, err := ioutil.ReadFile("/home/node/genesis.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	genesis := string(b)
+	genesis = strings.Replace(genesis, "\n","",-1)
+	conn := ConnectionInfo{ipaddr,rpcportInt,enode}
+	responseobj := NodeInfo{conn,raftrole,raftidInt,blocknumberInt,pendingtxcount,genesis,thisadmininfo}
+	return responseobj
 }
 
 func (ec *EthClient) GetCurrentNodeHandler(w http.ResponseWriter, r *http.Request) {

@@ -1,4 +1,5 @@
 #!/bin/bash
+
 #Getting the blocknumber of the node 
 echo "var a = eth.blockNumber; console.log(a);" > scriptBlockNumber.js
 
@@ -8,5 +9,4 @@ readarray blockNoArr < blockNo
 rm -rf blockNo
 block_no="$(echo -e "${blockNoArr[0]}" | sed -e 's/[[:space:]]*$//')"
 
-#RaftID is outputted to file to be read by Java Service
 echo $block_no

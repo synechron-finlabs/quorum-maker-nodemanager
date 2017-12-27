@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"bytes"
 	"os/exec"
+	"strings"
 )
 
 type JoinNetworkRequest struct {
@@ -21,8 +22,8 @@ type GetGenesisResponse struct {
 }
 
 type NodeService interface {
-	GetGenesis  () GetGenesisResponse
-	JoinNetwork (request JoinNetworkRequest) string
+	GetGenesis() GetGenesisResponse
+	JoinNetwork(request JoinNetworkRequest) string
 }
 
 type NodeServiceImpl struct {
@@ -37,7 +38,7 @@ func (nsi *NodeServiceImpl) GetGenesis() (response GetGenesisResponse) {
 		log.Fatal(err)
 	}
 	constl := out.String()
-
+	constl = strings.TrimSuffix(constl, "\n")
 	var outnet bytes.Buffer
 	cmd = exec.Command("./get_netid.sh")
 	cmd.Stdout = &outnet
@@ -46,7 +47,7 @@ func (nsi *NodeServiceImpl) GetGenesis() (response GetGenesisResponse) {
 		log.Fatal(err)
 	}
 	netid := outnet.String()
-
+	netid = strings.TrimSuffix(netid, "\n")
 	b, err := ioutil.ReadFile("/home/node/genesis.json")
 
 	if err != nil {
@@ -54,6 +55,7 @@ func (nsi *NodeServiceImpl) GetGenesis() (response GetGenesisResponse) {
 	}
 
 	genesis := string(b)
+	genesis = strings.Replace(genesis, "\n","",-1)
 	response = GetGenesisResponse{constl, netid, genesis}
 	return
 }
@@ -72,6 +74,7 @@ func (nsi *NodeServiceImpl) JoinNetwork(request string) (response string) {
 		log.Fatal(err)
 	}
 	response = out.String()
+	response = strings.TrimSuffix(response, "\n")
 	return
 }
 

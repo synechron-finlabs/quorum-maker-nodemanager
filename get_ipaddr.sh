@@ -14,5 +14,4 @@ rm -rf orig-data-file
 #sanitization procedure for removing whitespaces
 ipaddr="$(echo "$val1a" | sed -e 's/[[:space:]]*$//')"
 
-#Constellation Port is outputted to file to be read by Java Service
 echo $ipaddr
