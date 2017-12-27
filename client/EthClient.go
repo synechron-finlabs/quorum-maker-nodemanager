@@ -265,38 +265,38 @@ func (ec *EthClient) GetCurrentNode () (NodeInfo) {
 		log.Fatal(err)
 	}
 
-	var out1 bytes.Buffer
+	var outrole bytes.Buffer
 	cmd = exec.Command("./raft_role.sh")
-	cmd.Stdout = &out1
+	cmd.Stdout = &outrole
 	err = cmd.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
-	raftrole := out1.String()
+	raftrole := outrole.String()
 	raftrole = strings.TrimSuffix(raftrole, "\n")
 
-	var out2 bytes.Buffer
+	var outrpc bytes.Buffer
 	cmd = exec.Command("./get_rpc.sh")
-	cmd.Stdout = &out2
+	cmd.Stdout = &outrpc
 	err = cmd.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
-	rpcport := out2.String()
+	rpcport := outrpc.String()
 	rpcport = strings.TrimSuffix(rpcport, "\n")
 	rpcportInt, err := strconv.Atoi(rpcport)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var out3 bytes.Buffer
+	var outipaddr bytes.Buffer
 	cmd = exec.Command("./get_ipaddr.sh")
-	cmd.Stdout = &out3
+	cmd.Stdout = &outipaddr
 	err = cmd.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
-	ipaddr := out3.String()
+	ipaddr := outipaddr.String()
 	ipaddr = strings.TrimSuffix(ipaddr, "\n")
 	b, err := ioutil.ReadFile("/home/node/genesis.json")
 	if err != nil {
