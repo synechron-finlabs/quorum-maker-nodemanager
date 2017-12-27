@@ -7,7 +7,6 @@ import (
 	"synechron.com/quorum-manager/service"
 	"synechron.com/quorum-manager/client"
 	"os"
-	"fmt"
 )
 
 var nodeUrl = "http://localhost:22000"
