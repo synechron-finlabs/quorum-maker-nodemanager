@@ -10,10 +10,12 @@ import (
 	"bytes"
 	"os/exec"
 	"strings"
+	"fmt"
 )
 
 var ipaddr string
 var rpcport string
+var nodeUrl string
 var listenPort = ":8000"
 
 func init(){
@@ -39,10 +41,13 @@ func init(){
 }
 
 func main() {
-	s := []string{"http:",ipaddr}
-	var halfUrl = strings.Join(s, "//")
-	s = []string{halfUrl,rpcport}
-	var nodeUrl = strings.Join(s, ":")
+    //We can use the 4 commented lines below if we want to remove dependency on fmt
+	//s := []string{"http:",ipaddr}
+	//var halfUrl = strings.Join(s, "//")
+	//s = []string{halfUrl,rpcport}
+	//nodeUrl = strings.Join(s, ":")
+	halfUrl := fmt.Sprint("http://", ipaddr)
+	nodeUrl = fmt.Sprint(halfUrl, ":",rpcport)
 
 	if len(os.Args) > 1 {
 		nodeUrl = os.Args[1]
