@@ -15,29 +15,29 @@ import (
 )
 
 type NodeInfo struct {
-	ConnectionInfo  ConnectionInfo	`json:"connectionInfo,omitempty"`
-	RaftRole 		string 			`json:"raftRole,omitempty"`
-	RaftID 			int      		`json:"raftID,omitempty"`
-	BlockNumber 	int64			`json:"blockNumber,omitempty"`
-	PendingTxCount 	int 			`json:"pendingTxCount"`
-	Genesis 		string			`json:"genesis,omitempty"`
-	AdminInfo		AdminInfo		`json:"adminInfo,omitempty"`
+    ConnectionInfo  ConnectionInfo  `json:"connectionInfo,omitempty"`
+    RaftRole        string          `json:"raftRole,omitempty"`
+    RaftID          int             `json:"raftID,omitempty"`
+    BlockNumber     int64           `json:"blockNumber,omitempty"`
+    PendingTxCount  int             `json:"pendingTxCount"`
+    Genesis         string          `json:"genesis,omitempty"`
+    AdminInfo       AdminInfo       `json:"adminInfo,omitempty"`
 }
 
 type ConnectionInfo struct {
-	IP 		string 	`json:"ip,omitempty"`
-	Port 	int 	`json:"port,omitempty"`
-	Enode 	string 	`json:"enode,omitempty"`
+    IP      string  `json:"ip,omitempty"`
+    Port    int     `json:"port,omitempty"`
+    Enode   string  `json:"enode,omitempty"`
 }
 
 type AdminInfo struct {
-	ID   		string 		`json:"id,omitempty"`
-	Name 		string 		`json:"name,omitempty"`
-	Enode 		string 		`json:"enode,omitempty"`
-	IP 			string 		`json:"ip,omitempty"`
-	Ports 		Ports 		`json:"ports,omitempty"`
-	ListenAddr 	string 		`json:"listenAddr,omitempty"`
-	Protocols 	Protocols	`json:"protocols,omitempty"`
+    ID          string      `json:"id,omitempty"`
+    Name        string      `json:"name,omitempty"`
+    Enode       string      `json:"enode,omitempty"`
+    IP          string      `json:"ip,omitempty"`
+    Ports       Ports       `json:"ports,omitempty"`
+    ListenAddr  string      `json:"listenAddr,omitempty"`
+    Protocols   Protocols   `json:"protocols,omitempty"`
 }
 
 type Ports struct {
