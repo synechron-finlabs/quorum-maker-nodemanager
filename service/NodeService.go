@@ -49,11 +49,9 @@ func (nsi *NodeServiceImpl) GetGenesis() (response GetGenesisResponse) {
 	netid := outnet.String()
 	netid = strings.TrimSuffix(netid, "\n")
 	b, err := ioutil.ReadFile("/home/node/genesis.json")
-
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	genesis := string(b)
 	genesis = strings.Replace(genesis, "\n","",-1)
 	response = GetGenesisResponse{constl, netid, genesis}
