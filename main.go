@@ -7,12 +7,42 @@ import (
 	"synechron.com/quorum-manager/service"
 	"synechron.com/quorum-manager/client"
 	"os"
+	"bytes"
+	"os/exec"
+	"strings"
 )
 
-var nodeUrl = "http://localhost:22000"
+var ipaddr string
+var rpcport string
 var listenPort = ":8000"
 
+func init(){
+	var out bytes.Buffer
+	cmd := exec.Command("./get_rpc.sh")
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+	rpcport = out.String()
+	rpcport = strings.TrimSuffix(rpcport, "\n")
+
+	var outip bytes.Buffer
+	cmd = exec.Command("./get_ipaddr.sh")
+	cmd.Stdout = &outip
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+	ipaddr = outip.String()
+	ipaddr = strings.TrimSuffix(ipaddr, "\n")
+}
+
 func main() {
+	s := []string{"http:",ipaddr}
+	var halfUrl = strings.Join(s, "//")
+	s = []string{halfUrl,rpcport}
+	var nodeUrl = strings.Join(s, ":")
 
 	if len(os.Args) > 1 {
 		nodeUrl = os.Args[1]
