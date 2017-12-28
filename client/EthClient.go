@@ -7,11 +7,11 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"strconv"
-	"os/exec"
-	"bytes"
 	"log"
 	"io/ioutil"
 	"strings"
+	"github.com/magiconair/properties"
+	"regexp"
 )
 
 type NodeInfo struct {
@@ -131,9 +131,13 @@ func (ec *EthClient) GetTransactionInfo(txno string) (TransactionDetailsResponse
 
 func (ec *EthClient) GetTransactionInfoHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	response := ec.GetTransactionInfo(params["id"])
-	fmt.Print(response)
-	json.NewEncoder(w).Encode(response)
+	if params["id"] == "pending" {
+		response := ec.GetPendingTransactions()
+		json.NewEncoder(w).Encode(response)
+	} else {
+		response := ec.GetTransactionInfo(params["id"])
+		json.NewEncoder(w).Encode(response)
+	}
 }
 
 func (ec *EthClient) GetBlockInfo(blockno int64) (BlockDetailsResponse) {
@@ -179,12 +183,6 @@ func (ec *EthClient) GetPendingTransactions() ([]TransactionDetailsResponse) {
 	return pendingtxresponse
 }
 
-func (ec *EthClient) GetPendingTransactionsHandler(w http.ResponseWriter, r *http.Request) {
-	response := ec.GetPendingTransactions()
-	fmt.Print(response)
-	json.NewEncoder(w).Encode(response)
-}
-
 func (ec *EthClient) GetOtherPeer(peerid string) (AdminPeers) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("admin_peers")
@@ -213,6 +211,36 @@ func (ec *EthClient) GetOtherPeerHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (ec *EthClient) GetCurrentNode () (NodeInfo) {
+	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+	var filename string
+	ipaddr := p.MustGetString("CURRENT_IP")
+	rpcport := p.MustGetString("RPC_PORT")
+
+	//Alternate regex that can be used is (start_)(\w)*.sh
+	r, _ := regexp.Compile("[s][t][a][r][t][_][A-Za-z0-9]*[.][s][h]")
+	files, err := ioutil.ReadDir("/home/node")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, f := range files {
+		match, _ := regexp.MatchString("[s][t][a][r][t][_][A-Za-z0-9]*[.][s][h]", f.Name())
+		if(match) {
+			filename = r.FindString(f.Name())
+		}
+	}
+
+	filepath := fmt.Sprint("/home/node/", filename)
+	content, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	lines := strings.Split(string(content), "\n")
+	raftidline := lines[4]
+	lines = strings.Split(string(raftidline), "=")
+	raftid := lines[1]
+
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("admin_nodeInfo")
 	if err != nil {
@@ -220,8 +248,8 @@ func (ec *EthClient) GetCurrentNode () (NodeInfo) {
 	}
 	thisadmininfo := AdminInfo{}
 	err = response.GetObject(&thisadmininfo)
+
 	enode := thisadmininfo.Enode
-	
 	rpcClient = jsonrpc.NewRPCClient(ec.Url)
 	response, err = rpcClient.Call("eth_pendingTransactions")
 	if err != nil {
@@ -230,6 +258,7 @@ func (ec *EthClient) GetCurrentNode () (NodeInfo) {
 	pendingtxresponse := []TransactionDetailsResponse{}
 	err = response.GetObject(&pendingtxresponse)
 	pendingtxcount := len(pendingtxresponse)
+
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -251,57 +280,38 @@ func (ec *EthClient) GetCurrentNode () (NodeInfo) {
 		fmt.Println(err)
 	}
 
-	cmd := exec.Command("./raft_id.sh")
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err = cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
-	raftid := out.String()
 	raftid = strings.TrimSuffix(raftid, "\n")
+
 	raftidInt, err := strconv.Atoi(raftid)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var outrole bytes.Buffer
-	cmd = exec.Command("./raft_role.sh")
-	cmd.Stdout = &outrole
-	err = cmd.Run()
+	rpcClient = jsonrpc.NewRPCClient(ec.Url)
+	response, err = rpcClient.Call("raft_role")
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
-	raftrole := outrole.String()
+	var raftrole string;
+	err = response.GetObject(&raftrole)
+	if err != nil {
+		fmt.Println(err)
+	}
 	raftrole = strings.TrimSuffix(raftrole, "\n")
 
-	var outrpc bytes.Buffer
-	cmd = exec.Command("./get_rpc.sh")
-	cmd.Stdout = &outrpc
-	err = cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
-	rpcport := outrpc.String()
 	rpcport = strings.TrimSuffix(rpcport, "\n")
+
 	rpcportInt, err := strconv.Atoi(rpcport)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var outipaddr bytes.Buffer
-	cmd = exec.Command("./get_ipaddr.sh")
-	cmd.Stdout = &outipaddr
-	err = cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
-	ipaddr := outipaddr.String()
 	ipaddr = strings.TrimSuffix(ipaddr, "\n")
 	b, err := ioutil.ReadFile("/home/node/genesis.json")
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	genesis := string(b)
 	genesis = strings.Replace(genesis, "\n","",-1)
 	conn := ConnectionInfo{ipaddr,rpcportInt,enode}

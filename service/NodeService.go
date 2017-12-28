@@ -5,9 +5,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"bytes"
-	"os/exec"
+	"github.com/ybbus/jsonrpc"
 	"strings"
+	"github.com/magiconair/properties"
+	"regexp"
+	"fmt"
 )
 
 type JoinNetworkRequest struct {
@@ -23,38 +25,59 @@ type GetGenesisResponse struct {
 
 type NodeService interface {
 	GetGenesis() GetGenesisResponse
-	JoinNetwork(request JoinNetworkRequest) string
+	JoinNetwork (request JoinNetworkRequest) string
 }
 
 type NodeServiceImpl struct {
+	Url string
 }
 
 func (nsi *NodeServiceImpl) GetGenesis() (response GetGenesisResponse) {
-	cmd := exec.Command("./get_const.sh")
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
+
+	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+	var filename string
+	constl := p.MustGetString("CONSTELLATION_PORT")
+
+	//Alternate regex that can be used is (start_)(\w)*.sh
+	r, _ := regexp.Compile("[s][t][a][r][t][_][A-Za-z0-9]*[.][s][h]")
+	files, err := ioutil.ReadDir("/home/node")
 	if err != nil {
 		log.Fatal(err)
 	}
-	constl := out.String()
+
+	for _, f := range files {
+		match, _ := regexp.MatchString("[s][t][a][r][t][_][A-Za-z0-9]*[.][s][h]", f.Name())
+		if(match) {
+			filename = r.FindString(f.Name())
+		}
+	}
+
+	filepath := fmt.Sprint("/home/node/", filename)
+	content, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		fmt.Println(err)
+	}
+	lines := strings.Split(string(content), "\n")
+
+	netidline := lines[3]
+
+	lines = strings.Split(string(netidline), "=")
+
+	netid := lines[1]
+
 	constl = strings.TrimSuffix(constl, "\n")
-	var outnet bytes.Buffer
-	cmd = exec.Command("./get_netid.sh")
-	cmd.Stdout = &outnet
-	err = cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
-	netid := outnet.String()
+
 	netid = strings.TrimSuffix(netid, "\n")
 	b, err := ioutil.ReadFile("/home/node/genesis.json")
+
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	genesis := string(b)
 	genesis = strings.Replace(genesis, "\n","",-1)
 	response = GetGenesisResponse{constl, netid, genesis}
+
 	return
 }
 
@@ -63,17 +86,16 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	json.NewEncoder(w).Encode(response)
 }
 
-func (nsi *NodeServiceImpl) JoinNetwork(request string) (response string) {
-	cmd := exec.Command("./add_peer.sh",request)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
+func (nsi *NodeServiceImpl) JoinNetwork(request string) (int) {
+	rpcClient := jsonrpc.NewRPCClient(nsi.Url)
+	response, err := rpcClient.Call("raft_addPeer",request)
+	fmt.Println(response)
+	var raftid int
+	err = response.GetObject(&raftid)
 	if err != nil {
 		log.Fatal(err)
 	}
-	response = out.String()
-	response = strings.TrimSuffix(response, "\n")
-	return
+	return raftid
 }
 
 func (nsi *NodeServiceImpl) JoinNetworkHandler(w http.ResponseWriter, r *http.Request) {
