@@ -18,11 +18,11 @@ type ConnectionInfo struct {
 
 type NodeInfo struct {
 	ConnectionInfo  ConnectionInfo		`json:"connectionInfo,omitempty"`
-	RaftRole 	string 				`json:"raftRole,omitempty"`
-	RaftID 		int      			`json:"raftID,omitempty"`
-	BlockNumber 	int64				`json:"blockNumber"`
-	PendingTxCount 	int 				`json:"pendingTxCount"`
-	Genesis 	string				`json:"genesis,omitempty"`
+	RaftRole 	string 			`json:"raftRole,omitempty"`
+	RaftID 		int      		`json:"raftID,omitempty"`
+	BlockNumber 	int64			`json:"blockNumber"`
+	PendingTxCount 	int 			`json:"pendingTxCount"`
+	Genesis 	string			`json:"genesis,omitempty"`
 	AdminInfo	client.AdminInfo	`json:"adminInfo,omitempty"`
 }
 
