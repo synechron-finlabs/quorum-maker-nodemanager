@@ -17,7 +17,7 @@ type AdminInfo struct {
 }
 
 type Ports struct {
-	Discovery int `json:"discovery,omitempty"`
+	Discovery int `json:"discovery"`
 	Listener  int `json:"listener,omitempty"`
 }
 
