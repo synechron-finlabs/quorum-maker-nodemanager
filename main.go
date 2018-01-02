@@ -22,7 +22,7 @@ func main() {
 	}
 
 	router := mux.NewRouter()
-	nodeService:= service.NodeServiceImpl{nodeUrl}
+	nodeService := service.NodeServiceImpl{nodeUrl}
 
 	router.HandleFunc("/txn/{id}", nodeService.GetTransactionInfoHandler).Methods("GET")
 	router.HandleFunc("/block/{id}", nodeService.GetBlockInfoHandler).Methods("GET")
