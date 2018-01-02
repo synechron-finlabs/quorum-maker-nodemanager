@@ -1,16 +1,30 @@
 package service
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"log"
-	"net/http"
-	"github.com/ybbus/jsonrpc"
+	"synechron.com/quorum-manager/client"
 	"strings"
 	"github.com/magiconair/properties"
-	"regexp"
 	"fmt"
+	"strconv"
 )
+
+type ConnectionInfo struct {
+	IP 		string 	`json:"ip,omitempty"`
+	Port 	int 	`json:"port,omitempty"`
+	Enode 	string 	`json:"enode,omitempty"`
+}
+
+type NodeInfo struct {
+	ConnectionInfo  ConnectionInfo		`json:"connectionInfo,omitempty"`
+	RaftRole 		string 				`json:"raftRole,omitempty"`
+	RaftID 			int      			`json:"raftID,omitempty"`
+	BlockNumber 	int64				`json:"blockNumber"`
+	PendingTxCount 	int 				`json:"pendingTxCount"`
+	Genesis 		string				`json:"genesis,omitempty"`
+	AdminInfo		client.AdminInfo	`json:"adminInfo,omitempty"`
+}
 
 type JoinNetworkRequest struct {
 	EnodeID    string `json:"enode-id,omitempty"`
@@ -23,51 +37,79 @@ type GetGenesisResponse struct {
 	Genesis            string `json: "genesis, omitempty"`
 }
 
-type NodeService interface {
-	GetGenesis() GetGenesisResponse
-	JoinNetwork (request JoinNetworkRequest) string
-}
-
 type NodeServiceImpl struct {
 	Url string
 }
 
-func (nsi *NodeServiceImpl) GetGenesis() (response GetGenesisResponse) {
+
+func (nsi *NodeServiceImpl) GetGenesis(url string) (response GetGenesisResponse) {
+	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+	constl := p.MustGetString("CONSTELLATION_PORT")
+	constl = strings.TrimSuffix(constl, "\n")
+	netid := p.MustGetString("NETWORK_ID")
+	netid = strings.TrimSuffix(netid, "\n")
+
+	b, err := ioutil.ReadFile("/home/node/genesis.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	genesis := string(b)
+	genesis = strings.Replace(genesis, "\n","",-1)
+
+	response = GetGenesisResponse{constl, netid, genesis}
+	return response
+}
+
+
+func (nsi *NodeServiceImpl) JoinNetwork(request string, url string) (int) {
+	var nodeUrl = url
+	Ethclient:= client.EthClient{nodeUrl}
+	raftid := Ethclient.RaftAddPeer(request)
+	return raftid
+}
+
+
+func (nsi *NodeServiceImpl) GetCurrentNode (url string) (NodeInfo) {
+	var nodeUrl = url
+	Ethclient:= client.EthClient{nodeUrl}
 
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-	var filename string
-	constl := p.MustGetString("CONSTELLATION_PORT")
+	ipaddr := p.MustGetString("CURRENT_IP")
+	raftid := p.MustGetString("RAFT_ID")
+	rpcport := p.MustGetString("RPC_PORT")
 
-	//Alternate regex that can be used is (start_)(\w)*.sh
-	r, _ := regexp.Compile("[s][t][a][r][t][_][A-Za-z0-9]*[.][s][h]")
-	files, err := ioutil.ReadDir("/home/node")
+	ipaddr = strings.TrimSuffix(ipaddr, "\n")
+	raftid = strings.TrimSuffix(raftid, "\n")
+	rpcport = strings.TrimSuffix(rpcport, "\n")
+
+	raftidInt, err := strconv.Atoi(raftid)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, f := range files {
-		match, _ := regexp.MatchString("[s][t][a][r][t][_][A-Za-z0-9]*[.][s][h]", f.Name())
-		if(match) {
-			filename = r.FindString(f.Name())
-		}
+	rpcportInt, err := strconv.Atoi(rpcport)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	filepath := fmt.Sprint("/home/node/", filename)
-	content, err := ioutil.ReadFile(filepath)
+	thisadmininfo := Ethclient.AdminNodeInfo()
+	enode := thisadmininfo.Enode
+
+	pendingtxresponse := Ethclient.PendingTransactions()
+	pendingtxcount := len(pendingtxresponse)
+
+	blocknumber := Ethclient.BlockNumber()
+	blocknumber = strings.TrimSuffix(blocknumber, "\n")
+	blocknumber = strings.TrimPrefix(blocknumber, "0x")
+	blocknumberInt, err := strconv.ParseInt(blocknumber, 16, 64)
 	if err != nil {
 		fmt.Println(err)
 	}
-	lines := strings.Split(string(content), "\n")
 
-	netidline := lines[3]
+	raftrole := Ethclient.RaftRole()
 
-	lines = strings.Split(string(netidline), "=")
+	raftrole = strings.TrimSuffix(raftrole, "\n")
 
-	netid := lines[1]
-
-	constl = strings.TrimSuffix(constl, "\n")
-
-	netid = strings.TrimSuffix(netid, "\n")
 	b, err := ioutil.ReadFile("/home/node/genesis.json")
 
 	if err != nil {
@@ -76,32 +118,47 @@ func (nsi *NodeServiceImpl) GetGenesis() (response GetGenesisResponse) {
 
 	genesis := string(b)
 	genesis = strings.Replace(genesis, "\n","",-1)
-	response = GetGenesisResponse{constl, netid, genesis}
-
-	return
+	conn := ConnectionInfo{ipaddr,rpcportInt,enode}
+	responseobj := NodeInfo{conn,raftrole,raftidInt,blocknumberInt,pendingtxcount,genesis,thisadmininfo}
+	return responseobj
 }
 
-func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Request) {
-	response := nsi.GetGenesis()
-	json.NewEncoder(w).Encode(response)
-}
 
-func (nsi *NodeServiceImpl) JoinNetwork(request string) (int) {
-	rpcClient := jsonrpc.NewRPCClient(nsi.Url)
-	response, err := rpcClient.Call("raft_addPeer",request)
-	fmt.Println(response)
-	var raftid int
-	err = response.GetObject(&raftid)
-	if err != nil {
-		log.Fatal(err)
+func (nsi *NodeServiceImpl) GetOtherPeer(peerid string, url string) (client.AdminPeers) {
+	var nodeUrl = url
+	Ethclient:= client.EthClient{nodeUrl}
+	otherpeersresponse := Ethclient.AdminPeers()
+	for _, item := range otherpeersresponse {
+		if item.ID == peerid {
+			peerresponse := item
+			return peerresponse
+		}
 	}
-	return raftid
+	return client.AdminPeers{}
 }
 
-func (nsi *NodeServiceImpl) JoinNetworkHandler(w http.ResponseWriter, r *http.Request) {
-	var request JoinNetworkRequest
-	_ = json.NewDecoder(r.Body).Decode(&request)
-	enode := request.EnodeID
-	response := nsi.JoinNetwork(enode)
-	json.NewEncoder(w).Encode(response)
+
+func (nsi *NodeServiceImpl) GetPendingTransactions(url string) ([]client.TransactionDetailsResponse) {
+	var nodeUrl = url
+	Ethclient:= client.EthClient{nodeUrl}
+	pendingtxresponse := Ethclient.PendingTransactions()
+	return pendingtxresponse
+}
+
+
+func (nsi *NodeServiceImpl) GetBlockInfo(blockno int64, url string) (client.BlockDetailsResponse) {
+	var nodeUrl = url
+	Ethclient:= client.EthClient{nodeUrl}
+	blocknohex  := strconv.FormatInt(blockno, 16)
+	bnohex := fmt.Sprint("0x", blocknohex)
+	blockresponse := Ethclient.GetBlockByNumber(bnohex)
+	return blockresponse
+}
+
+
+func (nsi *NodeServiceImpl) GetTransactionInfo(txno string, url string) (client.TransactionDetailsResponse) {
+	var nodeUrl = url
+	Ethclient:= client.EthClient{nodeUrl}
+	txresponse := Ethclient.GetTransactionByHash(txno)
+	return txresponse
 }
