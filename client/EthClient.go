@@ -35,7 +35,7 @@ type Protocols struct {
 
 type Eth struct {
 	Network    int	  `json:"network,omitempty"`
- 	Version    int    `json:"version,omitempty"`
+	Version    int    `json:"version,omitempty"`
 	Difficulty int    `json:"difficulty,omitempty"`
 	Genesis    string `json:"genesis,omitempty"`
 	Head       string `json:"head,omitempty"`
@@ -91,7 +91,6 @@ type EthClient struct {
 func (ec *EthClient) GetTransactionByHash(txno string) (TransactionDetailsResponse) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("eth_getTransactionByHash", txno)
-
 	if err != nil {
 		fmt.Println(err)
 	}
