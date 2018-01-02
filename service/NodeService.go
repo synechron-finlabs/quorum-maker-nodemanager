@@ -11,19 +11,19 @@ import (
 )
 
 type ConnectionInfo struct {
-	IP 		string 	`json:"ip,omitempty"`
+	IP 	string 	`json:"ip,omitempty"`
 	Port 	int 	`json:"port,omitempty"`
 	Enode 	string 	`json:"enode,omitempty"`
 }
 
 type NodeInfo struct {
 	ConnectionInfo  ConnectionInfo		`json:"connectionInfo,omitempty"`
-	RaftRole 		string 				`json:"raftRole,omitempty"`
-	RaftID 			int      			`json:"raftID,omitempty"`
+	RaftRole 	string 				`json:"raftRole,omitempty"`
+	RaftID 		int      			`json:"raftID,omitempty"`
 	BlockNumber 	int64				`json:"blockNumber"`
 	PendingTxCount 	int 				`json:"pendingTxCount"`
-	Genesis 		string				`json:"genesis,omitempty"`
-	AdminInfo		client.AdminInfo	`json:"adminInfo,omitempty"`
+	Genesis 	string				`json:"genesis,omitempty"`
+	AdminInfo	client.AdminInfo	`json:"adminInfo,omitempty"`
 }
 
 type JoinNetworkRequest struct {
@@ -63,7 +63,7 @@ func (nsi *NodeServiceImpl) GetGenesis(url string) (response GetGenesisResponse)
 
 func (nsi *NodeServiceImpl) JoinNetwork(request string, url string) (int) {
 	var nodeUrl = url
-	Ethclient:= client.EthClient{nodeUrl}
+	Ethclient := client.EthClient{nodeUrl}
 	raftid := Ethclient.RaftAddPeer(request)
 	return raftid
 }
@@ -71,7 +71,7 @@ func (nsi *NodeServiceImpl) JoinNetwork(request string, url string) (int) {
 
 func (nsi *NodeServiceImpl) GetCurrentNode (url string) (NodeInfo) {
 	var nodeUrl = url
-	Ethclient:= client.EthClient{nodeUrl}
+	Ethclient := client.EthClient{nodeUrl}
 
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	ipaddr := p.MustGetString("CURRENT_IP")
@@ -126,7 +126,7 @@ func (nsi *NodeServiceImpl) GetCurrentNode (url string) (NodeInfo) {
 
 func (nsi *NodeServiceImpl) GetOtherPeer(peerid string, url string) (client.AdminPeers) {
 	var nodeUrl = url
-	Ethclient:= client.EthClient{nodeUrl}
+	Ethclient := client.EthClient{nodeUrl}
 	otherpeersresponse := Ethclient.AdminPeers()
 	for _, item := range otherpeersresponse {
 		if item.ID == peerid {
@@ -140,7 +140,7 @@ func (nsi *NodeServiceImpl) GetOtherPeer(peerid string, url string) (client.Admi
 
 func (nsi *NodeServiceImpl) GetPendingTransactions(url string) ([]client.TransactionDetailsResponse) {
 	var nodeUrl = url
-	Ethclient:= client.EthClient{nodeUrl}
+	Ethclient := client.EthClient{nodeUrl}
 	pendingtxresponse := Ethclient.PendingTransactions()
 	return pendingtxresponse
 }
@@ -148,7 +148,7 @@ func (nsi *NodeServiceImpl) GetPendingTransactions(url string) ([]client.Transac
 
 func (nsi *NodeServiceImpl) GetBlockInfo(blockno int64, url string) (client.BlockDetailsResponse) {
 	var nodeUrl = url
-	Ethclient:= client.EthClient{nodeUrl}
+	Ethclient := client.EthClient{nodeUrl}
 	blocknohex  := strconv.FormatInt(blockno, 16)
 	bnohex := fmt.Sprint("0x", blocknohex)
 	blockresponse := Ethclient.GetBlockByNumber(bnohex)
@@ -158,7 +158,7 @@ func (nsi *NodeServiceImpl) GetBlockInfo(blockno int64, url string) (client.Bloc
 
 func (nsi *NodeServiceImpl) GetTransactionInfo(txno string, url string) (client.TransactionDetailsResponse) {
 	var nodeUrl = url
-	Ethclient:= client.EthClient{nodeUrl}
+	Ethclient := client.EthClient{nodeUrl}
 	txresponse := Ethclient.GetTransactionByHash(txno)
 	return txresponse
 }
