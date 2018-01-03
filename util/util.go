@@ -1,6 +1,11 @@
 package util
 
-import "reflect"
+import (
+	"reflect"
+	"strings"
+	"strconv"
+	"fmt"
+)
 
 func TakeSliceArg(arg interface{}) (out []interface{}, ok bool) {
 	slice, success := takeArg(arg, reflect.Slice)
@@ -22,4 +27,14 @@ func takeArg(arg interface{}, kind reflect.Kind) (val reflect.Value, ok bool) {
 		ok = true
 	}
 	return
+}
+
+func HexStringtoInt64(hexval string) (intval int64) {
+	hexval = strings.TrimSuffix(hexval, "\n")
+	hexval = strings.TrimPrefix(hexval, "0x")
+	intval, err := strconv.ParseInt(hexval, 16, 64)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return intval
 }
