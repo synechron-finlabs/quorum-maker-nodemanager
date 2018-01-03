@@ -5,7 +5,6 @@ import (
 	"log"
 	"synechron.com/quorum-manager/client"
 	"strings"
-	"github.com/magiconair/properties"
 	"fmt"
 	"strconv"
 	"synechron.com/quorum-manager/util"
@@ -82,12 +81,9 @@ type NodeServiceImpl struct {
 
 
 func (nsi *NodeServiceImpl) GetGenesis(url string) (response GetGenesisResponse) {
-	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-	constl := p.MustGetString("CONSTELLATION_PORT")
-	constl = strings.TrimSuffix(constl, "\n")
-	netid := p.MustGetString("NETWORK_ID")
-	netid = strings.TrimSuffix(netid, "\n")
-
+	netid := util.MustGetString("NETWORK_ID","/home/setup.conf")
+	constl := util.MustGetString("CONSTELLATION_PORT","/home/setup.conf")
+	
 	b, err := ioutil.ReadFile("/home/node/genesis.json")
 	if err != nil {
 		log.Fatal(err)
@@ -111,15 +107,10 @@ func (nsi *NodeServiceImpl) JoinNetwork(request string, url string) (int) {
 func (nsi *NodeServiceImpl) GetCurrentNode (url string) (NodeInfo) {
 	var nodeUrl = url
 	Ethclient := client.EthClient{nodeUrl}
-
-	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-	ipaddr := p.MustGetString("CURRENT_IP")
-	raftid := p.MustGetString("RAFT_ID")
-	rpcport := p.MustGetString("RPC_PORT")
-
-	ipaddr = strings.TrimSuffix(ipaddr, "\n")
-	raftid = strings.TrimSuffix(raftid, "\n")
-	rpcport = strings.TrimSuffix(rpcport, "\n")
+	
+	ipaddr := util.MustGetString("CURRENT_IP","/home/setup.conf")
+	raftid := util.MustGetString("RAFT_ID","/home/setup.conf")
+	rpcport := util.MustGetString("RPC_PORT","/home/setup.conf")
 
 	raftidInt, err := strconv.Atoi(raftid)
 	if err != nil {
