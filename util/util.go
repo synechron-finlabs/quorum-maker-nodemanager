@@ -40,7 +40,7 @@ func HexStringtoInt64(hexval string) (intval int64) {
 	return intval
 }
 
-func MustGetString(key string, filename string)(val string){
+func MustGetString(key string, filename string) (val string) {
 	p := properties.MustLoadFile(filename, properties.UTF8)
 	val = p.MustGetString(key)
 	val = strings.TrimSuffix(val, "\n")
