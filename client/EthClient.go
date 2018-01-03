@@ -10,7 +10,7 @@ type AdminInfo struct {
 	ID   		string 		`json:"id,omitempty"`
 	Name 		string 		`json:"name,omitempty"`
 	Enode 		string 		`json:"enode,omitempty"`
-	IP 			string 		`json:"ip,omitempty"`
+	IP 		string 		`json:"ip,omitempty"`
 	Ports 		Ports 		`json:"ports,omitempty"`
 	ListenAddr 	string 		`json:"listenAddr,omitempty"`
 	Protocols 	Protocols	`json:"protocols,omitempty"`
