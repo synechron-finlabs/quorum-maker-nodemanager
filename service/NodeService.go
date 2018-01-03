@@ -39,38 +39,38 @@ type GetGenesisResponse struct {
 }
 
 type BlockDetailsResponse struct {
-	Number           int64                       `json:"number,omitempty"`
-	Hash             string                       `json:"hash,omitempty"`
-	ParentHash       string                       `json:"parentHash,omitempty"`
-	Nonce            string                       `json:"nonce,omitempty"`
-	Sha3Uncles       string                       `json:"sha3Uncles,omitempty"`
-	LogsBloom        string                       `json:"logsBloom,omitempty"`
-	TransactionsRoot string                       `json:"transactionsRoot,omitempty"`
-	StateRoot        string                       `json:"stateRoot,omitempty"`
-	Miner            string                       `json:"miner,omitempty"`
-	Difficulty       int64                       `json:"difficulty,omitempty"`
-	TotalDifficulty  int64                       `json:"totalDifficulty,omitempty"`
-	ExtraData        string                       `json:"extraData,omitempty"`
-	Size             int64                       `json:"size,omitempty"`
-	GasLimit         int64                       `json:"gasLimit,omitempty"`
-	GasUsed          int64                       `json:"gasUsed,omitempty"`
-	Timestamp        int64                       `json:"timestamp,omitempty"`
-	Transactions     []client.TransactionDetailsResponse `json:"transactions,omitempty"`
-	Uncles           []string                     `json:"uncles,omitempty"`
+	Number           int64                                  `json:"number,omitempty"`
+	Hash             string                                 `json:"hash,omitempty"`
+	ParentHash       string                                 `json:"parentHash,omitempty"`
+	Nonce            string                                 `json:"nonce,omitempty"`
+	Sha3Uncles       string                                 `json:"sha3Uncles,omitempty"`
+	LogsBloom        string                                 `json:"logsBloom,omitempty"`
+	TransactionsRoot string                                 `json:"transactionsRoot,omitempty"`
+	StateRoot        string                                 `json:"stateRoot,omitempty"`
+	Miner            string                                 `json:"miner,omitempty"`
+	Difficulty       int64                                  `json:"difficulty,omitempty"`
+	TotalDifficulty  int64                                  `json:"totalDifficulty,omitempty"`
+	ExtraData        string                                 `json:"extraData,omitempty"`
+	Size             int64                                  `json:"size,omitempty"`
+	GasLimit         int64                                  `json:"gasLimit,omitempty"`
+	GasUsed          int64                                  `json:"gasUsed,omitempty"`
+	Timestamp        int64                                  `json:"timestamp,omitempty"`
+	Transactions     []client.TransactionDetailsResponse    `json:"transactions,omitempty"`
+	Uncles           []string                               `json:"uncles,omitempty"`
 }
 
 type TransactionDetailsResponse struct {
 	BlockHash        string `json:"blockHash,omitempty"`
-	BlockNumber      int64 `json:"blockNumber"`
+	BlockNumber      int64  `json:"blockNumber"`
 	From             string `json:"from,omitempty"`
-	Gas              int64 `json:"gas,omitempty"`
-	GasPrice         int64 `json:"gasPrice"`
+	Gas              int64  `json:"gas,omitempty"`
+	GasPrice         int64  `json:"gasPrice"`
 	Hash             string `json:"hash,omitempty"`
 	Input            string `json:"input,omitempty"`
-	Nonce            int64 `json:"nonce"`
+	Nonce            int64  `json:"nonce"`
 	To               string `json:"to,omitempty"`
-	TransactionIndex int64 `json:"transactionIndex"`
-	Value            int64 `json:"value,omitempty"`
+	TransactionIndex int64  `json:"transactionIndex"`
+	Value            int64  `json:"value,omitempty"`
 	V                string `json:"v,omitempty"`
 	R                string `json:"r,omitempty"`
 	S                string `json:"s,omitempty"`
