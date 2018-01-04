@@ -54,7 +54,7 @@ type BlockDetailsResponse struct {
 	GasLimit         int64                                  `json:"gasLimit,omitempty"`
 	GasUsed          int64                                  `json:"gasUsed,omitempty"`
 	Timestamp        int64                                  `json:"timestamp,omitempty"`
-	Transactions     []client.TransactionDetailsResponse    `json:"transactions,omitempty"`
+	Transactions     TransactionDetailsResponse             `json:"transactions,omitempty"`
 	Uncles           []string                               `json:"uncles,omitempty"`
 }
 
@@ -212,8 +212,26 @@ func (nsi *NodeServiceImpl) GetBlockInfo(blockno int64, url string) (BlockDetail
 	blockresponse.StateRoot = blockresponseclient.StateRoot
 	blockresponse.Miner = blockresponseclient.Miner
 	blockresponse.ExtraData = blockresponseclient.ExtraData
-	blockresponse.Transactions = blockresponseclient.Transactions
 	blockresponse.Uncles = blockresponseclient.Uncles
+	txnno := len(blockresponseclient.Transactions)
+	txresponse := make([]TransactionDetailsResponse, txnno)
+	for i := 0; i < txnno; i++ {
+		txresponse[i].BlockNumber = util.HexStringtoInt64(blockresponseclient.Transactions[i].BlockNumber)
+		txresponse[i].Gas = util.HexStringtoInt64(blockresponseclient.Transactions[i].Gas)
+		txresponse[i].GasPrice = util.HexStringtoInt64(blockresponseclient.Transactions[i].GasPrice)
+		txresponse[i].TransactionIndex = util.HexStringtoInt64(blockresponseclient.Transactions[i].TransactionIndex)
+		txresponse[i].Value = util.HexStringtoInt64(blockresponseclient.Transactions[i].Value)
+		txresponse[i].Nonce = util.HexStringtoInt64(blockresponseclient.Transactions[i].Nonce)
+		txresponse[i].BlockHash = blockresponseclient.Transactions[i].BlockHash
+		txresponse[i].From = blockresponseclient.Transactions[i].From
+		txresponse[i].Hash = blockresponseclient.Transactions[i].Hash
+		txresponse[i].Input = blockresponseclient.Transactions[i].Input
+		txresponse[i].To = blockresponseclient.Transactions[i].To
+		txresponse[i].V = blockresponseclient.Transactions[i].V
+		txresponse[i].R = blockresponseclient.Transactions[i].R
+		txresponse[i].S = blockresponseclient.Transactions[i].S
+	}
+	blockresponse.Transactions = txresponse
 	return blockresponse
 }
 
