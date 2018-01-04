@@ -32,9 +32,9 @@ type JoinNetworkRequest struct {
 }
 
 type GetGenesisResponse struct {
-	ContstellationPort string `json: "contstellation-port, omitempty"`
-	NetID              string `json: "netID,omitempty"`
-	Genesis            string `json: "genesis, omitempty"`
+	ContstellationPort string `json:"contstellation-port, omitempty"`
+	NetID              string `json:"netID,omitempty"`
+	Genesis            string `json:"genesis, omitempty"`
 }
 
 type BlockDetailsResponse struct {
