@@ -35,7 +35,7 @@ type Protocols struct {
 
 type Eth struct {
 	Network    int	  `json:"network,omitempty"`
-	Version    int    `json:"version,omitempty"`
+ 	Version    int    `json:"version,omitempty"`
 	Difficulty int    `json:"difficulty,omitempty"`
 	Genesis    string `json:"genesis,omitempty"`
 	Head       string `json:"head,omitempty"`
@@ -69,15 +69,15 @@ type BlockDetailsResponse struct {
 
 type TransactionDetailsResponse struct {
 	BlockHash        string `json:"blockHash,omitempty"`
-	BlockNumber      string `json:"blockNumber,omitempty"`
+	BlockNumber      string `json:"blockNumber"`
 	From             string `json:"from,omitempty"`
 	Gas              string `json:"gas,omitempty"`
-	GasPrice         string `json:"gasPrice,omitempty"`
+	GasPrice         string `json:"gasPrice"`
 	Hash             string `json:"hash,omitempty"`
 	Input            string `json:"input,omitempty"`
-	Nonce            string `json:"nonce,omitempty"`
+	Nonce            string `json:"nonce"`
 	To               string `json:"to,omitempty"`
-	TransactionIndex string `json:"transactionIndex,omitempty"`
+	TransactionIndex string `json:"transactionIndex"`
 	Value            string `json:"value,omitempty"`
 	V                string `json:"v,omitempty"`
 	R                string `json:"r,omitempty"`
@@ -91,6 +91,7 @@ type EthClient struct {
 func (ec *EthClient) GetTransactionByHash(txno string) (TransactionDetailsResponse) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("eth_getTransactionByHash", txno)
+
 	if err != nil {
 		fmt.Println(err)
 	}
