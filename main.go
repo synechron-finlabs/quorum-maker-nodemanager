@@ -4,7 +4,7 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"synechron.com/quorum-manager/service"
+	"synechron.com/NodeManagerGo/service"
 	"os"
 )
 
