@@ -3,11 +3,11 @@ package service
 import (
 	"io/ioutil"
 	"log"
-	"synechron.com/quorum-manager/client"
+	"synechron.com/NodeManagerGo/client"
 	"strings"
 	"fmt"
 	"strconv"
-	"synechron.com/quorum-manager/util"
+	"synechron.com/NodeManagerGo/util"
 )
 
 type ConnectionInfo struct {
@@ -54,7 +54,7 @@ type BlockDetailsResponse struct {
 	GasLimit         int64                                  `json:"gasLimit,omitempty"`
 	GasUsed          int64                                  `json:"gasUsed,omitempty"`
 	Timestamp        int64                                  `json:"timestamp,omitempty"`
-	Transactions     TransactionDetailsResponse             `json:"transactions,omitempty"`
+	Transactions     []TransactionDetailsResponse             `json:"transactions,omitempty"`
 	Uncles           []string                               `json:"uncles,omitempty"`
 }
 
