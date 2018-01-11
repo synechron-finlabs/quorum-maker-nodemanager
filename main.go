@@ -24,10 +24,10 @@ func main() {
 	router := mux.NewRouter()
 	nodeService := service.NodeServiceImpl{nodeUrl}
 
-	router.HandleFunc("/txn/{id}", nodeService.GetTransactionInfoHandler).Methods("GET")
-	router.HandleFunc("/block/{id}", nodeService.GetBlockInfoHandler).Methods("GET")
+	router.HandleFunc("/txn/{txn_hash}", nodeService.GetTransactionInfoHandler).Methods("GET")
+	router.HandleFunc("/block/{block_no}", nodeService.GetBlockInfoHandler).Methods("GET")
 	router.HandleFunc("/genesis", nodeService.GetGenesisHandler).Methods("GET")
-	router.HandleFunc("/peer/{id}", nodeService.GetOtherPeerHandler).Methods("GET")
+	router.HandleFunc("/peer/{peer_id}", nodeService.GetOtherPeerHandler).Methods("GET")
 	router.HandleFunc("/peer", nodeService.JoinNetworkHandler).Methods("POST")
 	router.HandleFunc("/peer", nodeService.GetCurrentNodeHandler).Methods("GET")
 
