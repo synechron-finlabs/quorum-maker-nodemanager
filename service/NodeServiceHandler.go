@@ -28,13 +28,13 @@ func (nsi *NodeServiceImpl) GetCurrentNodeHandler(w http.ResponseWriter, r *http
 
 func (nsi *NodeServiceImpl) GetOtherPeerHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	response := nsi.GetOtherPeer(params["id"],nsi.Url)
+	response := nsi.GetOtherPeer(params["peer_id"],nsi.Url)
 	json.NewEncoder(w).Encode(response)
 }
 
 func (nsi *NodeServiceImpl) GetBlockInfoHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	block, err := strconv.ParseInt(params["id"], 10, 64)
+	block, err := strconv.ParseInt(params["block_no"], 10, 64)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -44,11 +44,11 @@ func (nsi *NodeServiceImpl) GetBlockInfoHandler(w http.ResponseWriter, r *http.R
 
 func (nsi *NodeServiceImpl) GetTransactionInfoHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	if params["id"] == "pending" {
+	if params["txn_hash"] == "pending" {
 		response := nsi.GetPendingTransactions(nsi.Url)
 		json.NewEncoder(w).Encode(response)
 	} else {
-		response := nsi.GetTransactionInfo(params["id"],nsi.Url)
+		response := nsi.GetTransactionInfo(params["txn_hash"],nsi.Url)
 		json.NewEncoder(w).Encode(response)
 	}
 }
