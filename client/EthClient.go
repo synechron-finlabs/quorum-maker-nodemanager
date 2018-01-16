@@ -85,12 +85,12 @@ type TransactionDetailsResponse struct {
 }
 
 type TransactionReceiptResponse struct {
-	BlockHash         	string      `json:"blockHash"`
-	BlockNumber       	string      `json:"blockNumber"`
+	BlockHash         	string          `json:"blockHash"`
+	BlockNumber       	string          `json:"blockNumber"`
 	ContractAddress   	string 		`json:"contractAddress"`
-	CumulativeGasUsed 	string      `json:"cumulativeGasUsed"`
-	From              	string      `json:"from"`
-	GasUsed           	string      `json:"gasUsed"`
+	CumulativeGasUsed 	string          `json:"cumulativeGasUsed"`
+	From              	string          `json:"from"`
+	GasUsed           	string          `json:"gasUsed"`
 	Logs              	[]Logs 		`json:"logs"`
 	LogsBloom        	string 		`json:"logsBloom"`
 	Root             	string 		`json:"root"`
