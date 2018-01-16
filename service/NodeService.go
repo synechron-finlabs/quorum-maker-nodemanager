@@ -76,6 +76,32 @@ type TransactionDetailsResponse struct {
 	S                string `json:"s,omitempty"`
 }
 
+type TransactionReceiptResponse struct {
+	BlockHash         	string      `json:"blockHash"`
+	BlockNumber       	int64      `json:"blockNumber"`
+	ContractAddress   	string 		`json:"contractAddress"`
+	CumulativeGasUsed 	int64      `json:"cumulativeGasUsed"`
+	From              	string      `json:"from"`
+	GasUsed           	int64      `json:"gasUsed"`
+	Logs              	[]Logs 		`json:"logs"`
+	LogsBloom        	string 		`json:"logsBloom"`
+	Root             	string 		`json:"root"`
+	To               	string 		`json:"to"`
+	TransactionHash  	string 		`json:"transactionHash"`
+	TransactionIndex 	int64 		`json:"transactionIndex"`
+}
+
+type Logs struct {
+	Address         	string        `json:"address"`
+	BlockHash       	string        `json:"blockHash"`
+	BlockNumber   	int64        `json:"blockNumber"`
+	Data 				string        `json:"data"`
+	LogIndex          int64        `json:"logIndex"`
+	Topics           	[]string      `json:"topics"`
+	TransactionHash   string 		  `json:"transactionHash"`
+	TransactionIndex  int64        `json:"transactionIndex"`
+}
+
 type NodeServiceImpl struct {
 	Url string
 }
@@ -257,5 +283,38 @@ func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) (Transac
 	txResponse.V = txResponseClient.V
 	txResponse.R = txResponseClient.R
 	txResponse.S = txResponseClient.S
+	return txResponse
+}
+
+
+func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) (TransactionReceiptResponse) {
+	var nodeUrl = url
+	ethClient := client.EthClient{nodeUrl}
+	var txResponse TransactionReceiptResponse
+	txResponseClient := ethClient.GetTransactionReceipt(txno)
+	txResponse.BlockNumber = util.HexStringtoInt64(txResponseClient.BlockNumber)
+	txResponse.CumulativeGasUsed = util.HexStringtoInt64(txResponseClient.CumulativeGasUsed)
+	txResponse.GasUsed = util.HexStringtoInt64(txResponseClient.GasUsed)
+	txResponse.TransactionIndex = util.HexStringtoInt64(txResponseClient.TransactionIndex)
+	txResponse.BlockHash = txResponseClient.BlockHash
+	txResponse.From = txResponseClient.From
+	txResponse.ContractAddress = txResponseClient.ContractAddress
+	txResponse.LogsBloom = txResponseClient.LogsBloom
+	txResponse.Root = txResponseClient.Root
+	txResponse.To = txResponseClient.To
+	txResponse.TransactionHash = txResponseClient.TransactionHash
+	eventNo := len(txResponseClient.Logs)
+	txResponseBuffer := make([]Logs, eventNo)
+	for i := 0; i < eventNo; i++ {
+		txResponseBuffer[i].BlockNumber = util.HexStringtoInt64(txResponseClient.Logs[i].BlockNumber)
+		txResponseBuffer[i].LogIndex = util.HexStringtoInt64(txResponseClient.Logs[i].LogIndex)
+		txResponseBuffer[i].TransactionIndex = util.HexStringtoInt64(txResponseClient.Logs[i].TransactionIndex)
+		txResponseBuffer[i].Address = txResponseClient.Logs[i].Address
+		txResponseBuffer[i].BlockHash = txResponseClient.Logs[i].BlockHash
+		txResponseBuffer[i].Data = txResponseClient.Logs[i].Data
+		txResponseBuffer[i].TransactionHash = txResponseClient.Logs[i].TransactionHash
+		txResponseBuffer[i].Topics = txResponseClient.Logs[i].Topics
+	}
+	txResponse.Logs = txResponseBuffer
 	return txResponse
 }
