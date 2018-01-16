@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-var nodeUrl = "http://10.34.14.204:22000"
+var nodeUrl = "http://localhost:22000"
 var listenPort = ":8000"
 
 func main() {
