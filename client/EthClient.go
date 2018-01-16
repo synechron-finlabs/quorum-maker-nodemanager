@@ -106,7 +106,7 @@ type Logs struct {
 	Data 			string        `json:"data"`
 	LogIndex          	string        `json:"logIndex"`
 	Topics           	[]string      `json:"topics"`
-	TransactionHash     string 		    `json:"transactionHash"`
+	TransactionHash         string      `json:"transactionHash"`
 	TransactionIndex  	string        `json:"transactionIndex"`
 }
 
