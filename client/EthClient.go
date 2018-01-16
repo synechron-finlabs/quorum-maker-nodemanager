@@ -88,33 +88,33 @@ type EthClient struct {
 	Url string
 }
 
-func (ec *EthClient) GetTransactionByHash(txno string) (TransactionDetailsResponse) {
+func (ec *EthClient) GetTransactionByHash(txNo string) (TransactionDetailsResponse) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
-	response, err := rpcClient.Call("eth_getTransactionByHash", txno)
+	response, err := rpcClient.Call("eth_getTransactionByHash", txNo)
 
 	if err != nil {
 		fmt.Println(err)
 	}
-	txresponse := TransactionDetailsResponse{}
-	err = response.GetObject(&txresponse)
+	txResponse := TransactionDetailsResponse{}
+	err = response.GetObject(&txResponse)
 	if err != nil {
 		fmt.Println(err)
 	}
-	return txresponse
+	return txResponse
 }
 
-func (ec *EthClient) GetBlockByNumber(blockno string) (BlockDetailsResponse) {
+func (ec *EthClient) GetBlockByNumber(blockNo string) (BlockDetailsResponse) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
-	response, err := rpcClient.Call("eth_getBlockByNumber", blockno, true)
+	response, err := rpcClient.Call("eth_getBlockByNumber", blockNo, true)
 	if err != nil {
 		fmt.Println(err)
 	}
-	blockresponse := BlockDetailsResponse{}
-	err = response.GetObject(&blockresponse)
+	blockResponse := BlockDetailsResponse{}
+	err = response.GetObject(&blockResponse)
 	if err != nil {
 		fmt.Println(err)
 	}
-	return blockresponse
+	return blockResponse
 }
 
 func (ec *EthClient) PendingTransactions() ([]TransactionDetailsResponse) {
@@ -123,12 +123,12 @@ func (ec *EthClient) PendingTransactions() ([]TransactionDetailsResponse) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	pendingtxresponse := []TransactionDetailsResponse{}
-	err = response.GetObject(&pendingtxresponse)
+	pendingTxResponse := []TransactionDetailsResponse{}
+	err = response.GetObject(&pendingTxResponse)
 	if err != nil {
 		fmt.Println(err)
 	}
-	return pendingtxresponse
+	return pendingTxResponse
 }
 
 func (ec *EthClient) AdminPeers() ([]AdminPeers) {
@@ -137,12 +137,12 @@ func (ec *EthClient) AdminPeers() ([]AdminPeers) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	otherpeersresponse := []AdminPeers{}
-	err = response.GetObject(&otherpeersresponse)
+	otherPeersResponse := []AdminPeers{}
+	err = response.GetObject(&otherPeersResponse)
 	if err != nil {
 		fmt.Println(err)
 	}
-	return otherpeersresponse
+	return otherPeersResponse
 }
 
 func (ec *EthClient) AdminNodeInfo () (AdminInfo) {
@@ -151,9 +151,9 @@ func (ec *EthClient) AdminNodeInfo () (AdminInfo) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	thisadmininfo := AdminInfo{}
-	err = response.GetObject(&thisadmininfo)
-	return thisadmininfo
+	thisAdminInfo := AdminInfo{}
+	err = response.GetObject(&thisAdminInfo)
+	return thisAdminInfo
 }
 
 func (ec *EthClient) BlockNumber() (string) {
@@ -162,12 +162,12 @@ func (ec *EthClient) BlockNumber() (string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	var blocknumber string;
-	err = response.GetObject(&blocknumber)
+	var blockNumber string;
+	err = response.GetObject(&blockNumber)
 	if err != nil {
 		fmt.Println(err)
 	}
-	return blocknumber
+	return blockNumber
 }
 
 func (ec *EthClient) RaftRole() (string) {
@@ -176,21 +176,21 @@ func (ec *EthClient) RaftRole() (string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	var raftrole string;
-	err = response.GetObject(&raftrole)
+	var raftRole string;
+	err = response.GetObject(&raftRole)
 	if err != nil {
 		fmt.Println(err)
 	}
-	return raftrole
+	return raftRole
 }
 
 func (ec *EthClient) RaftAddPeer(request string) (int) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("raft_addPeer",request)
-	var raftid int
-	err = response.GetObject(&raftid)
+	var raftId int
+	err = response.GetObject(&raftId)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return raftid
+	return raftId
 }
