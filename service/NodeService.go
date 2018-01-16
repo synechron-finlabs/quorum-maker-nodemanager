@@ -55,7 +55,7 @@ type BlockDetailsResponse struct {
 	GasLimit         int64                                  `json:"gasLimit,omitempty"`
 	GasUsed          int64                                  `json:"gasUsed,omitempty"`
 	Timestamp        int64                                  `json:"timestamp,omitempty"`
-	Transactions     []TransactionDetailsResponse             `json:"transactions,omitempty"`
+	Transactions     []TransactionDetailsResponse           `json:"transactions,omitempty"`
 	Uncles           []string                               `json:"uncles,omitempty"`
 }
 
