@@ -52,3 +52,9 @@ func (nsi *NodeServiceImpl) GetTransactionInfoHandler(w http.ResponseWriter, r *
 		json.NewEncoder(w).Encode(response)
 	}
 }
+
+func (nsi *NodeServiceImpl) GetTransactionReceiptHandler(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	response := nsi.getTransactionReceipt(params["txn_hash"],nsi.Url)
+	json.NewEncoder(w).Encode(response)
+}
