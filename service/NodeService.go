@@ -77,29 +77,29 @@ type TransactionDetailsResponse struct {
 }
 
 type TransactionReceiptResponse struct {
-	BlockHash         	string      `json:"blockHash"`
-	BlockNumber       	int64      `json:"blockNumber"`
-	ContractAddress   	string 		`json:"contractAddress"`
-	CumulativeGasUsed 	int64      `json:"cumulativeGasUsed"`
-	From              	string      `json:"from"`
-	GasUsed           	int64      `json:"gasUsed"`
-	Logs              	[]Logs 		`json:"logs"`
-	LogsBloom        	string 		`json:"logsBloom"`
-	Root             	string 		`json:"root"`
-	To               	string 		`json:"to"`
-	TransactionHash  	string 		`json:"transactionHash"`
-	TransactionIndex 	int64 		`json:"transactionIndex"`
+	BlockHash         	string      	`json:"blockHash"`
+	BlockNumber       	int64      		`json:"blockNumber"`
+	ContractAddress   	string 			`json:"contractAddress"`
+	CumulativeGasUsed 	int64      		`json:"cumulativeGasUsed"`
+	From              	string      	`json:"from"`
+	GasUsed           	int64      		`json:"gasUsed"`
+	Logs              	[]Logs 			`json:"logs"`
+	LogsBloom        	string 			`json:"logsBloom"`
+	Root             	string 			`json:"root"`
+	To               	string 			`json:"to"`
+	TransactionHash  	string 			`json:"transactionHash"`
+	TransactionIndex 	int64 			`json:"transactionIndex"`
 }
 
 type Logs struct {
-	Address         	string        `json:"address"`
-	BlockHash       	string        `json:"blockHash"`
-	BlockNumber   	int64        `json:"blockNumber"`
-	Data 				string        `json:"data"`
-	LogIndex          int64        `json:"logIndex"`
-	Topics           	[]string      `json:"topics"`
-	TransactionHash   string 		  `json:"transactionHash"`
-	TransactionIndex  int64        `json:"transactionIndex"`
+	Address         	string    	`json:"address"`
+	BlockHash       	string  	`json:"blockHash"`
+	BlockNumber   		int64    	`json:"blockNumber"`
+	Data 				string    	`json:"data"`
+	LogIndex          	int64      	`json:"logIndex"`
+	Topics          	[]string   	`json:"topics"`
+	TransactionHash   	string 		`json:"transactionHash"`
+	TransactionIndex  	int64      	`json:"transactionIndex"`
 }
 
 type NodeServiceImpl struct {
