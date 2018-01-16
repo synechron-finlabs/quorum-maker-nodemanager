@@ -84,6 +84,32 @@ type TransactionDetailsResponse struct {
 	S                string `json:"s,omitempty"`
 }
 
+type TransactionReceiptResponse struct {
+	BlockHash         	string      `json:"blockHash"`
+	BlockNumber       	string      `json:"blockNumber"`
+	ContractAddress   	string 		`json:"contractAddress"`
+	CumulativeGasUsed 	string      `json:"cumulativeGasUsed"`
+	From              	string      `json:"from"`
+	GasUsed           	string      `json:"gasUsed"`
+	Logs              	[]Logs 		`json:"logs"`
+	LogsBloom        	string 		`json:"logsBloom"`
+	Root             	string 		`json:"root"`
+	To               	string 		`json:"to"`
+	TransactionHash  	string 		`json:"transactionHash"`
+	TransactionIndex 	string 		`json:"transactionIndex"`
+}
+
+type Logs struct {
+	Address         	string        `json:"address"`
+	BlockHash       	string        `json:"blockHash"`
+	BlockNumber   		string        `json:"blockNumber"`
+	Data 				string        `json:"data"`
+	LogIndex          	string        `json:"logIndex"`
+	Topics           	[]string      `json:"topics"`
+	TransactionHash   	string 		  `json:"transactionHash"`
+	TransactionIndex  	string        `json:"transactionIndex"`
+}
+
 type EthClient struct {
 	Url string
 }
@@ -193,4 +219,19 @@ func (ec *EthClient) RaftAddPeer(request string) (int) {
 		log.Fatal(err)
 	}
 	return raftId
+}
+
+func (ec *EthClient) GetTransactionReceipt(txNo string) (TransactionReceiptResponse) {
+	rpcClient := jsonrpc.NewRPCClient(ec.Url)
+	response, err := rpcClient.Call("eth_getTransactionReceipt", txNo)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	txResponse := TransactionReceiptResponse{}
+	err = response.GetObject(&txResponse)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return txResponse
 }
