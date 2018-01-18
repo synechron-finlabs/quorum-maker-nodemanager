@@ -12,23 +12,23 @@ func (nsi *NodeServiceImpl) JoinNetworkHandler(w http.ResponseWriter, r *http.Re
 	var request JoinNetworkRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 	enode := request.EnodeID
-	response := nsi.JoinNetwork(enode,nsi.Url)
+	response := nsi.joinNetwork(enode,nsi.Url)
 	json.NewEncoder(w).Encode(response)
 }
 
 func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Request) {
-	response := nsi.GetGenesis(nsi.Url)
+	response := nsi.getGenesis(nsi.Url)
 	json.NewEncoder(w).Encode(response)
 }
 
 func (nsi *NodeServiceImpl) GetCurrentNodeHandler(w http.ResponseWriter, r *http.Request) {
-	response := nsi.GetCurrentNode(nsi.Url)
+	response := nsi.getCurrentNode(nsi.Url)
 	json.NewEncoder(w).Encode(response)
 }
 
 func (nsi *NodeServiceImpl) GetOtherPeerHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	response := nsi.GetOtherPeer(params["peer_id"],nsi.Url)
+	response := nsi.getOtherPeer(params["peer_id"],nsi.Url)
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -38,17 +38,23 @@ func (nsi *NodeServiceImpl) GetBlockInfoHandler(w http.ResponseWriter, r *http.R
 	if err != nil {
 		fmt.Println(err)
 	}
-	response := nsi.GetBlockInfo(block,nsi.Url)
+	response := nsi.getBlockInfo(block,nsi.Url)
 	json.NewEncoder(w).Encode(response)
 }
 
 func (nsi *NodeServiceImpl) GetTransactionInfoHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	if params["txn_hash"] == "pending" {
-		response := nsi.GetPendingTransactions(nsi.Url)
+		response := nsi.getPendingTransactions(nsi.Url)
 		json.NewEncoder(w).Encode(response)
 	} else {
-		response := nsi.GetTransactionInfo(params["txn_hash"],nsi.Url)
+		response := nsi.getTransactionInfo(params["txn_hash"],nsi.Url)
 		json.NewEncoder(w).Encode(response)
 	}
+}
+
+func (nsi *NodeServiceImpl) GetTransactionReceiptHandler(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	response := nsi.getTransactionReceipt(params["txn_hash"],nsi.Url)
+	json.NewEncoder(w).Encode(response)
 }

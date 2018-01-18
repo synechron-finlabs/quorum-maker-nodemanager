@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strconv"
 	"synechron.com/NodeManagerGo/util"
+	"github.com/magiconair/properties"
 )
 
 type ConnectionInfo struct {
@@ -54,7 +55,7 @@ type BlockDetailsResponse struct {
 	GasLimit         int64                                  `json:"gasLimit,omitempty"`
 	GasUsed          int64                                  `json:"gasUsed,omitempty"`
 	Timestamp        int64                                  `json:"timestamp,omitempty"`
-	Transactions     []TransactionDetailsResponse             `json:"transactions,omitempty"`
+	Transactions     []TransactionDetailsResponse           `json:"transactions,omitempty"`
 	Uncles           []string                               `json:"uncles,omitempty"`
 }
 
@@ -75,14 +76,41 @@ type TransactionDetailsResponse struct {
 	S                string `json:"s,omitempty"`
 }
 
+type TransactionReceiptResponse struct {
+	BlockHash         	string      	        `json:"blockHash"`
+	BlockNumber       	int64      		`json:"blockNumber"`
+	ContractAddress   	string 			`json:"contractAddress"`
+	CumulativeGasUsed 	int64      		`json:"cumulativeGasUsed"`
+	From              	string      	        `json:"from"`
+	GasUsed           	int64      		`json:"gasUsed"`
+	Logs              	[]Logs 			`json:"logs"`
+	LogsBloom        	string 			`json:"logsBloom"`
+	Root             	string 			`json:"root"`
+	To               	string 			`json:"to"`
+	TransactionHash  	string 			`json:"transactionHash"`
+	TransactionIndex 	int64 			`json:"transactionIndex"`
+}
+
+type Logs struct {
+	Address         	string    	`json:"address"`
+	BlockHash       	string  	`json:"blockHash"`
+	BlockNumber   		int64    	`json:"blockNumber"`
+	Data 			string    	`json:"data"`
+	LogIndex          	int64      	`json:"logIndex"`
+	Topics          	[]string   	`json:"topics"`
+	TransactionHash   	string 		`json:"transactionHash"`
+	TransactionIndex  	int64      	`json:"transactionIndex"`
+}
+
 type NodeServiceImpl struct {
 	Url string
 }
 
 
-func (nsi *NodeServiceImpl) GetGenesis(url string) (response GetGenesisResponse) {
-	netid := util.MustGetString("NETWORK_ID","/home/setup.conf")
-	constl := util.MustGetString("CONSTELLATION_PORT","/home/setup.conf")
+func (nsi *NodeServiceImpl) getGenesis(url string) (response GetGenesisResponse) {
+	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+	netId := util.MustGetString("NETWORK_ID", p)
+	constl := util.MustGetString("CONSTELLATION_PORT", p)
 	
 	b, err := ioutil.ReadFile("/home/node/genesis.json")
 	if err != nil {
@@ -91,49 +119,49 @@ func (nsi *NodeServiceImpl) GetGenesis(url string) (response GetGenesisResponse)
 	genesis := string(b)
 	genesis = strings.Replace(genesis, "\n","",-1)
 
-	response = GetGenesisResponse{constl, netid, genesis}
+	response = GetGenesisResponse{constl, netId, genesis}
 	return response
 }
 
 
-func (nsi *NodeServiceImpl) JoinNetwork(request string, url string) (int) {
+func (nsi *NodeServiceImpl) joinNetwork(request string, url string) (int) {
 	var nodeUrl = url
-	Ethclient := client.EthClient{nodeUrl}
-	raftid := Ethclient.RaftAddPeer(request)
-	return raftid
+	ethClient := client.EthClient{nodeUrl}
+	raftId := ethClient.RaftAddPeer(request)
+	return raftId
 }
 
 
-func (nsi *NodeServiceImpl) GetCurrentNode (url string) (NodeInfo) {
+func (nsi *NodeServiceImpl) getCurrentNode (url string) (NodeInfo) {
 	var nodeUrl = url
-	Ethclient := client.EthClient{nodeUrl}
-	
-	ipaddr := util.MustGetString("CURRENT_IP","/home/setup.conf")
-	raftid := util.MustGetString("RAFT_ID","/home/setup.conf")
-	rpcport := util.MustGetString("RPC_PORT","/home/setup.conf")
+	ethClient := client.EthClient{nodeUrl}
+	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+	ipAddr := util.MustGetString("CURRENT_IP", p)
+	raftId := util.MustGetString("RAFT_ID", p)
+	rpcPort := util.MustGetString("RPC_PORT", p)
 
-	raftidInt, err := strconv.Atoi(raftid)
+	raftIdInt, err := strconv.Atoi(raftId)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	rpcportInt, err := strconv.Atoi(rpcport)
+	rpcPortInt, err := strconv.Atoi(rpcPort)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	thisadmininfo := Ethclient.AdminNodeInfo()
-	enode := thisadmininfo.Enode
+	thisAdminInfo := ethClient.AdminNodeInfo()
+	enode := thisAdminInfo.Enode
 
-	pendingtxresponse := Ethclient.PendingTransactions()
-	pendingtxcount := len(pendingtxresponse)
+	pendingTxResponse := ethClient.PendingTransactions()
+	pendingTxCount := len(pendingTxResponse)
 
-	blocknumber := Ethclient.BlockNumber()
-	blocknumberInt :=  util.HexStringtoInt64(blocknumber)
+	blockNumber := ethClient.BlockNumber()
+	blockNumberInt :=  util.HexStringtoInt64(blockNumber)
 
-	raftrole := Ethclient.RaftRole()
+	raftRole := ethClient.RaftRole()
 
-	raftrole = strings.TrimSuffix(raftrole, "\n")
+	raftRole = strings.TrimSuffix(raftRole, "\n")
 
 	b, err := ioutil.ReadFile("/home/node/genesis.json")
 
@@ -143,117 +171,150 @@ func (nsi *NodeServiceImpl) GetCurrentNode (url string) (NodeInfo) {
 
 	genesis := string(b)
 	genesis = strings.Replace(genesis, "\n","",-1)
-	conn := ConnectionInfo{ipaddr,rpcportInt,enode}
-	responseobj := NodeInfo{conn,raftrole,raftidInt,blocknumberInt,pendingtxcount,genesis,thisadmininfo}
-	return responseobj
+	conn := ConnectionInfo{ipAddr,rpcPortInt,enode}
+	responseObj := NodeInfo{conn,raftRole,raftIdInt,blockNumberInt,pendingTxCount,genesis,thisAdminInfo}
+	return responseObj
 }
 
 
-func (nsi *NodeServiceImpl) GetOtherPeer(peerid string, url string) (client.AdminPeers) {
+func (nsi *NodeServiceImpl) getOtherPeer(peerId string, url string) (client.AdminPeers) {
 	var nodeUrl = url
-	Ethclient := client.EthClient{nodeUrl}
-	otherpeersresponse := Ethclient.AdminPeers()
-	for _, item := range otherpeersresponse {
-		if item.ID == peerid {
-			peerresponse := item
-			return peerresponse
+	ethClient := client.EthClient{nodeUrl}
+	otherPeersResponse := ethClient.AdminPeers()
+	for _, item := range otherPeersResponse {
+		if item.ID == peerId {
+			peerResponse := item
+			return peerResponse
 		}
 	}
 	return client.AdminPeers{}
 }
 
 
-func (nsi *NodeServiceImpl) GetPendingTransactions(url string) ([]TransactionDetailsResponse) {
+func (nsi *NodeServiceImpl) getPendingTransactions(url string) ([]TransactionDetailsResponse) {
 	var nodeUrl = url
-	Ethclient := client.EthClient{nodeUrl}
-	pendingtxresponseclient := Ethclient.PendingTransactions()
-	pendingtxcount := len(pendingtxresponseclient)
-	pendingtxresponse := make([]TransactionDetailsResponse, pendingtxcount)
-	for i := 0; i < pendingtxcount; i++ {
-		pendingtxresponse[i].BlockNumber = util.HexStringtoInt64(pendingtxresponseclient[i].BlockNumber)
-		pendingtxresponse[i].Gas = util.HexStringtoInt64(pendingtxresponseclient[i].Gas)
-		pendingtxresponse[i].GasPrice = util.HexStringtoInt64(pendingtxresponseclient[i].GasPrice)
-		pendingtxresponse[i].TransactionIndex = util.HexStringtoInt64(pendingtxresponseclient[i].TransactionIndex)
-		pendingtxresponse[i].Value = util.HexStringtoInt64(pendingtxresponseclient[i].Value)
-		pendingtxresponse[i].Nonce = util.HexStringtoInt64(pendingtxresponseclient[i].Nonce)
-		pendingtxresponse[i].BlockHash = pendingtxresponseclient[i].BlockHash
-		pendingtxresponse[i].From = pendingtxresponseclient[i].From
-		pendingtxresponse[i].Hash = pendingtxresponseclient[i].Hash
-		pendingtxresponse[i].Input = pendingtxresponseclient[i].Input
-		pendingtxresponse[i].To = pendingtxresponseclient[i].To
-		pendingtxresponse[i].V = pendingtxresponseclient[i].V
-		pendingtxresponse[i].R = pendingtxresponseclient[i].R
-		pendingtxresponse[i].S = pendingtxresponseclient[i].S
+	ethClient := client.EthClient{nodeUrl}
+	pendingTxResponseClient := ethClient.PendingTransactions()
+	pendingTxCount := len(pendingTxResponseClient)
+	pendingTxResponse := make([]TransactionDetailsResponse, pendingTxCount)
+	for i := 0; i < pendingTxCount; i++ {
+		pendingTxResponse[i].BlockNumber = util.HexStringtoInt64(pendingTxResponseClient[i].BlockNumber)
+		pendingTxResponse[i].Gas = util.HexStringtoInt64(pendingTxResponseClient[i].Gas)
+		pendingTxResponse[i].GasPrice = util.HexStringtoInt64(pendingTxResponseClient[i].GasPrice)
+		pendingTxResponse[i].TransactionIndex = util.HexStringtoInt64(pendingTxResponseClient[i].TransactionIndex)
+		pendingTxResponse[i].Value = util.HexStringtoInt64(pendingTxResponseClient[i].Value)
+		pendingTxResponse[i].Nonce = util.HexStringtoInt64(pendingTxResponseClient[i].Nonce)
+		pendingTxResponse[i].BlockHash = pendingTxResponseClient[i].BlockHash
+		pendingTxResponse[i].From = pendingTxResponseClient[i].From
+		pendingTxResponse[i].Hash = pendingTxResponseClient[i].Hash
+		pendingTxResponse[i].Input = pendingTxResponseClient[i].Input
+		pendingTxResponse[i].To = pendingTxResponseClient[i].To
+		pendingTxResponse[i].V = pendingTxResponseClient[i].V
+		pendingTxResponse[i].R = pendingTxResponseClient[i].R
+		pendingTxResponse[i].S = pendingTxResponseClient[i].S
 	}
-	return pendingtxresponse
+	return pendingTxResponse
 }
 
 
-func (nsi *NodeServiceImpl) GetBlockInfo(blockno int64, url string) (BlockDetailsResponse) {
+func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) (BlockDetailsResponse) {
 	var nodeUrl = url
-	Ethclient := client.EthClient{nodeUrl}
-	blocknohex  := strconv.FormatInt(blockno, 16)
-	bnohex := fmt.Sprint("0x", blocknohex)
-	var blockresponse BlockDetailsResponse
-	blockresponseclient := Ethclient.GetBlockByNumber(bnohex)
-	blockresponse.Number = util.HexStringtoInt64(blockresponseclient.Number)
-	blockresponse.Difficulty = util.HexStringtoInt64(blockresponseclient.Difficulty)
-	blockresponse.TotalDifficulty = util.HexStringtoInt64(blockresponseclient.TotalDifficulty)
-	blockresponse.Size = util.HexStringtoInt64(blockresponseclient.Size)
-	blockresponse.GasLimit = util.HexStringtoInt64(blockresponseclient.GasLimit)
-	blockresponse.GasUsed = util.HexStringtoInt64(blockresponseclient.GasUsed)
-	blockresponse.Timestamp = util.HexStringtoInt64(blockresponseclient.Timestamp)
-	blockresponse.Hash = blockresponseclient.Hash
-	blockresponse.ParentHash = blockresponseclient.ParentHash
-	blockresponse.Nonce = blockresponseclient.Nonce
-	blockresponse.Sha3Uncles = blockresponseclient.Sha3Uncles
-	blockresponse.LogsBloom = blockresponseclient.LogsBloom
-	blockresponse.TransactionsRoot = blockresponseclient.TransactionsRoot
-	blockresponse.StateRoot = blockresponseclient.StateRoot
-	blockresponse.Miner = blockresponseclient.Miner
-	blockresponse.ExtraData = blockresponseclient.ExtraData
-	blockresponse.Uncles = blockresponseclient.Uncles
-	txnno := len(blockresponseclient.Transactions)
-	txresponse := make([]TransactionDetailsResponse, txnno)
-	for i := 0; i < txnno; i++ {
-		txresponse[i].BlockNumber = util.HexStringtoInt64(blockresponseclient.Transactions[i].BlockNumber)
-		txresponse[i].Gas = util.HexStringtoInt64(blockresponseclient.Transactions[i].Gas)
-		txresponse[i].GasPrice = util.HexStringtoInt64(blockresponseclient.Transactions[i].GasPrice)
-		txresponse[i].TransactionIndex = util.HexStringtoInt64(blockresponseclient.Transactions[i].TransactionIndex)
-		txresponse[i].Value = util.HexStringtoInt64(blockresponseclient.Transactions[i].Value)
-		txresponse[i].Nonce = util.HexStringtoInt64(blockresponseclient.Transactions[i].Nonce)
-		txresponse[i].BlockHash = blockresponseclient.Transactions[i].BlockHash
-		txresponse[i].From = blockresponseclient.Transactions[i].From
-		txresponse[i].Hash = blockresponseclient.Transactions[i].Hash
-		txresponse[i].Input = blockresponseclient.Transactions[i].Input
-		txresponse[i].To = blockresponseclient.Transactions[i].To
-		txresponse[i].V = blockresponseclient.Transactions[i].V
-		txresponse[i].R = blockresponseclient.Transactions[i].R
-		txresponse[i].S = blockresponseclient.Transactions[i].S
+	ethClient := client.EthClient{nodeUrl}
+	blockNoHex  := strconv.FormatInt(blockno, 16)
+	bNoHex := fmt.Sprint("0x", blockNoHex)
+	var blockResponse BlockDetailsResponse
+	blockResponseClient := ethClient.GetBlockByNumber(bNoHex)
+	blockResponse.Number = util.HexStringtoInt64(blockResponseClient.Number)
+	blockResponse.Difficulty = util.HexStringtoInt64(blockResponseClient.Difficulty)
+	blockResponse.TotalDifficulty = util.HexStringtoInt64(blockResponseClient.TotalDifficulty)
+	blockResponse.Size = util.HexStringtoInt64(blockResponseClient.Size)
+	blockResponse.GasLimit = util.HexStringtoInt64(blockResponseClient.GasLimit)
+	blockResponse.GasUsed = util.HexStringtoInt64(blockResponseClient.GasUsed)
+	blockResponse.Timestamp = util.HexStringtoInt64(blockResponseClient.Timestamp)
+	blockResponse.Hash = blockResponseClient.Hash
+	blockResponse.ParentHash = blockResponseClient.ParentHash
+	blockResponse.Nonce = blockResponseClient.Nonce
+	blockResponse.Sha3Uncles = blockResponseClient.Sha3Uncles
+	blockResponse.LogsBloom = blockResponseClient.LogsBloom
+	blockResponse.TransactionsRoot = blockResponseClient.TransactionsRoot
+	blockResponse.StateRoot = blockResponseClient.StateRoot
+	blockResponse.Miner = blockResponseClient.Miner
+	blockResponse.ExtraData = blockResponseClient.ExtraData
+	blockResponse.Uncles = blockResponseClient.Uncles
+	txnNo := len(blockResponseClient.Transactions)
+	txResponse := make([]TransactionDetailsResponse, txnNo)
+	for i := 0; i < txnNo; i++ {
+		txResponse[i].BlockNumber = util.HexStringtoInt64(blockResponseClient.Transactions[i].BlockNumber)
+		txResponse[i].Gas = util.HexStringtoInt64(blockResponseClient.Transactions[i].Gas)
+		txResponse[i].GasPrice = util.HexStringtoInt64(blockResponseClient.Transactions[i].GasPrice)
+		txResponse[i].TransactionIndex = util.HexStringtoInt64(blockResponseClient.Transactions[i].TransactionIndex)
+		txResponse[i].Value = util.HexStringtoInt64(blockResponseClient.Transactions[i].Value)
+		txResponse[i].Nonce = util.HexStringtoInt64(blockResponseClient.Transactions[i].Nonce)
+		txResponse[i].BlockHash = blockResponseClient.Transactions[i].BlockHash
+		txResponse[i].From = blockResponseClient.Transactions[i].From
+		txResponse[i].Hash = blockResponseClient.Transactions[i].Hash
+		txResponse[i].Input = blockResponseClient.Transactions[i].Input
+		txResponse[i].To = blockResponseClient.Transactions[i].To
+		txResponse[i].V = blockResponseClient.Transactions[i].V
+		txResponse[i].R = blockResponseClient.Transactions[i].R
+		txResponse[i].S = blockResponseClient.Transactions[i].S
 	}
-	blockresponse.Transactions = txresponse
-	return blockresponse
+	blockResponse.Transactions = txResponse
+	return blockResponse
 }
 
 
-func (nsi *NodeServiceImpl) GetTransactionInfo(txno string, url string) (TransactionDetailsResponse) {
+func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) (TransactionDetailsResponse) {
 	var nodeUrl = url
-	Ethclient := client.EthClient{nodeUrl}
-	var txresponse TransactionDetailsResponse
-	txresponseclient := Ethclient.GetTransactionByHash(txno)
-	txresponse.BlockNumber = util.HexStringtoInt64(txresponseclient.BlockNumber)
-	txresponse.Gas = util.HexStringtoInt64(txresponseclient.Gas)
-	txresponse.GasPrice = util.HexStringtoInt64(txresponseclient.GasPrice)
-	txresponse.TransactionIndex = util.HexStringtoInt64(txresponseclient.TransactionIndex)
-	txresponse.Value = util.HexStringtoInt64(txresponseclient.Value)
-	txresponse.Nonce = util.HexStringtoInt64(txresponseclient.Nonce)
-	txresponse.BlockHash = txresponseclient.BlockHash
-	txresponse.From = txresponseclient.From
-	txresponse.Hash = txresponseclient.Hash
-	txresponse.Input = txresponseclient.Input
-	txresponse.To = txresponseclient.To
-	txresponse.V = txresponseclient.V
-	txresponse.R = txresponseclient.R
-	txresponse.S = txresponseclient.S
-	return txresponse
+	ethClient := client.EthClient{nodeUrl}
+	var txResponse TransactionDetailsResponse
+	txResponseClient := ethClient.GetTransactionByHash(txno)
+	txResponse.BlockNumber = util.HexStringtoInt64(txResponseClient.BlockNumber)
+	txResponse.Gas = util.HexStringtoInt64(txResponseClient.Gas)
+	txResponse.GasPrice = util.HexStringtoInt64(txResponseClient.GasPrice)
+	txResponse.TransactionIndex = util.HexStringtoInt64(txResponseClient.TransactionIndex)
+	txResponse.Value = util.HexStringtoInt64(txResponseClient.Value)
+	txResponse.Nonce = util.HexStringtoInt64(txResponseClient.Nonce)
+	txResponse.BlockHash = txResponseClient.BlockHash
+	txResponse.From = txResponseClient.From
+	txResponse.Hash = txResponseClient.Hash
+	txResponse.Input = txResponseClient.Input
+	txResponse.To = txResponseClient.To
+	txResponse.V = txResponseClient.V
+	txResponse.R = txResponseClient.R
+	txResponse.S = txResponseClient.S
+	return txResponse
+}
+
+
+func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) (TransactionReceiptResponse) {
+	var nodeUrl = url
+	ethClient := client.EthClient{nodeUrl}
+	var txResponse TransactionReceiptResponse
+	txResponseClient := ethClient.GetTransactionReceipt(txno)
+	txResponse.BlockNumber = util.HexStringtoInt64(txResponseClient.BlockNumber)
+	txResponse.CumulativeGasUsed = util.HexStringtoInt64(txResponseClient.CumulativeGasUsed)
+	txResponse.GasUsed = util.HexStringtoInt64(txResponseClient.GasUsed)
+	txResponse.TransactionIndex = util.HexStringtoInt64(txResponseClient.TransactionIndex)
+	txResponse.BlockHash = txResponseClient.BlockHash
+	txResponse.From = txResponseClient.From
+	txResponse.ContractAddress = txResponseClient.ContractAddress
+	txResponse.LogsBloom = txResponseClient.LogsBloom
+	txResponse.Root = txResponseClient.Root
+	txResponse.To = txResponseClient.To
+	txResponse.TransactionHash = txResponseClient.TransactionHash
+	eventNo := len(txResponseClient.Logs)
+	txResponseBuffer := make([]Logs, eventNo)
+	for i := 0; i < eventNo; i++ {
+		txResponseBuffer[i].BlockNumber = util.HexStringtoInt64(txResponseClient.Logs[i].BlockNumber)
+		txResponseBuffer[i].LogIndex = util.HexStringtoInt64(txResponseClient.Logs[i].LogIndex)
+		txResponseBuffer[i].TransactionIndex = util.HexStringtoInt64(txResponseClient.Logs[i].TransactionIndex)
+		txResponseBuffer[i].Address = txResponseClient.Logs[i].Address
+		txResponseBuffer[i].BlockHash = txResponseClient.Logs[i].BlockHash
+		txResponseBuffer[i].Data = txResponseClient.Logs[i].Data
+		txResponseBuffer[i].TransactionHash = txResponseClient.Logs[i].TransactionHash
+		txResponseBuffer[i].Topics = txResponseClient.Logs[i].Topics
+	}
+	txResponse.Logs = txResponseBuffer
+	return txResponse
 }

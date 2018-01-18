@@ -30,19 +30,18 @@ func takeArg(arg interface{}, kind reflect.Kind) (val reflect.Value, ok bool) {
 	return
 }
 
-func HexStringtoInt64(hexval string) (intval int64) {
-	hexval = strings.TrimSuffix(hexval, "\n")
-	hexval = strings.TrimPrefix(hexval, "0x")
-	intval, err := strconv.ParseInt(hexval, 16, 64)
+func HexStringtoInt64(hexVal string) (intVal int64) {
+	hexVal = strings.TrimSuffix(hexVal, "\n")
+	hexVal = strings.TrimPrefix(hexVal, "0x")
+	intVal, err := strconv.ParseInt(hexVal, 16, 64)
 	if err != nil {
 		fmt.Println(err)
 	}
-	return intval
+	return intVal
 }
 
-func MustGetString(key string, filename string) (val string) {
-	p := properties.MustLoadFile(filename, properties.UTF8)
-	val = p.MustGetString(key)
+func MustGetString(key string, filename *properties.Properties) (val string) {
+	val = filename.MustGetString(key)
 	val = strings.TrimSuffix(val, "\n")
 	return val
 }
