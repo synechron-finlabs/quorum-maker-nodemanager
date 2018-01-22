@@ -29,7 +29,7 @@ type NodeInfo struct {
 
 type JoinNetworkRequest struct {
 	EnodeID    string `json:"enode-id,omitempty"`
-	EthAccount string `json:"eth-account,omitempty"`
+	IPAddress  string `json:"ip-address,omitempty"`
 }
 
 type GetGenesisResponse struct {
@@ -100,6 +100,11 @@ type Logs struct {
 	Topics          	[]string   	`json:"topics"`
 	TransactionHash   	string 		`json:"transactionHash"`
 	TransactionIndex  	int64      	`json:"transactionIndex"`
+}
+
+type JoinNetworkResponse struct {
+	EnodeID string `json:"enode-id,omitempty"`
+	Status 	string `json:"status,omitempty"`
 }
 
 type NodeServiceImpl struct {
@@ -317,4 +322,10 @@ func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) (Tran
 	}
 	txResponse.Logs = txResponseBuffer
 	return txResponse
+}
+
+
+func (nsi *NodeServiceImpl) joinRequestResponse(enode string, status string) (success bool) {
+	peerMap[enode] = status
+	return true
 }
