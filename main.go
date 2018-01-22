@@ -30,7 +30,9 @@ func main() {
 	router.HandleFunc("/peer/{peer_id}", nodeService.GetOtherPeerHandler).Methods("GET")
 	router.HandleFunc("/peer", nodeService.JoinNetworkHandler).Methods("POST")
 	router.HandleFunc("/peer", nodeService.GetCurrentNodeHandler).Methods("GET")
-        router.HandleFunc("/txnrcpt/{txn_hash}", nodeService.GetTransactionReceiptHandler).Methods("GET")
+    router.HandleFunc("/txnrcpt/{txn_hash}", nodeService.GetTransactionReceiptHandler).Methods("GET")
+    router.HandleFunc("/pendingJoinRequests", nodeService.PendingJoinRequestsHandler).Methods("GET")
+	router.HandleFunc("/joinRequestResponse", nodeService.JoinRequestResponseHandler).Methods("POST")
     
 	log.Fatal(http.ListenAndServe(listenPort, router))
 }
