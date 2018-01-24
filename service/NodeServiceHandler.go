@@ -31,7 +31,7 @@ func (nsi *NodeServiceImpl) JoinNetworkHandler(w http.ResponseWriter, r *http.Re
 	//reply =  strings.TrimSuffix(text, "\n")
 	//if reply == "y" || text == "Y" {
 	//	peerMap[enode] = "YES"
-	//	response := nsi.joinNetwork(enode, foreignIP, nsi.Url)
+	//	response := nsi.joinNetwork(enode, nsi.Url)
 	//	json.NewEncoder(w).Encode(response)
 	//} else {
 	//	peerMap[enode] = "NO"
