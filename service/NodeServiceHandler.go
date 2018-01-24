@@ -17,7 +17,7 @@ func (nsi *NodeServiceImpl) JoinNetworkHandler(w http.ResponseWriter, r *http.Re
 	var request JoinNetworkRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 	enode := request.EnodeID
-	foreignIP := request.IPAddress
+	//foreignIP := request.IPAddress
 
 	if peerMap[enode] == "" {
 		peerMap[enode] = "PENDING"
@@ -40,7 +40,7 @@ func (nsi *NodeServiceImpl) JoinNetworkHandler(w http.ResponseWriter, r *http.Re
 	//}
 
 	if peerMap[enode] == "YES" {
-		response := nsi.joinNetwork(enode, foreignIP, nsi.Url)
+		response := nsi.joinNetwork(enode, nsi.Url)
 		json.NewEncoder(w).Encode(response)
 	} else if peerMap[enode] == "NO" {
 		w.WriteHeader(http.StatusForbidden)
@@ -52,8 +52,41 @@ func (nsi *NodeServiceImpl) JoinNetworkHandler(w http.ResponseWriter, r *http.Re
 }
 
 func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Request) {
-	response := nsi.getGenesis(nsi.Url)
-	json.NewEncoder(w).Encode(response)
+	var request JoinNetworkRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+	enode := request.EnodeID
+	//foreignIP := request.IPAddress
+
+	if peerMap[enode] == "" {
+		peerMap[enode] = "PENDING"
+	}
+
+	//The commented code below can be used for approving or rejecting nodes from the CLI
+	//fmt.Println("Request for genesis.JSON for Enode",enode,"from IP",foreignIP,"Do you approve ? y/N")
+	//
+	//reader := bufio.NewReader(os.Stdin)
+	//reply, _ := reader.ReadString('\n')
+	//reply =  strings.TrimSuffix(text, "\n")
+	//if reply == "y" || text == "Y" {
+	//	peerMap[enode] = "YES"
+	//	response := nsi.getGenesis(nsi.Url)
+	//	json.NewEncoder(w).Encode(response)
+	//} else {
+	//	peerMap[enode] = "NO"
+	//	w.WriteHeader(http.StatusForbidden)
+	//	w.Write([]byte("Access denied"))
+	//}
+
+	if peerMap[enode] == "YES" {
+		response := nsi.getGenesis(nsi.Url)
+		json.NewEncoder(w).Encode(response)
+	} else if peerMap[enode] == "NO" {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Access denied"))
+	} else {
+		w.WriteHeader(http.StatusAccepted)
+		w.Write([]byte("Pending user response"))
+	}
 }
 
 func (nsi *NodeServiceImpl) GetCurrentNodeHandler(w http.ResponseWriter, r *http.Request) {

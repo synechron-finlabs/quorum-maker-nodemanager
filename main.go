@@ -26,7 +26,7 @@ func main() {
 
 	router.HandleFunc("/txn/{txn_hash}", nodeService.GetTransactionInfoHandler).Methods("GET")
 	router.HandleFunc("/block/{block_no}", nodeService.GetBlockInfoHandler).Methods("GET")
-	router.HandleFunc("/genesis", nodeService.GetGenesisHandler).Methods("GET")
+	router.HandleFunc("/genesis", nodeService.GetGenesisHandler).Methods("POST")
 	router.HandleFunc("/peer/{peer_id}", nodeService.GetOtherPeerHandler).Methods("GET")
 	router.HandleFunc("/peer", nodeService.JoinNetworkHandler).Methods("POST")
 	router.HandleFunc("/peer", nodeService.GetCurrentNodeHandler).Methods("GET")

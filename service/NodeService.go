@@ -129,7 +129,7 @@ func (nsi *NodeServiceImpl) getGenesis(url string) (response GetGenesisResponse)
 }
 
 
-func (nsi *NodeServiceImpl) joinNetwork(enode string, ipAddr string, url string) (int) {
+func (nsi *NodeServiceImpl) joinNetwork(enode string, url string) (int) {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	raftId := ethClient.RaftAddPeer(enode)
