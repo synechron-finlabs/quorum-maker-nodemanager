@@ -29,7 +29,7 @@ type NodeInfo struct {
 
 type JoinNetworkRequest struct {
 	EnodeID    string `json:"enode-id,omitempty"`
-	EthAccount string `json:"eth-account,omitempty"`
+	IPAddress  string `json:"ip-address,omitempty"`
 }
 
 type GetGenesisResponse struct {
@@ -102,6 +102,11 @@ type Logs struct {
 	TransactionIndex  	int64      	`json:"transactionIndex"`
 }
 
+type JoinNetworkResponse struct {
+	EnodeID string `json:"enode-id,omitempty"`
+	Status 	string `json:"status,omitempty"`
+}
+
 type NodeServiceImpl struct {
 	Url string
 }
@@ -124,10 +129,10 @@ func (nsi *NodeServiceImpl) getGenesis(url string) (response GetGenesisResponse)
 }
 
 
-func (nsi *NodeServiceImpl) joinNetwork(request string, url string) (int) {
+func (nsi *NodeServiceImpl) joinNetwork(enode string, url string) (int) {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
-	raftId := ethClient.RaftAddPeer(request)
+	raftId := ethClient.RaftAddPeer(enode)
 	return raftId
 }
 
@@ -317,4 +322,10 @@ func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) (Tran
 	}
 	txResponse.Logs = txResponseBuffer
 	return txResponse
+}
+
+
+func (nsi *NodeServiceImpl) joinRequestResponse(enode string, status string) (success bool) {
+	peerMap[enode] = status
+	return true
 }
