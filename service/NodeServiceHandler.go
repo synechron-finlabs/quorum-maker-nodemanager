@@ -28,8 +28,8 @@ func (nsi *NodeServiceImpl) JoinNetworkHandler(w http.ResponseWriter, r *http.Re
 	//
 	//reader := bufio.NewReader(os.Stdin)
 	//reply, _ := reader.ReadString('\n')
-	//reply =  strings.TrimSuffix(text, "\n")
-	//if reply == "y" || text == "Y" {
+	//reply =  strings.TrimSuffix(reply, "\n")
+	//if reply == "y" || reply == "Y" {
 	//	peerMap[enode] = "YES"
 	//	response := nsi.joinNetwork(enode, nsi.Url)
 	//	json.NewEncoder(w).Encode(response)
@@ -66,8 +66,8 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	//
 	//reader := bufio.NewReader(os.Stdin)
 	//reply, _ := reader.ReadString('\n')
-	//reply =  strings.TrimSuffix(text, "\n")
-	//if reply == "y" || text == "Y" {
+	//reply =  strings.TrimSuffix(reply, "\n")
+	//if reply == "y" || reply == "Y" {
 	//	peerMap[enode] = "YES"
 	//	response := nsi.getGenesis(nsi.Url)
 	//	json.NewEncoder(w).Encode(response)
