@@ -1,11 +1,11 @@
 package main
 
 import (
+	"synechron.com/NodeManagerGo/service"
+	"os"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"synechron.com/NodeManagerGo/service"
-	"os"
 )
 
 var nodeUrl = "http://localhost:22000"
@@ -18,7 +18,7 @@ func main() {
 	}
 
 	if len(os.Args) > 2 {
-		listenPort = ":"  + os.Args[2]
+		listenPort = ":" + os.Args[2]
 	}
 
 	router := mux.NewRouter()
@@ -30,7 +30,10 @@ func main() {
 	router.HandleFunc("/peer/{peer_id}", nodeService.GetOtherPeerHandler).Methods("GET")
 	router.HandleFunc("/peer", nodeService.JoinNetworkHandler).Methods("POST")
 	router.HandleFunc("/peer", nodeService.GetCurrentNodeHandler).Methods("GET")
-        router.HandleFunc("/txnrcpt/{txn_hash}", nodeService.GetTransactionReceiptHandler).Methods("GET")
-    
+	router.HandleFunc("/txnrcpt/{txn_hash}", nodeService.GetTransactionReceiptHandler).Methods("GET")
+
 	log.Fatal(http.ListenAndServe(listenPort, router))
+
 }
+
+
