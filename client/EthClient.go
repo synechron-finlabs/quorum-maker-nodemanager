@@ -1,9 +1,11 @@
 package client
 
 import (
+	//"encoding/json"
 	"fmt"
-	"github.com/ybbus/jsonrpc"
 	"log"
+
+	"github.com/ybbus/jsonrpc"
 )
 
 type AdminInfo struct {
@@ -114,7 +116,7 @@ type EthClient struct {
 	Url string
 }
 
-func (ec *EthClient) GetTransactionByHash(txNo string) (TransactionDetailsResponse) {
+func (ec *EthClient) GetTransactionByHash(txNo string) TransactionDetailsResponse {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("eth_getTransactionByHash", txNo)
 
@@ -129,7 +131,7 @@ func (ec *EthClient) GetTransactionByHash(txNo string) (TransactionDetailsRespon
 	return txResponse
 }
 
-func (ec *EthClient) GetBlockByNumber(blockNo string) (BlockDetailsResponse) {
+func (ec *EthClient) GetBlockByNumber(blockNo string) BlockDetailsResponse {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("eth_getBlockByNumber", blockNo, true)
 	if err != nil {
@@ -143,7 +145,7 @@ func (ec *EthClient) GetBlockByNumber(blockNo string) (BlockDetailsResponse) {
 	return blockResponse
 }
 
-func (ec *EthClient) PendingTransactions() ([]TransactionDetailsResponse) {
+func (ec *EthClient) PendingTransactions() []TransactionDetailsResponse {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("eth_pendingTransactions")
 	if err != nil {
@@ -157,7 +159,7 @@ func (ec *EthClient) PendingTransactions() ([]TransactionDetailsResponse) {
 	return pendingTxResponse
 }
 
-func (ec *EthClient) AdminPeers() ([]AdminPeers) {
+func (ec *EthClient) AdminPeers() []AdminPeers {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("admin_peers")
 	if err != nil {
@@ -171,7 +173,7 @@ func (ec *EthClient) AdminPeers() ([]AdminPeers) {
 	return otherPeersResponse
 }
 
-func (ec *EthClient) AdminNodeInfo() (AdminInfo) {
+func (ec *EthClient) AdminNodeInfo() AdminInfo {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("admin_nodeInfo")
 
@@ -183,13 +185,13 @@ func (ec *EthClient) AdminNodeInfo() (AdminInfo) {
 	return thisAdminInfo
 }
 
-func (ec *EthClient) BlockNumber() (string) {
+func (ec *EthClient) BlockNumber() string {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("eth_blockNumber")
 	if err != nil {
 		fmt.Println(err)
 	}
-	var blockNumber string;
+	var blockNumber string
 	err = response.GetObject(&blockNumber)
 	if err != nil {
 		fmt.Println(err)
@@ -197,13 +199,13 @@ func (ec *EthClient) BlockNumber() (string) {
 	return blockNumber
 }
 
-func (ec *EthClient) RaftRole() (string) {
+func (ec *EthClient) RaftRole() string {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("raft_role")
 	if err != nil {
 		fmt.Println(err)
 	}
-	var raftRole string;
+	var raftRole string
 	err = response.GetObject(&raftRole)
 	if err != nil {
 		fmt.Println(err)
@@ -211,7 +213,7 @@ func (ec *EthClient) RaftRole() (string) {
 	return raftRole
 }
 
-func (ec *EthClient) RaftAddPeer(request string) (int) {
+func (ec *EthClient) RaftAddPeer(request string) int {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("raft_addPeer", request)
 	var raftId int
@@ -222,7 +224,7 @@ func (ec *EthClient) RaftAddPeer(request string) (int) {
 	return raftId
 }
 
-func (ec *EthClient) GetTransactionReceipt(txNo string) (TransactionReceiptResponse) {
+func (ec *EthClient) GetTransactionReceipt(txNo string) TransactionReceiptResponse {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("eth_getTransactionReceipt", txNo)
 
@@ -290,4 +292,54 @@ func (ec *EthClient) EthCall(param ContractParam, req RequestHandler, res Respon
 
 	return res
 
+}
+
+type SendTransaction struct {
+	From string `json:"from"`
+	PrivateFor	[]string `json:"privateFor"`
+	Gas  string `json:"gas"`
+	Data string `json:"data"`
+}
+
+type ContractAddress struct {
+	Address string `json:"Address"`
+}
+
+func (ec *EthClient) DeployContracts(byteCode string, addr string) string {
+	rpcClient := jsonrpc.NewRPCClient(ec.Url)
+	response, err := rpcClient.Call("eth_coinbase")
+	if err != nil {
+		fmt.Println("can't get coinbase" + err.Error())
+	}
+	var ownerAddress string
+	err = response.GetObject(&ownerAddress)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	var privateFor []string
+	privateFor = append(privateFor,addr)
+	response, err = rpcClient.Call("personal_unlockAccount", "eth.coinbase", "")
+	if err != nil {
+		fmt.Println("can't unlock account" + err.Error())
+	}
+	sendTransaction := SendTransaction{
+		From:ownerAddress,
+		PrivateFor:privateFor,
+		Gas:"10000000",
+		Data:byteCode}
+
+	response, err = rpcClient.Call("eth_sendTransaction", sendTransaction)
+	fmt.Println("after call")
+	if err != nil {
+		fmt.Println("transaction failed" + err.Error())
+	}
+	var contractAddress string
+	fmt.Println( response)
+	err = response.GetObject(&contractAddress)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return contractAddress
 }

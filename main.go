@@ -1,11 +1,12 @@
 package main
 
 import (
-	"synechron.com/NodeManagerGo/service"
-	"os"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/gorilla/mux"
+	"synechron.com/NodeManagerGo/service"
 )
 
 var nodeUrl = "http://localhost:22000"
@@ -31,9 +32,8 @@ func main() {
 	router.HandleFunc("/peer", nodeService.JoinNetworkHandler).Methods("POST")
 	router.HandleFunc("/peer", nodeService.GetCurrentNodeHandler).Methods("GET")
 	router.HandleFunc("/txnrcpt/{txn_hash}", nodeService.GetTransactionReceiptHandler).Methods("GET")
+	router.HandleFunc("/deployContract", nodeService.DeployContractHandler).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(listenPort, router))
 
 }
-
-

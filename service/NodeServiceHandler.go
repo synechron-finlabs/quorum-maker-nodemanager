@@ -1,18 +1,19 @@
 package service
 
 import (
-	"net/http"
 	"encoding/json"
-	"github.com/gorilla/mux"
 	"fmt"
+	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 func (nsi *NodeServiceImpl) JoinNetworkHandler(w http.ResponseWriter, r *http.Request) {
 	var request JoinNetworkRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 	enode := request.EnodeID
-	response := nsi.joinNetwork(enode,nsi.Url)
+	response := nsi.joinNetwork(enode, nsi.Url)
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -28,7 +29,7 @@ func (nsi *NodeServiceImpl) GetCurrentNodeHandler(w http.ResponseWriter, r *http
 
 func (nsi *NodeServiceImpl) GetOtherPeerHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	response := nsi.getOtherPeer(params["peer_id"],nsi.Url)
+	response := nsi.getOtherPeer(params["peer_id"], nsi.Url)
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -38,7 +39,7 @@ func (nsi *NodeServiceImpl) GetBlockInfoHandler(w http.ResponseWriter, r *http.R
 	if err != nil {
 		fmt.Println(err)
 	}
-	response := nsi.getBlockInfo(block,nsi.Url)
+	response := nsi.getBlockInfo(block, nsi.Url)
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -48,13 +49,22 @@ func (nsi *NodeServiceImpl) GetTransactionInfoHandler(w http.ResponseWriter, r *
 		response := nsi.getPendingTransactions(nsi.Url)
 		json.NewEncoder(w).Encode(response)
 	} else {
-		response := nsi.getTransactionInfo(params["txn_hash"],nsi.Url)
+		response := nsi.getTransactionInfo(params["txn_hash"], nsi.Url)
 		json.NewEncoder(w).Encode(response)
 	}
 }
 
 func (nsi *NodeServiceImpl) GetTransactionReceiptHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	response := nsi.getTransactionReceipt(params["txn_hash"],nsi.Url)
+	response := nsi.getTransactionReceipt(params["txn_hash"], nsi.Url)
+	json.NewEncoder(w).Encode(response)
+}
+
+func (nsi *NodeServiceImpl) DeployContractHandler(w http.ResponseWriter, r *http.Request) {
+
+	var request DeployRequestFileName
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	response := nsi.deployContract(nsi.Url, request.Address, request.FileName)
 	json.NewEncoder(w).Encode(response)
 }

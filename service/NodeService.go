@@ -1,30 +1,33 @@
 package service
 
 import (
+	"bytes"
+	"fmt"
 	"io/ioutil"
 	"log"
-	"synechron.com/NodeManagerGo/client"
-	"strings"
-	"fmt"
+	"os/exec"
 	"strconv"
-	"synechron.com/NodeManagerGo/util"
+	"strings"
+
 	"github.com/magiconair/properties"
+	"synechron.com/NodeManagerGo/client"
+	"synechron.com/NodeManagerGo/util"
 )
 
 type ConnectionInfo struct {
-	IP 	string 	`json:"ip,omitempty"`
-	Port 	int 	`json:"port,omitempty"`
-	Enode 	string 	`json:"enode,omitempty"`
+	IP    string `json:"ip,omitempty"`
+	Port  int    `json:"port,omitempty"`
+	Enode string `json:"enode,omitempty"`
 }
 
 type NodeInfo struct {
-	ConnectionInfo  ConnectionInfo		`json:"connectionInfo,omitempty"`
-	RaftRole 	string 			`json:"raftRole,omitempty"`
-	RaftID 		int      		`json:"raftID,omitempty"`
-	BlockNumber 	int64			`json:"blockNumber"`
-	PendingTxCount 	int 			`json:"pendingTxCount"`
-	Genesis 	string			`json:"genesis,omitempty"`
-	AdminInfo	client.AdminInfo	`json:"adminInfo,omitempty"`
+	ConnectionInfo ConnectionInfo   `json:"connectionInfo,omitempty"`
+	RaftRole       string           `json:"raftRole,omitempty"`
+	RaftID         int              `json:"raftID,omitempty"`
+	BlockNumber    int64            `json:"blockNumber"`
+	PendingTxCount int              `json:"pendingTxCount"`
+	Genesis        string           `json:"genesis,omitempty"`
+	AdminInfo      client.AdminInfo `json:"adminInfo,omitempty"`
 }
 
 type JoinNetworkRequest struct {
@@ -39,24 +42,24 @@ type GetGenesisResponse struct {
 }
 
 type BlockDetailsResponse struct {
-	Number           int64                                  `json:"number,omitempty"`
-	Hash             string                                 `json:"hash,omitempty"`
-	ParentHash       string                                 `json:"parentHash,omitempty"`
-	Nonce            string                                 `json:"nonce,omitempty"`
-	Sha3Uncles       string                                 `json:"sha3Uncles,omitempty"`
-	LogsBloom        string                                 `json:"logsBloom,omitempty"`
-	TransactionsRoot string                                 `json:"transactionsRoot,omitempty"`
-	StateRoot        string                                 `json:"stateRoot,omitempty"`
-	Miner            string                                 `json:"miner,omitempty"`
-	Difficulty       int64                                  `json:"difficulty,omitempty"`
-	TotalDifficulty  int64                                  `json:"totalDifficulty,omitempty"`
-	ExtraData        string                                 `json:"extraData,omitempty"`
-	Size             int64                                  `json:"size,omitempty"`
-	GasLimit         int64                                  `json:"gasLimit,omitempty"`
-	GasUsed          int64                                  `json:"gasUsed,omitempty"`
-	Timestamp        int64                                  `json:"timestamp,omitempty"`
-	Transactions     []TransactionDetailsResponse           `json:"transactions,omitempty"`
-	Uncles           []string                               `json:"uncles,omitempty"`
+	Number           int64                        `json:"number,omitempty"`
+	Hash             string                       `json:"hash,omitempty"`
+	ParentHash       string                       `json:"parentHash,omitempty"`
+	Nonce            string                       `json:"nonce,omitempty"`
+	Sha3Uncles       string                       `json:"sha3Uncles,omitempty"`
+	LogsBloom        string                       `json:"logsBloom,omitempty"`
+	TransactionsRoot string                       `json:"transactionsRoot,omitempty"`
+	StateRoot        string                       `json:"stateRoot,omitempty"`
+	Miner            string                       `json:"miner,omitempty"`
+	Difficulty       int64                        `json:"difficulty,omitempty"`
+	TotalDifficulty  int64                        `json:"totalDifficulty,omitempty"`
+	ExtraData        string                       `json:"extraData,omitempty"`
+	Size             int64                        `json:"size,omitempty"`
+	GasLimit         int64                        `json:"gasLimit,omitempty"`
+	GasUsed          int64                        `json:"gasUsed,omitempty"`
+	Timestamp        int64                        `json:"timestamp,omitempty"`
+	Transactions     []TransactionDetailsResponse `json:"transactions,omitempty"`
+	Uncles           []string                     `json:"uncles,omitempty"`
 }
 
 type TransactionDetailsResponse struct {
@@ -77,62 +80,70 @@ type TransactionDetailsResponse struct {
 }
 
 type TransactionReceiptResponse struct {
-	BlockHash         	string      	        `json:"blockHash"`
-	BlockNumber       	int64      		`json:"blockNumber"`
-	ContractAddress   	string 			`json:"contractAddress"`
-	CumulativeGasUsed 	int64      		`json:"cumulativeGasUsed"`
-	From              	string      	        `json:"from"`
-	GasUsed           	int64      		`json:"gasUsed"`
-	Logs              	[]Logs 			`json:"logs"`
-	LogsBloom        	string 			`json:"logsBloom"`
-	Root             	string 			`json:"root"`
-	To               	string 			`json:"to"`
-	TransactionHash  	string 			`json:"transactionHash"`
-	TransactionIndex 	int64 			`json:"transactionIndex"`
+	BlockHash         string `json:"blockHash"`
+	BlockNumber       int64  `json:"blockNumber"`
+	ContractAddress   string `json:"contractAddress"`
+	CumulativeGasUsed int64  `json:"cumulativeGasUsed"`
+	From              string `json:"from"`
+	GasUsed           int64  `json:"gasUsed"`
+	Logs              []Logs `json:"logs"`
+	LogsBloom         string `json:"logsBloom"`
+	Root              string `json:"root"`
+	To                string `json:"to"`
+	TransactionHash   string `json:"transactionHash"`
+	TransactionIndex  int64  `json:"transactionIndex"`
 }
 
 type Logs struct {
-	Address         	string    	`json:"address"`
-	BlockHash       	string  	`json:"blockHash"`
-	BlockNumber   		int64    	`json:"blockNumber"`
-	Data 			string    	`json:"data"`
-	LogIndex          	int64      	`json:"logIndex"`
-	Topics          	[]string   	`json:"topics"`
-	TransactionHash   	string 		`json:"transactionHash"`
-	TransactionIndex  	int64      	`json:"transactionIndex"`
+	Address          string   `json:"address"`
+	BlockHash        string   `json:"blockHash"`
+	BlockNumber      int64    `json:"blockNumber"`
+	Data             string   `json:"data"`
+	LogIndex         int64    `json:"logIndex"`
+	Topics           []string `json:"topics"`
+	TransactionHash  string   `json:"transactionHash"`
+	TransactionIndex int64    `json:"transactionIndex"`
+}
+
+type ContractJson struct {
+	Interface        string `json:"interface"`
+	Bytecode        string `json:"bytecode"`
+	ContractAddress string `json:"address"`
+}
+
+type DeployRequestFileName struct {
+	FileName 		[]string `json:"fileName"`
+	Address 		[]string `json:"address"`
 }
 
 type NodeServiceImpl struct {
 	Url string
 }
 
-
 func (nsi *NodeServiceImpl) getGenesis(url string) (response GetGenesisResponse) {
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	netId := util.MustGetString("NETWORK_ID", p)
 	constl := util.MustGetString("CONSTELLATION_PORT", p)
-	
+
 	b, err := ioutil.ReadFile("/home/node/genesis.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 	genesis := string(b)
-	genesis = strings.Replace(genesis, "\n","",-1)
+	genesis = strings.Replace(genesis, "\n", "", -1)
 
 	response = GetGenesisResponse{constl, netId, genesis}
 	return response
 }
 
-
-func (nsi *NodeServiceImpl) joinNetwork(request string, url string) (int) {
+func (nsi *NodeServiceImpl) joinNetwork(request string, url string) int {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	raftId := ethClient.RaftAddPeer(request)
 	return raftId
 }
 
-
-func (nsi *NodeServiceImpl) getCurrentNode (url string) (NodeInfo) {
+func (nsi *NodeServiceImpl) getCurrentNode(url string) NodeInfo {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
@@ -157,7 +168,7 @@ func (nsi *NodeServiceImpl) getCurrentNode (url string) (NodeInfo) {
 	pendingTxCount := len(pendingTxResponse)
 
 	blockNumber := ethClient.BlockNumber()
-	blockNumberInt :=  util.HexStringtoInt64(blockNumber)
+	blockNumberInt := util.HexStringtoInt64(blockNumber)
 
 	raftRole := ethClient.RaftRole()
 
@@ -170,14 +181,13 @@ func (nsi *NodeServiceImpl) getCurrentNode (url string) (NodeInfo) {
 	}
 
 	genesis := string(b)
-	genesis = strings.Replace(genesis, "\n","",-1)
-	conn := ConnectionInfo{ipAddr,rpcPortInt,enode}
-	responseObj := NodeInfo{conn,raftRole,raftIdInt,blockNumberInt,pendingTxCount,genesis,thisAdminInfo}
+	genesis = strings.Replace(genesis, "\n", "", -1)
+	conn := ConnectionInfo{ipAddr, rpcPortInt, enode}
+	responseObj := NodeInfo{conn, raftRole, raftIdInt, blockNumberInt, pendingTxCount, genesis, thisAdminInfo}
 	return responseObj
 }
 
-
-func (nsi *NodeServiceImpl) getOtherPeer(peerId string, url string) (client.AdminPeers) {
+func (nsi *NodeServiceImpl) getOtherPeer(peerId string, url string) client.AdminPeers {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	otherPeersResponse := ethClient.AdminPeers()
@@ -190,8 +200,7 @@ func (nsi *NodeServiceImpl) getOtherPeer(peerId string, url string) (client.Admi
 	return client.AdminPeers{}
 }
 
-
-func (nsi *NodeServiceImpl) getPendingTransactions(url string) ([]TransactionDetailsResponse) {
+func (nsi *NodeServiceImpl) getPendingTransactions(url string) []TransactionDetailsResponse {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	pendingTxResponseClient := ethClient.PendingTransactions()
@@ -216,11 +225,10 @@ func (nsi *NodeServiceImpl) getPendingTransactions(url string) ([]TransactionDet
 	return pendingTxResponse
 }
 
-
-func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) (BlockDetailsResponse) {
+func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) BlockDetailsResponse {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
-	blockNoHex  := strconv.FormatInt(blockno, 16)
+	blockNoHex := strconv.FormatInt(blockno, 16)
 	bNoHex := fmt.Sprint("0x", blockNoHex)
 	var blockResponse BlockDetailsResponse
 	blockResponseClient := ethClient.GetBlockByNumber(bNoHex)
@@ -263,8 +271,7 @@ func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) (BlockDetail
 	return blockResponse
 }
 
-
-func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) (TransactionDetailsResponse) {
+func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) TransactionDetailsResponse {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	var txResponse TransactionDetailsResponse
@@ -286,8 +293,7 @@ func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) (Transac
 	return txResponse
 }
 
-
-func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) (TransactionReceiptResponse) {
+func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) TransactionReceiptResponse {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	var txResponse TransactionReceiptResponse
@@ -317,4 +323,52 @@ func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) (Tran
 	}
 	txResponse.Logs = txResponseBuffer
 	return txResponse
+}
+
+func (nsi *NodeServiceImpl) deployContract(url string, address []string, fileName []string) ContractJson {
+	var nodeUrl = url
+
+	var solc string
+	if solc == "" {
+		solc = "solc"
+	}
+	var binOut bytes.Buffer
+	var error bytes.Buffer
+	fileName = append(fileName,"DataType.sol")
+	cmd := exec.Command(solc, "-o", ".", "--overwrite", "--bin", fileName[0])
+	cmd = exec.Command(solc, "--bin", "DataType.sol")
+	cmd.Stdout = &binOut
+	cmd.Stderr = &error
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println(fmt.Sprint(err) + ": " + error.String())
+	}
+	var abiOut bytes.Buffer
+	cmd = exec.Command(solc, "-o", ".", "--overwrite", "--abi", "DataType.sol")
+	cmd = exec.Command(solc, "--abi", "DataType.sol")
+	cmd.Stdout = &abiOut
+	cmd.Stderr = &error
+	err = cmd.Run()
+	if err != nil {
+		fmt.Println(fmt.Sprint(err) + ": " + error.String())
+	}
+	if len(address) == 0 {
+		address= append(address,"0x8530b4d82794b71c5c305c8c7e83d4ffec2dc6a7")
+	}
+
+	ethClient := client.EthClient{nodeUrl}
+
+	byteCode := binOut.String()
+	byteCode = byteCode[49:len(byteCode)]
+	byteCode = "0x" + byteCode
+	fmt.Println(byteCode)
+	contractAddress := ethClient.DeployContracts(byteCode, address[0])
+
+	var contractJson ContractJson
+	contractJson.Interface = abiOut.String()
+	contractJson.Bytecode = binOut.String()
+	contractJson.ContractAddress = contractAddress
+
+
+	return contractJson
 }
