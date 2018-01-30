@@ -4,8 +4,9 @@ import (
 	//"encoding/json"
 	"fmt"
 	"log"
-
+	/*"reflect"*/
 	"github.com/ybbus/jsonrpc"
+	/*"strings"*/
 )
 
 type AdminInfo struct {
@@ -305,7 +306,7 @@ type ContractAddress struct {
 	Address string `json:"Address"`
 }
 
-func (ec *EthClient) DeployContracts(byteCode string, addr string) string {
+func (ec *EthClient) DeployContracts(byteCode string, addr []string) string {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("eth_coinbase")
 	if err != nil {
@@ -318,28 +319,33 @@ func (ec *EthClient) DeployContracts(byteCode string, addr string) string {
 		fmt.Println(err)
 	}
 	var privateFor []string
-	privateFor = append(privateFor,addr)
-	response, err = rpcClient.Call("personal_unlockAccount", "eth.coinbase", "")
-	if err != nil {
-		fmt.Println("can't unlock account" + err.Error())
+	for i:=0; i<len(addr);i++{
+		privateFor = append(privateFor,addr[i])
 	}
+
+	response, err = rpcClient.Call("personal_unlockAccount", ownerAddress, "",nil)
+	if err != nil {
+		fmt.Println( err)
+	}
+
 	sendTransaction := SendTransaction{
-		From:ownerAddress,
-		PrivateFor:privateFor,
-		Gas:"10000000",
-		Data:byteCode}
+		ownerAddress,
+		privateFor,
+		"100000000",
+		byteCode}
 
 	response, err = rpcClient.Call("eth_sendTransaction", sendTransaction)
-	fmt.Println("after call")
+
 	if err != nil {
 		fmt.Println("transaction failed" + err.Error())
 	}
+
 	var contractAddress string
-	fmt.Println( response)
 	err = response.GetObject(&contractAddress)
+
 	if err != nil {
 		fmt.Println(err)
 	}
-
+	
 	return contractAddress
 }

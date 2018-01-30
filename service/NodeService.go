@@ -12,6 +12,7 @@ import (
 	"github.com/magiconair/properties"
 	"synechron.com/NodeManagerGo/client"
 	"synechron.com/NodeManagerGo/util"
+	"regexp"
 )
 
 type ConnectionInfo struct {
@@ -352,23 +353,21 @@ func (nsi *NodeServiceImpl) deployContract(url string, address []string, fileNam
 	if err != nil {
 		fmt.Println(fmt.Sprint(err) + ": " + error.String())
 	}
-	if len(address) == 0 {
-		address= append(address,"0x8530b4d82794b71c5c305c8c7e83d4ffec2dc6a7")
-	}
 
 	ethClient := client.EthClient{nodeUrl}
 
 	byteCode := binOut.String()
 	byteCode = byteCode[49:len(byteCode)]
 	byteCode = "0x" + byteCode
-	fmt.Println(byteCode)
-	contractAddress := ethClient.DeployContracts(byteCode, address[0])
+	reg, err := regexp.Compile("[^a-zA-Z0-9]+")
+	byteCode = reg.ReplaceAllString(byteCode,"")
+
+	contractAddress := ethClient.DeployContracts(byteCode, address)
 
 	var contractJson ContractJson
 	contractJson.Interface = abiOut.String()
 	contractJson.Bytecode = binOut.String()
 	contractJson.ContractAddress = contractAddress
-
 
 	return contractJson
 }
