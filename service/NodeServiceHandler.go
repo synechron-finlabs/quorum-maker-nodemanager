@@ -6,10 +6,14 @@ import (
 	"github.com/gorilla/mux"
 	"fmt"
 	"strconv"
-	//"bufio"
-	//"os"
-	//"strings"
+	"bufio"
+	"os"
+	"strings"
+	"time"
 )
+
+var cCLI = make(chan string, 1)
+var cUI = make(chan string, 1)
 
 var peerMap = map[string]string{}
 
@@ -17,76 +21,82 @@ func (nsi *NodeServiceImpl) JoinNetworkHandler(w http.ResponseWriter, r *http.Re
 	var request JoinNetworkRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 	enode := request.EnodeID
-	//foreignIP := request.IPAddress
 
 	if peerMap[enode] == "" {
 		peerMap[enode] = "PENDING"
 	}
 
-	//The commented code below can be used for approving or rejecting nodes from the CLI
-	//fmt.Println("Request for Join network for Enode",enode,"from IP",foreignIP,"Do you approve ? y/N")
-	//
-	//reader := bufio.NewReader(os.Stdin)
-	//reply, _ := reader.ReadString('\n')
-	//reply =  strings.TrimSuffix(reply, "\n")
-	//if reply == "y" || reply == "Y" {
-	//	peerMap[enode] = "YES"
-	//	response := nsi.joinNetwork(enode, nsi.Url)
-	//	json.NewEncoder(w).Encode(response)
-	//} else {
-	//	peerMap[enode] = "NO"
-	//	w.WriteHeader(http.StatusForbidden)
-	//	w.Write([]byte("Access denied"))
-	//}
-
-	if peerMap[enode] == "YES" {
-		response := nsi.joinNetwork(enode, nsi.Url)
-		json.NewEncoder(w).Encode(response)
-	} else if peerMap[enode] == "NO" {
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("Access denied"))
-	} else {
-		w.WriteHeader(http.StatusAccepted)
-		w.Write([]byte("Pending user response"))
-	}
+	 if peerMap[enode] == "YES" {
+	 	response := nsi.joinNetwork(enode, nsi.Url)
+	 	json.NewEncoder(w).Encode(response)
+	 } else if peerMap[enode] == "NO" {
+	 	w.WriteHeader(http.StatusForbidden)
+	 	w.Write([]byte("Access denied"))
+	 } else {
+	 	w.WriteHeader(http.StatusAccepted)
+	 	w.Write([]byte("Pending user response"))
+	 }
 }
 
 func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Request) {
 	var request JoinNetworkRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 	enode := request.EnodeID
-	//foreignIP := request.IPAddress
+	foreignIP := request.IPAddress
 
 	if peerMap[enode] == "" {
 		peerMap[enode] = "PENDING"
 	}
 
-	//The commented code below can be used for approving or rejecting nodes from the CLI
-	//fmt.Println("Request for genesis.JSON for Enode",enode,"from IP",foreignIP,"Do you approve ? y/N")
-	//
-	//reader := bufio.NewReader(os.Stdin)
-	//reply, _ := reader.ReadString('\n')
-	//reply =  strings.TrimSuffix(reply, "\n")
-	//if reply == "y" || reply == "Y" {
-	//	peerMap[enode] = "YES"
-	//	response := nsi.getGenesis(nsi.Url)
-	//	json.NewEncoder(w).Encode(response)
-	//} else {
-	//	peerMap[enode] = "NO"
-	//	w.WriteHeader(http.StatusForbidden)
-	//	w.Write([]byte("Access denied"))
-	//}
 
-	if peerMap[enode] == "YES" {
-		response := nsi.getGenesis(nsi.Url)
-		json.NewEncoder(w).Encode(response)
-	} else if peerMap[enode] == "NO" {
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("Access denied"))
-	} else {
-		w.WriteHeader(http.StatusAccepted)
-		w.Write([]byte("Pending user response"))
+
+	go func() {
+		fmt.Println("Request for genesis.JSON for Enode",enode,"from IP",foreignIP,"Do you approve ? y/N")
+
+		reader := bufio.NewReader(os.Stdin)
+		reply, _ := reader.ReadString('\n')
+		reply =  strings.TrimSuffix(reply, "\n")
+		if reply == "y" || reply == "Y" {
+			peerMap[enode] = "YES"
+			response := nsi.getGenesis(nsi.Url)
+			json.NewEncoder(w).Encode(response)
+		} else {
+			peerMap[enode] = "NO"
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("Access denied"))
+		}
+		cCLI <- "CLI response"
+	}()
+
+	select {
+	case resCLI := <-cCLI:
+		fmt.Println(resCLI)
+	case resUI := <-cUI:
+		if peerMap[enode] == "YES" {
+			response := nsi.getGenesis(nsi.Url)
+			json.NewEncoder(w).Encode(response)
+		} else if peerMap[enode] == "NO" {
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("Access denied"))
+		} else {
+			w.WriteHeader(http.StatusAccepted)
+			w.Write([]byte("Pending user response"))
+		}
+		fmt.Println(resUI)
+	case <-time.After(time.Second * 100):
+		fmt.Println("Response Timed Out")
+		if peerMap[enode] == "YES" {
+			response := nsi.getGenesis(nsi.Url)
+			json.NewEncoder(w).Encode(response)
+		} else if peerMap[enode] == "NO" {
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("Access denied"))
+		} else {
+			w.WriteHeader(http.StatusAccepted)
+			w.Write([]byte("Pending user response"))
+		}
 	}
+
 }
 
 func (nsi *NodeServiceImpl) GetCurrentNodeHandler(w http.ResponseWriter, r *http.Request) {
@@ -150,4 +160,5 @@ func (nsi *NodeServiceImpl) JoinRequestResponseHandler(w http.ResponseWriter, r 
 		reply = fmt.Sprintf("Failed to update status of %s to %s ",enode, status)
 	}
 	json.NewEncoder(w).Encode(reply)
+	cUI <- "UI response"
 }
