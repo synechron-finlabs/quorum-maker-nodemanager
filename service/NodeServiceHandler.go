@@ -81,7 +81,7 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 			w.Write([]byte("Pending user response"))
 		}
 		fmt.Println(resUI)
-	case <-time.After(time.Second * 100):
+	case <-time.After(time.Second * 300):
 		fmt.Println("Response Timed Out")
 		if peerMap[enode] == "YES" {
 			response := nsi.getGenesis(nsi.Url)
