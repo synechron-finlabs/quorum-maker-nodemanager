@@ -48,8 +48,6 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 		peerMap[enode] = "PENDING"
 	}
 
-
-
 	go func() {
 		fmt.Println("Request for genesis.JSON for Enode",enode,"from IP",foreignIP,"Do you approve ? y/N")
 
