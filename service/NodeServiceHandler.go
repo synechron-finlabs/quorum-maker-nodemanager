@@ -163,10 +163,8 @@ func (nsi *NodeServiceImpl) JoinRequestResponseHandler(w http.ResponseWriter, r 
 
 
 func (nsi *NodeServiceImpl) DeployContractHandler(w http.ResponseWriter, r *http.Request) {
-
 	var request DeployRequestFileName
 	_ = json.NewDecoder(r.Body).Decode(&request)
-
 	response := nsi.deployContract(nsi.Url, request.Address, request.FileName)
 	json.NewEncoder(w).Encode(response)
 }
