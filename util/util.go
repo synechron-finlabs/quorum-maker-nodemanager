@@ -45,3 +45,8 @@ func MustGetString(key string, filename *properties.Properties) (val string) {
 	val = strings.TrimSuffix(val, "\n")
 	return val
 }
+
+func ComposeJSON(intrfc string, bytecode string, contractAdd string) (json string){
+	json = "{\n\"interface\" : "+ intrfc + ",\n\"bytecode\" : \"" + bytecode + "\",\n\"address\" : \"" + contractAdd + "\"\n}"
+	return json
+}

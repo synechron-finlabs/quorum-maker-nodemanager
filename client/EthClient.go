@@ -1,22 +1,19 @@
 package client
 
 import (
-	//"encoding/json"
 	"fmt"
-	"log"
-	/*"reflect"*/
 	"github.com/ybbus/jsonrpc"
-	/*"strings"*/
+	"log"
 )
 
 type AdminInfo struct {
-	ID         string    `json:"id,omitempty"`
-	Name       string    `json:"name,omitempty"`
-	Enode      string    `json:"enode,omitempty"`
-	IP         string    `json:"ip,omitempty"`
-	Ports      Ports     `json:"ports,omitempty"`
-	ListenAddr string    `json:"listenAddr,omitempty"`
-	Protocols  Protocols `json:"protocols,omitempty"`
+	ID   		string 		`json:"id,omitempty"`
+	Name 		string 		`json:"name,omitempty"`
+	Enode 		string 		`json:"enode,omitempty"`
+	IP 		string 		`json:"ip,omitempty"`
+	Ports 		Ports 		`json:"ports,omitempty"`
+	ListenAddr 	string 		`json:"listenAddr,omitempty"`
+	Protocols 	Protocols	`json:"protocols,omitempty"`
 }
 
 type Ports struct {
@@ -25,11 +22,11 @@ type Ports struct {
 }
 
 type AdminPeers struct {
-	ID        string    `json:"id,omitempty"`
-	Name      string    `json:"name,omitempty"`
-	Caps      []string  `json:"caps,omitempty"`
-	Network   Network   `json:"network,omitempty"`
-	Protocols Protocols `json:"protocols,omitempty"`
+	ID      	string   	`json:"id,omitempty"`
+	Name    	string   	`json:"name,omitempty"`
+	Caps    	[]string 	`json:"caps,omitempty"`
+	Network 	Network 	`json:"network,omitempty"`
+	Protocols 	Protocols 	`json:"protocols,omitempty"`
 }
 
 type Protocols struct {
@@ -37,8 +34,8 @@ type Protocols struct {
 }
 
 type Eth struct {
-	Network    int    `json:"network,omitempty"`
-	Version    int    `json:"version,omitempty"`
+	Network    int	  `json:"network,omitempty"`
+ 	Version    int    `json:"version,omitempty"`
 	Difficulty int    `json:"difficulty,omitempty"`
 	Genesis    string `json:"genesis,omitempty"`
 	Head       string `json:"head,omitempty"`
@@ -88,36 +85,36 @@ type TransactionDetailsResponse struct {
 }
 
 type TransactionReceiptResponse struct {
-	BlockHash         string `json:"blockHash"`
-	BlockNumber       string `json:"blockNumber"`
-	ContractAddress   string `json:"contractAddress"`
-	CumulativeGasUsed string `json:"cumulativeGasUsed"`
-	From              string `json:"from"`
-	GasUsed           string `json:"gasUsed"`
-	Logs              []Logs `json:"logs"`
-	LogsBloom         string `json:"logsBloom"`
-	Root              string `json:"root"`
-	To                string `json:"to"`
-	TransactionHash   string `json:"transactionHash"`
-	TransactionIndex  string `json:"transactionIndex"`
+	BlockHash         	string          `json:"blockHash"`
+	BlockNumber       	string          `json:"blockNumber"`
+	ContractAddress   	string 		`json:"contractAddress"`
+	CumulativeGasUsed 	string          `json:"cumulativeGasUsed"`
+	From              	string          `json:"from"`
+	GasUsed           	string          `json:"gasUsed"`
+	Logs              	[]Logs 		`json:"logs"`
+	LogsBloom        	string 		`json:"logsBloom"`
+	Root             	string 		`json:"root"`
+	To               	string 		`json:"to"`
+	TransactionHash  	string 		`json:"transactionHash"`
+	TransactionIndex 	string 		`json:"transactionIndex"`
 }
 
 type Logs struct {
-	Address          string   `json:"address"`
-	BlockHash        string   `json:"blockHash"`
-	BlockNumber      string   `json:"blockNumber"`
-	Data             string   `json:"data"`
-	LogIndex         string   `json:"logIndex"`
-	Topics           []string `json:"topics"`
-	TransactionHash  string   `json:"transactionHash"`
-	TransactionIndex string   `json:"transactionIndex"`
+	Address         	string        `json:"address"`
+	BlockHash       	string        `json:"blockHash"`
+	BlockNumber   		string        `json:"blockNumber"`
+	Data 			string        `json:"data"`
+	LogIndex          	string        `json:"logIndex"`
+	Topics           	[]string      `json:"topics"`
+	TransactionHash         string        `json:"transactionHash"`
+	TransactionIndex  	string        `json:"transactionIndex"`
 }
 
 type EthClient struct {
 	Url string
 }
 
-func (ec *EthClient) GetTransactionByHash(txNo string) TransactionDetailsResponse {
+func (ec *EthClient) GetTransactionByHash(txNo string) (TransactionDetailsResponse) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("eth_getTransactionByHash", txNo)
 
@@ -132,7 +129,7 @@ func (ec *EthClient) GetTransactionByHash(txNo string) TransactionDetailsRespons
 	return txResponse
 }
 
-func (ec *EthClient) GetBlockByNumber(blockNo string) BlockDetailsResponse {
+func (ec *EthClient) GetBlockByNumber(blockNo string) (BlockDetailsResponse) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("eth_getBlockByNumber", blockNo, true)
 	if err != nil {
@@ -146,7 +143,7 @@ func (ec *EthClient) GetBlockByNumber(blockNo string) BlockDetailsResponse {
 	return blockResponse
 }
 
-func (ec *EthClient) PendingTransactions() []TransactionDetailsResponse {
+func (ec *EthClient) PendingTransactions() ([]TransactionDetailsResponse) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("eth_pendingTransactions")
 	if err != nil {
@@ -160,7 +157,7 @@ func (ec *EthClient) PendingTransactions() []TransactionDetailsResponse {
 	return pendingTxResponse
 }
 
-func (ec *EthClient) AdminPeers() []AdminPeers {
+func (ec *EthClient) AdminPeers() ([]AdminPeers) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("admin_peers")
 	if err != nil {
@@ -174,10 +171,9 @@ func (ec *EthClient) AdminPeers() []AdminPeers {
 	return otherPeersResponse
 }
 
-func (ec *EthClient) AdminNodeInfo() AdminInfo {
+func (ec *EthClient) AdminNodeInfo () (AdminInfo) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("admin_nodeInfo")
-
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -186,13 +182,13 @@ func (ec *EthClient) AdminNodeInfo() AdminInfo {
 	return thisAdminInfo
 }
 
-func (ec *EthClient) BlockNumber() string {
+func (ec *EthClient) BlockNumber() (string) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("eth_blockNumber")
 	if err != nil {
 		fmt.Println(err)
 	}
-	var blockNumber string
+	var blockNumber string;
 	err = response.GetObject(&blockNumber)
 	if err != nil {
 		fmt.Println(err)
@@ -200,13 +196,13 @@ func (ec *EthClient) BlockNumber() string {
 	return blockNumber
 }
 
-func (ec *EthClient) RaftRole() string {
+func (ec *EthClient) RaftRole() (string) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("raft_role")
 	if err != nil {
 		fmt.Println(err)
 	}
-	var raftRole string
+	var raftRole string;
 	err = response.GetObject(&raftRole)
 	if err != nil {
 		fmt.Println(err)
@@ -214,9 +210,9 @@ func (ec *EthClient) RaftRole() string {
 	return raftRole
 }
 
-func (ec *EthClient) RaftAddPeer(request string) int {
+func (ec *EthClient) RaftAddPeer(request string) (int) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
-	response, err := rpcClient.Call("raft_addPeer", request)
+	response, err := rpcClient.Call("raft_addPeer",request)
 	var raftId int
 	err = response.GetObject(&raftId)
 	if err != nil {
@@ -225,7 +221,7 @@ func (ec *EthClient) RaftAddPeer(request string) int {
 	return raftId
 }
 
-func (ec *EthClient) GetTransactionReceipt(txNo string) TransactionReceiptResponse {
+func (ec *EthClient) GetTransactionReceipt(txNo string) (TransactionReceiptResponse) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("eth_getTransactionReceipt", txNo)
 
@@ -239,6 +235,7 @@ func (ec *EthClient) GetTransactionReceipt(txNo string) TransactionReceiptRespon
 	}
 	return txResponse
 }
+
 
 type Payload struct {
 	From       string   `json:"from"`
@@ -302,10 +299,6 @@ type SendTransaction struct {
 	Data string `json:"data"`
 }
 
-type ContractAddress struct {
-	Address string `json:"Address"`
-}
-
 func (ec *EthClient) DeployContracts(byteCode string, addr []string) string {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("eth_coinbase")
@@ -340,12 +333,13 @@ func (ec *EthClient) DeployContracts(byteCode string, addr []string) string {
 		fmt.Println("transaction failed" + err.Error())
 	}
 
-	var contractAddress string
-	err = response.GetObject(&contractAddress)
+	var txHash string
+	err = response.GetObject(&txHash)
 
 	if err != nil {
 		fmt.Println(err)
 	}
-	
-	return contractAddress
+
+	contractAdd := ec.GetTransactionReceipt(txHash).ContractAddress
+	return contractAdd
 }

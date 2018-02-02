@@ -1,12 +1,11 @@
 package main
 
 import (
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"os"
-
-	"github.com/gorilla/mux"
 	"synechron.com/NodeManagerGo/service"
+	"os"
 )
 
 var nodeUrl = "http://localhost:22000"
@@ -19,7 +18,7 @@ func main() {
 	}
 
 	if len(os.Args) > 2 {
-		listenPort = ":" + os.Args[2]
+		listenPort = ":"  + os.Args[2]
 	}
 
 	router := mux.NewRouter()
@@ -27,13 +26,13 @@ func main() {
 
 	router.HandleFunc("/txn/{txn_hash}", nodeService.GetTransactionInfoHandler).Methods("GET")
 	router.HandleFunc("/block/{block_no}", nodeService.GetBlockInfoHandler).Methods("GET")
-	router.HandleFunc("/genesis", nodeService.GetGenesisHandler).Methods("GET")
+	router.HandleFunc("/genesis", nodeService.GetGenesisHandler).Methods("POST")
 	router.HandleFunc("/peer/{peer_id}", nodeService.GetOtherPeerHandler).Methods("GET")
 	router.HandleFunc("/peer", nodeService.JoinNetworkHandler).Methods("POST")
 	router.HandleFunc("/peer", nodeService.GetCurrentNodeHandler).Methods("GET")
-	router.HandleFunc("/txnrcpt/{txn_hash}", nodeService.GetTransactionReceiptHandler).Methods("GET")
+        router.HandleFunc("/txnrcpt/{txn_hash}", nodeService.GetTransactionReceiptHandler).Methods("GET")
+        router.HandleFunc("/pendingJoinRequests", nodeService.PendingJoinRequestsHandler).Methods("GET")
+	router.HandleFunc("/joinRequestResponse", nodeService.JoinRequestResponseHandler).Methods("POST")
 	router.HandleFunc("/deployContract", nodeService.DeployContractHandler).Methods("POST")
-
 	log.Fatal(http.ListenAndServe(listenPort, router))
-
 }
