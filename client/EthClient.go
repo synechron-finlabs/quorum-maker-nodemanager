@@ -294,7 +294,7 @@ func (ec *EthClient) EthCall(param ContractParam, req RequestHandler, res Respon
 
 type SendTransaction struct {
 	From        string      `json:"from"`
-	PrivateFor []string    `json:"privateFor"`
+	PrivateFor  []string    `json:"privateFor"`
 	Gas         string      `json:"gas"`
 	Data        string      `json:"data"`
 }
