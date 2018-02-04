@@ -111,6 +111,12 @@ type JoinNetworkResponse struct {
 	Status 	string `json:"status,omitempty"`
 }
 
+type ContractJson struct {
+	Interface        string `json:"interface"`
+	Bytecode        string `json:"bytecode"`
+	ContractAddress string `json:"address"`
+}
+
 type NodeServiceImpl struct {
 	Url string
 }
@@ -334,24 +340,19 @@ func (nsi *NodeServiceImpl) joinRequestResponse(enode string, status string) (su
 	return true
 }
 
-type ContractJson struct {
-	Interface        string `json:"interface"`
-	Bytecode        string `json:"bytecode"`
-	ContractAddress string `json:"address"`
-}
 
-type DeployRequestFileName struct {
-	FileName 		[]string `json:"fileName"`
-	Address 		[]string `json:"address"`
-}
-
-func (nsi *NodeServiceImpl) deployContract(url string, address []string, fileName []string) []ContractJson {
+func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, private bool, url string) []ContractJson {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
+
+	if pubKeys[0] == "" {
+		pubKeys = nsi.returnPubKeyList()
+	}
+
 	var solc string
 	if solc == "" {
 		solc = "solc"
-		}
+	}
 	fileNo := len(fileName)
 	contractJsonArr := make([]ContractJson, fileNo)
 	for i := 0; i < fileNo; i++ {
@@ -394,7 +395,7 @@ func (nsi *NodeServiceImpl) deployContract(url string, address []string, fileNam
 		reg, err := regexp.Compile("[^a-zA-Z0-9]+")
 		byteCode = reg.ReplaceAllString(byteCode, "")
 
-		contractAddress := ethClient.DeployContracts(byteCode, address)
+		contractAddress := ethClient.DeployContracts(byteCode, pubKeys, private)
 
 		path := "./" + contractAddress
 		if _, err := os.Stat(path); os.IsNotExist(err) {
