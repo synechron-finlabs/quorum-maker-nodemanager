@@ -322,10 +322,6 @@ func (ec *EthClient) DeployContracts(byteCode string, pubKeys []string, private 
 	if err != nil {
 		fmt.Println(err)
 	}
-	var privateFor []string
-	for i:=0; i<len(pubKeys);i++{
-		privateFor = append(privateFor,pubKeys[i])
-	}
 
 	response, err = rpcClient.Call("personal_unlockAccount", ownerAddress, "", nil)
 	if err != nil {
@@ -335,7 +331,7 @@ func (ec *EthClient) DeployContracts(byteCode string, pubKeys []string, private 
 	if private == true {
 		sendTransactionPvt = SendTransactionPvt{
 			ownerAddress,
-			privateFor,
+			pubKeys,
 			"0x5F5E100",
 			byteCode}
 	} else {
