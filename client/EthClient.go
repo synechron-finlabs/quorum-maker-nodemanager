@@ -110,6 +110,19 @@ type Logs struct {
 	TransactionIndex  	string        `json:"transactionIndex"`
 }
 
+type SendTransactionPvt struct {
+	From 		string 		`json:"from"`
+	PrivateFor	[]string 	`json:"privateFor"`
+	Gas  		string 		`json:"gas"`
+	Data 		string 		`json:"data"`
+}
+
+type SendTransactionPub struct {
+	From string `json:"from"`
+	Gas  string `json:"gas"`
+	Data string `json:"data"`
+}
+
 type EthClient struct {
 	Url string
 }
@@ -292,19 +305,17 @@ func (ec *EthClient) EthCall(param ContractParam, req RequestHandler, res Respon
 
 }
 
-type SendTransaction struct {
-	From        string      `json:"from"`
-	PrivateFor  []string    `json:"privateFor"`
-	Gas         string      `json:"gas"`
-	Data        string      `json:"data"`
-}
-
-func (ec *EthClient) DeployContracts(byteCode string, addr []string) string {
+func (ec *EthClient) DeployContracts(byteCode string, pubKeys []string, private bool) string {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
+
+	sendTransactionPvt := SendTransactionPvt{}
+	sendTransactionPub := SendTransactionPub{}
+
 	response, err := rpcClient.Call("eth_coinbase")
 	if err != nil {
 		fmt.Println("can't get coinbase" + err.Error())
 	}
+	
 	var ownerAddress string
 	err = response.GetObject(&ownerAddress)
 
@@ -312,22 +323,33 @@ func (ec *EthClient) DeployContracts(byteCode string, addr []string) string {
 		fmt.Println(err)
 	}
 	var privateFor []string
-	for i:=0; i<len(addr);i++{
-		privateFor = append(privateFor,addr[i])
+	for i:=0; i<len(pubKeys);i++{
+		privateFor = append(privateFor,pubKeys[i])
 	}
 
-	response, err = rpcClient.Call("personal_unlockAccount", ownerAddress, "",nil)
+	response, err = rpcClient.Call("personal_unlockAccount", ownerAddress, "", nil)
 	if err != nil {
 		fmt.Println( err)
 	}
+	
+	if private == true {
+		sendTransactionPvt = SendTransactionPvt{
+			ownerAddress,
+			privateFor,
+			"0x5F5E100",
+			byteCode}
+	} else {
+		sendTransactionPub = SendTransactionPub{
+			ownerAddress,
+			"0x5F5E100",
+			byteCode}
+	}
 
-	sendTransaction := SendTransaction{
-		ownerAddress,
-		privateFor,
-		"100000000",
-		byteCode}
-
-	response, err = rpcClient.Call("eth_sendTransaction", sendTransaction)
+	if private == true {
+		response, err = rpcClient.Call("eth_sendTransaction", sendTransactionPvt)
+	} else {
+		response, err = rpcClient.Call("eth_sendTransaction", sendTransactionPub)
+	}
 
 	if err != nil {
 		fmt.Println("transaction failed" + err.Error())
