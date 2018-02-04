@@ -112,7 +112,7 @@ type JoinNetworkResponse struct {
 }
 
 type ContractJson struct {
-	Interface        string `json:"interface"`
+	Interface       string `json:"interface"`
 	Bytecode        string `json:"bytecode"`
 	ContractAddress string `json:"address"`
 }
