@@ -345,7 +345,7 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 
-	if pubKeys[0] == "" {
+	if private == true && pubKeys[0] == "" {
 		pubKeys = nsi.returnPubKeyList()
 	}
 
