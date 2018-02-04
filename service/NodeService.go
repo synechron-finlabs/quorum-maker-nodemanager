@@ -365,6 +365,7 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 		err := cmd.Run()
 		if err != nil {
 			fmt.Println(fmt.Sprint(err) + ": " + error.String())
+			contractJsonArr[i].Bytecode = "Compilation Failed: " + error.String()
 		}
 		var abiOut bytes.Buffer
 		cmd = exec.Command(solc, "-o", ".", "--overwrite", "--abi", fileName[i])
@@ -374,6 +375,9 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 		err = cmd.Run()
 		if err != nil {
 			fmt.Println(fmt.Sprint(err) + ": " + error.String())
+			contractJsonArr[i].Interface = "Compilation Failed: " + error.String()
+			contractJsonArr[i].ContractAddress = "0x"
+			continue
 		}
 
 		byteCode := binOut.String()
