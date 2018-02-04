@@ -10,6 +10,9 @@ import (
 	"os"
 	"strings"
 	"time"
+	"bytes"
+	"io"
+	"io/ioutil"
 )
 
 var cCLI = make(chan string, 1)
