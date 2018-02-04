@@ -59,3 +59,8 @@ func (p GetNodeDetailsParam) Encode() string {
 
 	return getNodeDetailsFunSig + client.EncodeAndPad(i)
 }
+
+func (nms *NodeServiceImpl) returnPubKeyList() []string {
+	pubKeys := []string{"F/vdZBFpbIzi7vyRCRba0jvvEpYHGeZdBbKYwIiy1SE=","IgD5KZV+kZBhxfIReFR24JDQZVtz3UBeA+llw8vLpT4=","E/vdZBFpbIzi7vyRCRba0jvvEpYHGeZdBbKYwIiy1SF="}
+	return pubKeys
+}
