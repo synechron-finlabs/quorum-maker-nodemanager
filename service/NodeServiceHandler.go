@@ -163,8 +163,51 @@ func (nsi *NodeServiceImpl) JoinRequestResponseHandler(w http.ResponseWriter, r 
 
 
 func (nsi *NodeServiceImpl) DeployContractHandler(w http.ResponseWriter, r *http.Request) {
-	var request DeployRequestFileName
-	_ = json.NewDecoder(r.Body).Decode(&request)
-	response := nsi.deployContract(nsi.Url, request.Address, request.FileName)
+	var Buf bytes.Buffer
+	var private bool
+	var publicKeys []string
+
+	count := r.FormValue("count")
+	countInt, err := strconv.Atoi(count)
+	if err != nil {
+		panic(err)
+	}
+	fileNames := make([]string, countInt)
+	boolVal := r.FormValue("private")
+	if boolVal == "true" {
+		private = true
+	} else {
+		private = false
+	}
+
+	keys := r.FormValue("privateFor")
+	publicKeys = strings.Split(keys, ",")
+
+	for i := 0; i < countInt; i++ {
+		keyVal := "file" + strconv.Itoa(i + 1)
+
+		file, header, err := r.FormFile(keyVal)
+		if err != nil {
+			panic(err)
+		}
+		defer file.Close()
+		name := strings.Split(header.Filename, ".")
+
+		fileNames[i] = name[0] + ".sol"
+
+		io.Copy(&Buf, file)
+
+		contents := Buf.String()
+
+		fileContent := []byte(contents)
+		err = ioutil.WriteFile("./" + name[0] + ".sol" , fileContent, 0775)
+		if err != nil {
+			panic(err)
+		}
+
+		Buf.Reset()
+	}
+
+	response := nsi.deployContract(publicKeys, fileNames, private, nsi.Url)
 	json.NewEncoder(w).Encode(response)
 }
