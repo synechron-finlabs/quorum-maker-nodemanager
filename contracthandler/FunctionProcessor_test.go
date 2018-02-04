@@ -3,9 +3,13 @@ package contracthandler
 import (
 	"testing"
 	"reflect"
+	"synechron.com/NodeManagerGo/util"
+	"time"
 )
 
 func TestGetData(t *testing.T) {
+
+	defer util.TotalTime(time.Now().Nanosecond())
 
 	for _, table := range getTestData() {
 		data := FunctionProcessor{table.x, table.y, table.z}.GetData()

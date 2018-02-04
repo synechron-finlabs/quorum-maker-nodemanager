@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/magiconair/properties"
 	"encoding/hex"
+	"time"
 )
 
 func TakeSliceArg(arg interface{}) (out []interface{}, ok bool) {
@@ -86,4 +87,8 @@ func Between(value string, a string, b string) string {
 		return ""
 	}
 	return value[posFirstAdjusted:posLast]
+}
+
+func TotalTime(start int) {
+	fmt.Println("Total time took = ", time.Now().Nanosecond()-start)
 }

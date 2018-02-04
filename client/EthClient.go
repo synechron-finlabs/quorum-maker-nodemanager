@@ -254,7 +254,6 @@ func (ec *EthClient) SendTransaction(param contracthandler.ContractParam, rh con
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 
 	response, err := rpcClient.Call("personal_unlockAccount", param.From, param.Passwd, nil)
-	fmt.Println("response", response)
 	if err != nil {
 
 		fmt.Println(err)
@@ -267,13 +266,11 @@ func (ec *EthClient) SendTransaction(param contracthandler.ContractParam, rh con
 		param.Parties}
 
 	response, err = rpcClient.Call("eth_sendTransaction", p)
-	fmt.Println("response", response)
 	if err != nil {
 
 		fmt.Println(err)
 	}
 
-	fmt.Println("resonse.result", response.Result)
 	return fmt.Sprintf("%s", response.Result)
 
 }
@@ -284,15 +281,12 @@ func (ec *EthClient) EthCall(param contracthandler.ContractParam, encoder contra
 
 	p := CallPayload{param.To, encoder.Encode()}
 	response, err := rpcClient.Call("eth_call", p, "latest")
-	fmt.Println("response", response)
 
 	if err != nil {
 
 		fmt.Println(err)
 	}
 
-	decoder.Decode(fmt.Sprintf("%v", response.Result))
-
-	fmt.Println("completed")
+	decoder.Decode(fmt.Sprintf("%v", response.Result)[2:])
 
 }

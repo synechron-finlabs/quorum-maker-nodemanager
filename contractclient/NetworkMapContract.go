@@ -62,6 +62,7 @@ type GetNodeDetailsFuncHandler struct {
 }
 
 func (g *GetNodeDetailsFuncHandler) Decode(r string) {
+
 	sig := "string,string,string"
 
 	resultArray := contracthandler.FunctionProcessor{sig, nil, r}.GetResults()
