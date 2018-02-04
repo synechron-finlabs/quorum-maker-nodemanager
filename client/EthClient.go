@@ -209,6 +209,20 @@ func (ec *EthClient) BlockNumber() (string) {
 	return blockNumber
 }
 
+func (ec *EthClient) Coinbase() (string) {
+	rpcClient := jsonrpc.NewRPCClient(ec.Url)
+	response, err := rpcClient.Call("eth_coinbase")
+	if err != nil {
+		fmt.Println(err)
+	}
+	var coinbase string;
+	err = response.GetObject(&coinbase)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return coinbase
+}
+
 func (ec *EthClient) RaftRole() (string) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("raft_role")
