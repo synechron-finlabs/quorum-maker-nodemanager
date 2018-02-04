@@ -49,7 +49,7 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	go func() {
-		fmt.Println("Request for genesis.JSON for Enode",enode,"from IP",foreignIP,"Do you approve ? y/N")
+		fmt.Println("Request for Joining this network for Enode",enode,"from IP",foreignIP,"Do you approve ? y/N")
 
 		reader := bufio.NewReader(os.Stdin)
 		reply, _ := reader.ReadString('\n')
@@ -83,16 +83,9 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 		fmt.Println(resUI)
 	case <-time.After(time.Second * 300):
 		fmt.Println("Response Timed Out")
-		if peerMap[enode] == "YES" {
-			response := nsi.getGenesis(nsi.Url)
-			json.NewEncoder(w).Encode(response)
-		} else if peerMap[enode] == "NO" {
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Access denied"))
-		} else {
-			w.WriteHeader(http.StatusAccepted)
-			w.Write([]byte("Pending user response"))
-		}
+		w.WriteHeader(http.StatusAccepted)
+		w.Write([]byte("Pending user response"))
+		
 	}
 
 }
