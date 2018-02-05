@@ -85,6 +85,7 @@ func (t Uint256) Encode() []string {
 
 type Bool struct {
 	Uint256
+
 }
 
 func (t Bool) New(i interface{}, sig string) DataType {
@@ -106,7 +107,9 @@ type Uint32_DA struct {
 	BaseDataType
 }
 
+
 func (t Uint32_DA) Decode(data []string, index int) (int, interface{}) {
+
 	offset := util.StringToInt(data[index])
 
 	length := util.StringToInt(data[offset/32])

@@ -41,6 +41,7 @@ func (nmc *NetworkMapContractClient) UpdateNode(enode string, role string, name 
 	return nmc.SendTransaction(nmc.contractParam, RegisterUpdateNodeFuncHandler{nd, updateNodeFunSig})
 }
 
+
 type RegisterUpdateNodeFuncHandler struct {
 	nd      NodeDetails
 	funcSig string
@@ -77,4 +78,13 @@ func (g GetNodeDetailsFuncHandler) Encode() string {
 	param := []interface{}{g.index}
 
 	return g.funcSig + contracthandler.FunctionProcessor{sig, param, ""}.GetData()
+}
+
+type DeployContractHandler struct {
+	binary string
+}
+
+func (d DeployContractHandler) Encode() string {
+
+	return d.binary
 }

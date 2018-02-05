@@ -13,6 +13,7 @@ func TestGetData(t *testing.T) {
 
 	for _, table := range getTestData() {
 		data := FunctionProcessor{table.x, table.y, table.z}.GetData()
+
 		if data != table.z {
 			t.Errorf("Encoding was incorrect, got: %d, want: %d.", data, table.z)
 		}
