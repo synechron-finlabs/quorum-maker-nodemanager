@@ -10,9 +10,9 @@ import (
 	"os"
 	"strings"
 	"time"
-	"bytes"
 	"io"
 	"io/ioutil"
+	"bytes"
 )
 
 var cCLI = make(chan string, 1)
@@ -29,16 +29,16 @@ func (nsi *NodeServiceImpl) JoinNetworkHandler(w http.ResponseWriter, r *http.Re
 		peerMap[enode] = "PENDING"
 	}
 
-	 if peerMap[enode] == "YES" {
-	 	response := nsi.joinNetwork(enode, nsi.Url)
-	 	json.NewEncoder(w).Encode(response)
-	 } else if peerMap[enode] == "NO" {
-	 	w.WriteHeader(http.StatusForbidden)
-	 	w.Write([]byte("Access denied"))
-	 } else {
-	 	w.WriteHeader(http.StatusAccepted)
-	 	w.Write([]byte("Pending user response"))
-	 }
+	if peerMap[enode] == "YES" {
+		response := nsi.joinNetwork(enode, nsi.Url)
+		json.NewEncoder(w).Encode(response)
+	} else if peerMap[enode] == "NO" {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Access denied"))
+	} else {
+		w.WriteHeader(http.StatusAccepted)
+		w.Write([]byte("Pending user response"))
+	}
 }
 
 func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Request) {
@@ -88,7 +88,7 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 		fmt.Println("Response Timed Out")
 		w.WriteHeader(http.StatusAccepted)
 		w.Write([]byte("Pending user response"))
-		
+
 	}
 
 }

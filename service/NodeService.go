@@ -4,10 +4,10 @@ import (
 	"io/ioutil"
 	"log"
 	"synechron.com/NodeManagerGo/client"
+	"synechron.com/NodeManagerGo/util"
 	"strings"
 	"fmt"
 	"strconv"
-	"synechron.com/NodeManagerGo/util"
 	"github.com/magiconair/properties"
 	"bytes"
 	"os/exec"
@@ -346,7 +346,7 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 	ethClient := client.EthClient{nodeUrl}
 
 	if private == true && pubKeys[0] == "" {
-		pubKeys = nsi.returnPubKeyList()
+		pubKeys = []string{"F/vdZBFpbIzi7vyRCRba0jvvEpYHGeZdBbKYwIiy1SE=","IgD5KZV+kZBhxfIReFR24JDQZVtz3UBeA+llw8vLpT4=","E/vdZBFpbIzi7vyRCRba0jvvEpYHGeZdBbKYwIiy1SF="}
 	}
 
 	var solc string

@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"fmt"
 	"github.com/magiconair/properties"
+	"encoding/hex"
+	"time"
 )
 
 func TakeSliceArg(arg interface{}) (out []interface{}, ok bool) {
@@ -49,4 +51,49 @@ func MustGetString(key string, filename *properties.Properties) (val string) {
 func ComposeJSON(intrfc string, bytecode string, contractAdd string) (json string){
 	json = "{\n\"interface\" : "+ intrfc + ",\n\"bytecode\" : \"" + bytecode + "\",\n\"address\" : \"" + contractAdd + "\"\n}"
 	return json
+}
+
+func IntToString(i int) string {
+
+	return fmt.Sprintf("%064s", fmt.Sprintf("%x", i))
+}
+func StringToInt(s string) int {
+
+	s = strings.TrimLeft(s, "0")
+
+	n, err := strconv.ParseInt(s, 16, 32)
+	if err != nil {
+		panic(err)
+	}
+
+	return int(n)
+}
+
+func ByteToString(a []byte) string {
+
+	b := make([]byte, 32)
+
+	copy(b, a)
+	return hex.EncodeToString(b)
+
+}
+
+func Between(value string, a string, b string) string {
+	posFirst := strings.Index(value, a)
+	if posFirst == -1 {
+		return ""
+	}
+	posLast := strings.Index(value, b)
+	if posLast == -1 {
+		return ""
+	}
+	posFirstAdjusted := posFirst + len(a)
+	if posFirstAdjusted >= posLast {
+		return ""
+	}
+	return value[posFirstAdjusted:posLast]
+}
+
+func TotalTime(start int) {
+	fmt.Println("Total time took = ", time.Now().Nanosecond()-start)
 }

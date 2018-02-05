@@ -4,16 +4,17 @@ import (
 	"fmt"
 	"github.com/ybbus/jsonrpc"
 	"log"
+	"synechron.com/NodeManagerGo/contracthandler"
 )
 
 type AdminInfo struct {
-	ID   		string 		`json:"id,omitempty"`
-	Name 		string 		`json:"name,omitempty"`
-	Enode 		string 		`json:"enode,omitempty"`
-	IP 		string 		`json:"ip,omitempty"`
-	Ports 		Ports 		`json:"ports,omitempty"`
-	ListenAddr 	string 		`json:"listenAddr,omitempty"`
-	Protocols 	Protocols	`json:"protocols,omitempty"`
+	ID         string    `json:"id,omitempty"`
+	Name       string    `json:"name,omitempty"`
+	Enode      string    `json:"enode,omitempty"`
+	IP         string    `json:"ip,omitempty"`
+	Ports      Ports     `json:"ports,omitempty"`
+	ListenAddr string    `json:"listenAddr,omitempty"`
+	Protocols  Protocols `json:"protocols,omitempty"`
 }
 
 type Ports struct {
@@ -22,11 +23,11 @@ type Ports struct {
 }
 
 type AdminPeers struct {
-	ID      	string   	`json:"id,omitempty"`
-	Name    	string   	`json:"name,omitempty"`
-	Caps    	[]string 	`json:"caps,omitempty"`
-	Network 	Network 	`json:"network,omitempty"`
-	Protocols 	Protocols 	`json:"protocols,omitempty"`
+	ID        string    `json:"id,omitempty"`
+	Name      string    `json:"name,omitempty"`
+	Caps      []string  `json:"caps,omitempty"`
+	Network   Network   `json:"network,omitempty"`
+	Protocols Protocols `json:"protocols,omitempty"`
 }
 
 type Protocols struct {
@@ -34,8 +35,8 @@ type Protocols struct {
 }
 
 type Eth struct {
-	Network    int	  `json:"network,omitempty"`
- 	Version    int    `json:"version,omitempty"`
+	Network    int    `json:"network,omitempty"`
+	Version    int    `json:"version,omitempty"`
 	Difficulty int    `json:"difficulty,omitempty"`
 	Genesis    string `json:"genesis,omitempty"`
 	Head       string `json:"head,omitempty"`
@@ -85,41 +86,40 @@ type TransactionDetailsResponse struct {
 }
 
 type TransactionReceiptResponse struct {
-	BlockHash         	string          `json:"blockHash"`
-	BlockNumber       	string          `json:"blockNumber"`
-	ContractAddress   	string 		`json:"contractAddress"`
-	CumulativeGasUsed 	string          `json:"cumulativeGasUsed"`
-	From              	string          `json:"from"`
-	GasUsed           	string          `json:"gasUsed"`
-	Logs              	[]Logs 		`json:"logs"`
-	LogsBloom        	string 		`json:"logsBloom"`
-	Root             	string 		`json:"root"`
-	To               	string 		`json:"to"`
-	TransactionHash  	string 		`json:"transactionHash"`
-	TransactionIndex 	string 		`json:"transactionIndex"`
+	BlockHash         string `json:"blockHash"`
+	BlockNumber       string `json:"blockNumber"`
+	ContractAddress   string `json:"contractAddress"`
+	CumulativeGasUsed string `json:"cumulativeGasUsed"`
+	From              string `json:"from"`
+	GasUsed           string `json:"gasUsed"`
+	Logs              []Logs `json:"logs"`
+	LogsBloom         string `json:"logsBloom"`
+	Root              string `json:"root"`
+	To                string `json:"to"`
+	TransactionHash   string `json:"transactionHash"`
+	TransactionIndex  string `json:"transactionIndex"`
 }
 
 type Logs struct {
-	Address         	string        `json:"address"`
-	BlockHash       	string        `json:"blockHash"`
-	BlockNumber   		string        `json:"blockNumber"`
-	Data 			string        `json:"data"`
-	LogIndex          	string        `json:"logIndex"`
-	Topics           	[]string      `json:"topics"`
-	TransactionHash         string        `json:"transactionHash"`
-	TransactionIndex  	string        `json:"transactionIndex"`
+	Address          string   `json:"address"`
+	BlockHash        string   `json:"blockHash"`
+	BlockNumber      string   `json:"blockNumber"`
+	Data             string   `json:"data"`
+	LogIndex         string   `json:"logIndex"`
+	Topics           []string `json:"topics"`
+	TransactionHash  string   `json:"transactionHash"`
+	TransactionIndex string   `json:"transactionIndex"`
 }
 
-type SendTransactionPvt struct {
-	From 		string 		`json:"from"`
-	PrivateFor	[]string 	`json:"privateFor"`
-	Gas  		string 		`json:"gas"`
-	Data 		string 		`json:"data"`
+type Payload struct {
+	From       string   `json:"from"`
+	To         string   `json:"to"`
+	Data       string   `json:"data"`
+	PrivateFor []string `json:"privateFor"`
 }
 
-type SendTransactionPub struct {
-	From string `json:"from"`
-	Gas  string `json:"gas"`
+type CallPayload struct {
+	To   string `json:"to"`
 	Data string `json:"data"`
 }
 
@@ -184,7 +184,7 @@ func (ec *EthClient) AdminPeers() ([]AdminPeers) {
 	return otherPeersResponse
 }
 
-func (ec *EthClient) AdminNodeInfo () (AdminInfo) {
+func (ec *EthClient) AdminNodeInfo() (AdminInfo) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("admin_nodeInfo")
 	if err != nil {
@@ -209,6 +209,20 @@ func (ec *EthClient) BlockNumber() (string) {
 	return blockNumber
 }
 
+func (ec *EthClient) Coinbase() (string) {
+	rpcClient := jsonrpc.NewRPCClient(ec.Url)
+	response, err := rpcClient.Call("eth_coinbase")
+	if err != nil {
+		fmt.Println(err)
+	}
+	var coinbase string;
+	err = response.GetObject(&coinbase)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return coinbase
+}
+
 func (ec *EthClient) RaftRole() (string) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 	response, err := rpcClient.Call("raft_role")
@@ -225,7 +239,7 @@ func (ec *EthClient) RaftRole() (string) {
 
 func (ec *EthClient) RaftAddPeer(request string) (int) {
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
-	response, err := rpcClient.Call("raft_addPeer",request)
+	response, err := rpcClient.Call("raft_addPeer", request)
 	var raftId int
 	err = response.GetObject(&raftId)
 	if err != nil {
@@ -249,37 +263,25 @@ func (ec *EthClient) GetTransactionReceipt(txNo string) (TransactionReceiptRespo
 	return txResponse
 }
 
-
-type Payload struct {
-	From       string   `json:"from"`
-	To         string   `json:"to"`
-	Data       string   `json:"data"`
-	PrivateFor []string `json:"privateFor"`
-}
-
-type CallPayload struct {
-	To   string `json:"to"`
-	Data string `json:"data"`
-}
-
-func (ec *EthClient) SendTransaction(param ContractParam, rh RequestHandler) string {
+func (ec *EthClient) SendTransaction(param contracthandler.ContractParam, rh contracthandler.RequestHandler) string {
 
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 
 	response, err := rpcClient.Call("personal_unlockAccount", param.From, param.Passwd, nil)
-
 	if err != nil {
+
 		fmt.Println(err)
 	}
 
-	p := Payload{param.From,
+	p := Payload{
+		param.From,
 		param.To,
 		rh.Encode(),
 		param.Parties}
 
 	response, err = rpcClient.Call("eth_sendTransaction", p)
-
 	if err != nil {
+
 		fmt.Println(err)
 	}
 
@@ -287,76 +289,33 @@ func (ec *EthClient) SendTransaction(param ContractParam, rh RequestHandler) str
 
 }
 
-func (ec *EthClient) EthCall(param ContractParam, req RequestHandler, res ResponseHandler) interface{} {
+func (ec *EthClient) EthCall(param contracthandler.ContractParam, encoder contracthandler.RequestHandler, decoder contracthandler.ResponseHandler) {
 
 	rpcClient := jsonrpc.NewRPCClient(ec.Url)
 
-	p := CallPayload{param.To, req.Encode()}
-
+	p := CallPayload{param.To, encoder.Encode()}
 	response, err := rpcClient.Call("eth_call", p, "latest")
 
 	if err != nil {
+
 		fmt.Println(err)
 	}
 
-	res.Decode(fmt.Sprintf("%v", response.Result))
-
-	return res
+	decoder.Decode(fmt.Sprintf("%v", response.Result)[2:])
 
 }
 
 func (ec *EthClient) DeployContracts(byteCode string, pubKeys []string, private bool) string {
-	rpcClient := jsonrpc.NewRPCClient(ec.Url)
-
-	sendTransactionPvt := SendTransactionPvt{}
-	sendTransactionPub := SendTransactionPub{}
-
-	response, err := rpcClient.Call("eth_coinbase")
-	if err != nil {
-		fmt.Println("can't get coinbase" + err.Error())
-	}
-	
-	var ownerAddress string
-	err = response.GetObject(&ownerAddress)
-
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	response, err = rpcClient.Call("personal_unlockAccount", ownerAddress, "", nil)
-	if err != nil {
-		fmt.Println( err)
-	}
-	
+	coinbase := ec.Coinbase()
+	var params contracthandler.ContractParam
 	if private == true {
-		sendTransactionPvt = SendTransactionPvt{
-			ownerAddress,
-			pubKeys,
-			"0x5F5E100",
-			byteCode}
+		params = contracthandler.ContractParam{From: coinbase, Passwd: "", Parties: pubKeys}
 	} else {
-		sendTransactionPub = SendTransactionPub{
-			ownerAddress,
-			"0x5F5E100",
-			byteCode}
+		params = contracthandler.ContractParam{From: coinbase, Passwd: ""}
 	}
 
-	if private == true {
-		response, err = rpcClient.Call("eth_sendTransaction", sendTransactionPvt)
-	} else {
-		response, err = rpcClient.Call("eth_sendTransaction", sendTransactionPub)
-	}
-
-	if err != nil {
-		fmt.Println("transaction failed" + err.Error())
-	}
-
-	var txHash string
-	err = response.GetObject(&txHash)
-
-	if err != nil {
-		fmt.Println(err)
-	}
+	cont := contracthandler.DeployContractHandler{byteCode}
+	txHash := ec.SendTransaction(params,cont)
 
 	contractAdd := ec.GetTransactionReceipt(txHash).ContractAddress
 	return contractAdd
