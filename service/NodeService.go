@@ -478,7 +478,7 @@ func (nsi *NodeServiceImpl) createNetworkScriptCall(nodename string, currentIP s
 
 
 func (nsi *NodeServiceImpl) joinRequestResponseCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string, masterNodeManagerPort string, masterIP string) (success string) {
-	cmd := exec.Command("./setup.sh","2", nodename)
+	cmd := exec.Command("./setup.sh","2", nodename, masterIP, masterNodeManagerPort, currentIP, rpcPort, whisperPort, constellationPort, raftPort, nodeManagerPort)
 	cmd.Dir = "./Setup"
 	var out bytes.Buffer
 	cmd.Stdout = &out
