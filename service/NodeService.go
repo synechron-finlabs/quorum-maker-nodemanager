@@ -118,25 +118,25 @@ type ContractJson struct {
 }
 
 type CreateNetworkScriptArgs struct {
-	Nodename         	string                                 `json:"nodename,omitempty"`
-	CurrentIP        	string                                 `json:"currentIP,omitempty"`
-	RPCPort     	 	string                                 `json:"rpcPort,omitempty"`
-	WhisperPort         string                                 `json:"whisperPort,omitempty"`
-	ConstellationPort   string                                 `json:"constellationPort,omitempty"`
-	RaftPort       	 	string                                 `json:"raftPort,omitempty"`
-	NodeManagerPort 	string                                 `json:"nodeManagerPort,omitempty"`
+    Nodename            string                                 `json:"nodename,omitempty"`
+    CurrentIP           string                                 `json:"currentIP,omitempty"`
+    RPCPort             string                                 `json:"rpcPort,omitempty"`
+    WhisperPort         string                                 `json:"whisperPort,omitempty"`
+    ConstellationPort   string                                 `json:"constellationPort,omitempty"`
+    RaftPort            string                                 `json:"raftPort,omitempty"`
+    NodeManagerPort     string                                 `json:"nodeManagerPort,omitempty"`
 }
 
 type JoinNetworkScriptArgs struct {
-	Nodename         		string                                 `json:"nodename,omitempty"`
-	CurrentIP        		string                                 `json:"currentIP,omitempty"`
-	RPCPort     		 	string                                 `json:"rpcPort,omitempty"`
-	WhisperPort            	string                                 `json:"whisperPort,omitempty"`
-	ConstellationPort       string                                 `json:"constellationPort,omitempty"`
-	RaftPort        		string                                 `json:"raftPort,omitempty"`
-	NodeManagerPort 		string                                 `json:"nodeManagerPort,omitempty"`
-	MasterNodeManagerPort 	string							       `json:"masterNodeManagerPort,omitempty"`
-	MasterIP 				string								   `json:"masterIP,omitempty"`
+    Nodename                string                                 `json:"nodename,omitempty"`
+    CurrentIP               string                                 `json:"currentIP,omitempty"`
+    RPCPort                 string                                 `json:"rpcPort,omitempty"`
+    WhisperPort             string                                 `json:"whisperPort,omitempty"`
+    ConstellationPort       string                                 `json:"constellationPort,omitempty"`
+    RaftPort                string                                 `json:"raftPort,omitempty"`
+    NodeManagerPort         string                                 `json:"nodeManagerPort,omitempty"`
+    MasterNodeManagerPort   string                                 `json:"masterNodeManagerPort,omitempty"`
+    MasterIP                string                                 `json:"masterIP,omitempty"`
 }
 
 type NodeServiceImpl struct {
