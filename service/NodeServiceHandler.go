@@ -207,3 +207,19 @@ func (nsi *NodeServiceImpl) DeployContractHandler(w http.ResponseWriter, r *http
 	response := nsi.deployContract(publicKeys, fileNames, private, nsi.Url)
 	json.NewEncoder(w).Encode(response)
 }
+
+
+func (nsi *NodeServiceImpl) CreateNetworkScriptCallHandler(w http.ResponseWriter, r *http.Request) {
+	var request CreateNetworkScriptArgs
+	_ = json.NewDecoder(r.Body).Decode(&request)
+	response := nsi.createNetworkScriptCall(request.Nodename,request.CurrentIP,request.RPCPort,request.WhisperPort,request.ConstellationPort,request.RaftPort,request.NodeManagerPort)
+	json.NewEncoder(w).Encode(response)
+}
+
+
+func (nsi *NodeServiceImpl) JoinNetworkScriptCallHandler(w http.ResponseWriter, r *http.Request) {
+	var request JoinNetworkScriptArgs
+	_ = json.NewDecoder(r.Body).Decode(&request)
+	response := nsi.joinRequestResponseCall(request.Nodename,request.CurrentIP,request.RPCPort,request.WhisperPort,request.ConstellationPort,request.RaftPort,request.NodeManagerPort,request.MasterNodeManagerPort,request.MasterIP)
+	json.NewEncoder(w).Encode(response)
+}

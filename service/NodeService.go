@@ -117,6 +117,28 @@ type ContractJson struct {
 	ContractAddress string `json:"address"`
 }
 
+type CreateNetworkScriptArgs struct {
+	Nodename         	string                                 `json:"nodename,omitempty"`
+	CurrentIP        	string                                 `json:"currentIP,omitempty"`
+	RPCPort     	 	string                                 `json:"rpcPort,omitempty"`
+	WhisperPort         string                                 `json:"whisperPort,omitempty"`
+	ConstellationPort   string                                 `json:"constellationPort,omitempty"`
+	RaftPort       	 	string                                 `json:"raftPort,omitempty"`
+	NodeManagerPort 	string                                 `json:"nodeManagerPort,omitempty"`
+}
+
+type JoinNetworkScriptArgs struct {
+	Nodename         		string                                 `json:"nodename,omitempty"`
+	CurrentIP        		string                                 `json:"currentIP,omitempty"`
+	RPCPort     		 	string                                 `json:"rpcPort,omitempty"`
+	WhisperPort            	string                                 `json:"whisperPort,omitempty"`
+	ConstellationPort       string                                 `json:"constellationPort,omitempty"`
+	RaftPort        		string                                 `json:"raftPort,omitempty"`
+	NodeManagerPort 		string                                 `json:"nodeManagerPort,omitempty"`
+	MasterNodeManagerPort 	string							       `json:"masterNodeManagerPort,omitempty"`
+	MasterIP 				string								   `json:"masterIP,omitempty"`
+}
+
 type NodeServiceImpl struct {
 	Url string
 }
@@ -430,4 +452,48 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 		}
 	}
 	return contractJsonArr
+}
+
+
+func (nsi *NodeServiceImpl) createNetworkScriptCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string) (success string) {
+	cmd := exec.Command("./setup.sh","1", nodename)
+	cmd.Dir = "./Setup"
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var setupConf string
+	setupConf = "CURRENT_IP=" + currentIP + "\n" + "RPC_PORT=" + rpcPort + "\n" + "WHISPER_PORT=" + whisperPort + "\n" + "CONSTELLATION_PORT=" + constellationPort + "\n" + "RAFT_PORT=" + raftPort + "\n" + "NODEMANAGER_PORT=" + nodeManagerPort + "\n"
+	setupConfByte := []byte(setupConf)
+	err = ioutil.WriteFile("./Setup/" + nodename + "/setup.conf", setupConfByte, 0775)
+	if err != nil {
+		panic(err)
+	}
+
+	return "Successfully created new network"
+}
+
+
+func (nsi *NodeServiceImpl) joinRequestResponseCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string, masterNodeManagerPort string, masterIP string) (success string) {
+	cmd := exec.Command("./setup.sh","2", nodename)
+	cmd.Dir = "./Setup"
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var setupConf string
+	setupConf = "CURRENT_IP=" + currentIP + "\n" + "RPC_PORT=" + rpcPort + "\n" + "WHISPER_PORT=" + whisperPort + "\n" + "CONSTELLATION_PORT=" + constellationPort + "\n" + "RAFT_PORT=" + raftPort + "\n" + "THIS_NODEMANAGER_PORT=" + nodeManagerPort + "\n" + "MASTER_IP=" + masterIP + "\n"+ "NODEMANAGER_PORT=" + masterNodeManagerPort + "\n"
+	setupConfByte := []byte(setupConf)
+	err = ioutil.WriteFile("./Setup/" + nodename + "/setup.conf", setupConfByte, 0775)
+	if err != nil {
+		panic(err)
+	}
+
+	return "Successfully joined the network"
 }
