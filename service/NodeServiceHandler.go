@@ -10,6 +10,9 @@ import (
 	"os"
 	"strings"
 	"time"
+	"io"
+	"io/ioutil"
+	"bytes"
 )
 
 var cCLI = make(chan string, 1)
@@ -26,16 +29,16 @@ func (nsi *NodeServiceImpl) JoinNetworkHandler(w http.ResponseWriter, r *http.Re
 		peerMap[enode] = "PENDING"
 	}
 
-	 if peerMap[enode] == "YES" {
-	 	response := nsi.joinNetwork(enode, nsi.Url)
-	 	json.NewEncoder(w).Encode(response)
-	 } else if peerMap[enode] == "NO" {
-	 	w.WriteHeader(http.StatusForbidden)
-	 	w.Write([]byte("Access denied"))
-	 } else {
-	 	w.WriteHeader(http.StatusAccepted)
-	 	w.Write([]byte("Pending user response"))
-	 }
+	if peerMap[enode] == "YES" {
+		response := nsi.joinNetwork(enode, nsi.Url)
+		json.NewEncoder(w).Encode(response)
+	} else if peerMap[enode] == "NO" {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Access denied"))
+	} else {
+		w.WriteHeader(http.StatusAccepted)
+		w.Write([]byte("Pending user response"))
+	}
 }
 
 func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +52,7 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	go func() {
-		fmt.Println("Request for genesis.JSON for Enode",enode,"from IP",foreignIP,"Do you approve ? y/N")
+		fmt.Println("Request for Joining this network for Enode",enode,"from IP",foreignIP,"Do you approve ? y/N")
 
 		reader := bufio.NewReader(os.Stdin)
 		reply, _ := reader.ReadString('\n')
@@ -83,16 +86,8 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 		fmt.Println(resUI)
 	case <-time.After(time.Second * 300):
 		fmt.Println("Response Timed Out")
-		if peerMap[enode] == "YES" {
-			response := nsi.getGenesis(nsi.Url)
-			json.NewEncoder(w).Encode(response)
-		} else if peerMap[enode] == "NO" {
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Access denied"))
-		} else {
-			w.WriteHeader(http.StatusAccepted)
-			w.Write([]byte("Pending user response"))
-		}
+		w.WriteHeader(http.StatusAccepted)
+		w.Write([]byte("Pending user response"))
 	}
 
 }
@@ -159,4 +154,71 @@ func (nsi *NodeServiceImpl) JoinRequestResponseHandler(w http.ResponseWriter, r 
 	}
 	json.NewEncoder(w).Encode(reply)
 	cUI <- "UI response"
+}
+
+
+func (nsi *NodeServiceImpl) DeployContractHandler(w http.ResponseWriter, r *http.Request) {
+	var Buf bytes.Buffer
+	var private bool
+	var publicKeys []string
+
+	count := r.FormValue("count")
+	countInt, err := strconv.Atoi(count)
+	if err != nil {
+		panic(err)
+	}
+	fileNames := make([]string, countInt)
+	boolVal := r.FormValue("private")
+	if boolVal == "true" {
+		private = true
+	} else {
+		private = false
+	}
+
+	keys := r.FormValue("privateFor")
+	publicKeys = strings.Split(keys, ",")
+
+	for i := 0; i < countInt; i++ {
+		keyVal := "file" + strconv.Itoa(i + 1)
+
+		file, header, err := r.FormFile(keyVal)
+		if err != nil {
+			panic(err)
+		}
+		defer file.Close()
+		name := strings.Split(header.Filename, ".")
+
+		fileNames[i] = name[0] + ".sol"
+
+		io.Copy(&Buf, file)
+
+		contents := Buf.String()
+
+		fileContent := []byte(contents)
+		err = ioutil.WriteFile("./" + name[0] + ".sol" , fileContent, 0775)
+		if err != nil {
+			panic(err)
+		}
+
+		Buf.Reset()
+	}
+
+	response := nsi.deployContract(publicKeys, fileNames, private, nsi.Url)
+	json.NewEncoder(w).Encode(response)
+}
+
+
+func (nsi *NodeServiceImpl) CreateNetworkScriptCallHandler(w http.ResponseWriter, r *http.Request) {
+	var request CreateNetworkScriptArgs
+	_ = json.NewDecoder(r.Body).Decode(&request)
+	response := nsi.createNetworkScriptCall(request.Nodename,request.CurrentIP,request.RPCPort,request.WhisperPort,request.ConstellationPort,request.RaftPort,request.NodeManagerPort)
+	json.NewEncoder(w).Encode(response)
+}
+
+
+func (nsi *NodeServiceImpl) JoinNetworkScriptCallHandler(w http.ResponseWriter, r *http.Request) {
+	var request JoinNetworkScriptArgs
+	_ = json.NewDecoder(r.Body).Decode(&request)
+	response := nsi.joinRequestResponseCall(request.Nodename,request.CurrentIP,request.RPCPort,request.WhisperPort,request.ConstellationPort,request.RaftPort,request.NodeManagerPort,request.MasterNodeManagerPort,request.MasterIP)
+	json.NewEncoder(w).Encode(response)
 }

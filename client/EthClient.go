@@ -304,3 +304,19 @@ func (ec *EthClient) EthCall(param contracthandler.ContractParam, encoder contra
 	decoder.Decode(fmt.Sprintf("%v", response.Result)[2:])
 
 }
+
+func (ec *EthClient) DeployContracts(byteCode string, pubKeys []string, private bool) string {
+	coinbase := ec.Coinbase()
+	var params contracthandler.ContractParam
+	if private == true {
+		params = contracthandler.ContractParam{From: coinbase, Passwd: "", Parties: pubKeys}
+	} else {
+		params = contracthandler.ContractParam{From: coinbase, Passwd: ""}
+	}
+
+	cont := contracthandler.DeployContractHandler{byteCode}
+	txHash := ec.SendTransaction(params,cont)
+
+	contractAdd := ec.GetTransactionReceipt(txHash).ContractAddress
+	return contractAdd
+}

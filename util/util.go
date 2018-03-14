@@ -48,6 +48,11 @@ func MustGetString(key string, filename *properties.Properties) (val string) {
 	return val
 }
 
+func ComposeJSON(intrfc string, bytecode string, contractAdd string) (json string){
+	json = "{\n\"interface\" : "+ intrfc + ",\n\"bytecode\" : \"" + bytecode + "\",\n\"address\" : \"" + contractAdd + "\"\n}"
+	return json
+}
+
 func IntToString(i int) string {
 
 	return fmt.Sprintf("%064s", fmt.Sprintf("%x", i))
@@ -92,3 +97,4 @@ func Between(value string, a string, b string) string {
 func TotalTime(start int) {
 	fmt.Println("Total time took = ", time.Now().Nanosecond()-start)
 }
+

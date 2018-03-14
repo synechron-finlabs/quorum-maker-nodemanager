@@ -14,3 +14,12 @@ type ContractParam struct {
 	Passwd  string
 	Parties []string
 }
+
+type DeployContractHandler struct {
+	Binary string
+}
+
+func (d DeployContractHandler) Encode() string {
+
+	return d.Binary
+}

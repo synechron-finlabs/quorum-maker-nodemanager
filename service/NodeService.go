@@ -4,11 +4,15 @@ import (
 	"io/ioutil"
 	"log"
 	"synechron.com/NodeManagerGo/client"
+	"synechron.com/NodeManagerGo/util"
 	"strings"
 	"fmt"
 	"strconv"
-	"synechron.com/NodeManagerGo/util"
 	"github.com/magiconair/properties"
+	"bytes"
+	"os/exec"
+	"regexp"
+	"os"
 )
 
 type ConnectionInfo struct {
@@ -105,6 +109,34 @@ type Logs struct {
 type JoinNetworkResponse struct {
 	EnodeID string `json:"enode-id,omitempty"`
 	Status 	string `json:"status,omitempty"`
+}
+
+type ContractJson struct {
+	Interface       string `json:"interface"`
+	Bytecode        string `json:"bytecode"`
+	ContractAddress string `json:"address"`
+}
+
+type CreateNetworkScriptArgs struct {
+    Nodename            string                                 `json:"nodename,omitempty"`
+    CurrentIP           string                                 `json:"currentIP,omitempty"`
+    RPCPort             string                                 `json:"rpcPort,omitempty"`
+    WhisperPort         string                                 `json:"whisperPort,omitempty"`
+    ConstellationPort   string                                 `json:"constellationPort,omitempty"`
+    RaftPort            string                                 `json:"raftPort,omitempty"`
+    NodeManagerPort     string                                 `json:"nodeManagerPort,omitempty"`
+}
+
+type JoinNetworkScriptArgs struct {
+    Nodename                string                                 `json:"nodename,omitempty"`
+    CurrentIP               string                                 `json:"currentIP,omitempty"`
+    RPCPort                 string                                 `json:"rpcPort,omitempty"`
+    WhisperPort             string                                 `json:"whisperPort,omitempty"`
+    ConstellationPort       string                                 `json:"constellationPort,omitempty"`
+    RaftPort                string                                 `json:"raftPort,omitempty"`
+    NodeManagerPort         string                                 `json:"nodeManagerPort,omitempty"`
+    MasterNodeManagerPort   string                                 `json:"masterNodeManagerPort,omitempty"`
+    MasterIP                string                                 `json:"masterIP,omitempty"`
 }
 
 type NodeServiceImpl struct {
@@ -328,4 +360,140 @@ func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) (Tran
 func (nsi *NodeServiceImpl) joinRequestResponse(enode string, status string) (success bool) {
 	peerMap[enode] = status
 	return true
+}
+
+
+func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, private bool, url string) []ContractJson {
+	var nodeUrl = url
+	ethClient := client.EthClient{nodeUrl}
+
+	if private == true && pubKeys[0] == "" {
+		pubKeys = []string{"F/vdZBFpbIzi7vyRCRba0jvvEpYHGeZdBbKYwIiy1SE=","IgD5KZV+kZBhxfIReFR24JDQZVtz3UBeA+llw8vLpT4=","E/vdZBFpbIzi7vyRCRba0jvvEpYHGeZdBbKYwIiy1SF="}
+	}
+
+	var solc string
+	if solc == "" {
+		solc = "solc"
+	}
+	fileNo := len(fileName)
+	contractJsonArr := make([]ContractJson, fileNo)
+	for i := 0; i < fileNo; i++ {
+		var binOut bytes.Buffer
+		var error bytes.Buffer
+		cmd := exec.Command(solc, "-o", ".", "--overwrite", "--bin", fileName[i])
+		cmd = exec.Command(solc, "--bin", fileName[i])
+		cmd.Stdout = &binOut
+		cmd.Stderr = &error
+		err := cmd.Run()
+		if err != nil {
+			fmt.Println(fmt.Sprint(err) + ": " + error.String())
+			contractJsonArr[i].Bytecode = "Compilation Failed: " + error.String()
+		}
+		var abiOut bytes.Buffer
+		cmd = exec.Command(solc, "-o", ".", "--overwrite", "--abi", fileName[i])
+		cmd = exec.Command(solc, "--abi", fileName[i])
+		cmd.Stdout = &abiOut
+		cmd.Stderr = &error
+		err = cmd.Run()
+		if err != nil {
+			fmt.Println(fmt.Sprint(err) + ": " + error.String())
+			contractJsonArr[i].Interface = "Compilation Failed: " + error.String()
+			contractJsonArr[i].ContractAddress = "0x"
+			continue
+		}
+
+		byteCode := binOut.String()
+
+		re := regexp.MustCompile("Binary?")
+		index := re.FindStringIndex(byteCode)
+		var start int
+		start = index[1] + 3
+		byteCode = byteCode[start:len(byteCode)]
+		byteCode = "0x" + byteCode
+
+		abiStr := abiOut.String()
+
+		re = regexp.MustCompile("ABI?")
+		index = re.FindStringIndex(abiStr)
+		start = index[1] + 2
+		abiStr = abiStr[start:len(abiStr)]
+
+		reg, err := regexp.Compile("[^a-zA-Z0-9]+")
+		byteCode = reg.ReplaceAllString(byteCode, "")
+
+		contractAddress := ethClient.DeployContracts(byteCode, pubKeys, private)
+
+		path := "./" + contractAddress
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			os.Mkdir(path, 0775)
+		}
+
+		contractJsonArr[i].Interface = abiStr
+		contractJsonArr[i].Bytecode = byteCode
+		contractJsonArr[i].ContractAddress = contractAddress
+
+		js := util.ComposeJSON(abiStr, byteCode, contractAddress)
+
+		filePath := path + "/" + strings.Replace(fileName[i], ".sol","",-1) + ".json"
+		jsByte := []byte(js)
+		err = ioutil.WriteFile(filePath, jsByte, 0775)
+		if err != nil {
+			panic(err)
+		}
+		abi := []byte(abiStr)
+		err = ioutil.WriteFile(path + "/ABI", abi, 0775)
+		if err != nil {
+			panic(err)
+		}
+		bin := []byte(byteCode)
+		err = ioutil.WriteFile(path + "/BIN", bin, 0775)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return contractJsonArr
+}
+
+
+func (nsi *NodeServiceImpl) createNetworkScriptCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string) (success string) {
+	cmd := exec.Command("./setup.sh","1", nodename)
+	cmd.Dir = "./Setup"
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var setupConf string
+	setupConf = "CURRENT_IP=" + currentIP + "\n" + "RPC_PORT=" + rpcPort + "\n" + "WHISPER_PORT=" + whisperPort + "\n" + "CONSTELLATION_PORT=" + constellationPort + "\n" + "RAFT_PORT=" + raftPort + "\n" + "NODEMANAGER_PORT=" + nodeManagerPort + "\n"
+	setupConfByte := []byte(setupConf)
+	err = ioutil.WriteFile("./Setup/" + nodename + "/setup.conf", setupConfByte, 0775)
+	if err != nil {
+		panic(err)
+	}
+
+	return "Successfully created new network"
+}
+
+
+func (nsi *NodeServiceImpl) joinRequestResponseCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string, masterNodeManagerPort string, masterIP string) (success string) {
+	cmd := exec.Command("./setup.sh","2", nodename, masterIP, masterNodeManagerPort, currentIP, rpcPort, whisperPort, constellationPort, raftPort, nodeManagerPort)
+	cmd.Dir = "./Setup"
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var setupConf string
+	setupConf = "CURRENT_IP=" + currentIP + "\n" + "RPC_PORT=" + rpcPort + "\n" + "WHISPER_PORT=" + whisperPort + "\n" + "CONSTELLATION_PORT=" + constellationPort + "\n" + "RAFT_PORT=" + raftPort + "\n" + "THIS_NODEMANAGER_PORT=" + nodeManagerPort + "\n" + "MASTER_IP=" + masterIP + "\n"+ "NODEMANAGER_PORT=" + masterNodeManagerPort + "\n"
+	setupConfByte := []byte(setupConf)
+	err = ioutil.WriteFile("./Setup/" + nodename + "/setup.conf", setupConfByte, 0775)
+	if err != nil {
+		panic(err)
+	}
+
+	return "Successfully joined the network"
 }
