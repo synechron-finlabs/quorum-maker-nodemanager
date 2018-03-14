@@ -88,7 +88,6 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 		fmt.Println("Response Timed Out")
 		w.WriteHeader(http.StatusAccepted)
 		w.Write([]byte("Pending user response"))
-
 	}
 
 }

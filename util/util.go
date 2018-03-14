@@ -97,3 +97,4 @@ func Between(value string, a string, b string) string {
 func TotalTime(start int) {
 	fmt.Println("Total time took = ", time.Now().Nanosecond()-start)
 }
+
