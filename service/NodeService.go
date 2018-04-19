@@ -22,6 +22,8 @@ type ConnectionInfo struct {
 }
 
 type NodeInfo struct {
+	NodeName	string					`json:"nodeName,omitempty"`
+	NodeCount	int					`json:"nodeCount,omitempty"`
 	ConnectionInfo  ConnectionInfo		`json:"connectionInfo,omitempty"`
 	RaftRole 	string 			`json:"raftRole,omitempty"`
 	RaftID 		int      		`json:"raftID,omitempty"`
@@ -78,6 +80,7 @@ type TransactionDetailsResponse struct {
 	V                string `json:"v,omitempty"`
 	R                string `json:"r,omitempty"`
 	S                string `json:"s,omitempty"`
+	TransactionType	 string	`json:"transactionType,omitempty"`
 }
 
 type TransactionReceiptResponse struct {
@@ -93,6 +96,7 @@ type TransactionReceiptResponse struct {
 	To               	string 			`json:"to"`
 	TransactionHash  	string 			`json:"transactionHash"`
 	TransactionIndex 	int64 			`json:"transactionIndex"`
+	TransactionType	 	string			`json:"transactionType,omitempty"`
 }
 
 type Logs struct {
@@ -139,6 +143,11 @@ type JoinNetworkScriptArgs struct {
     MasterIP                string                                 `json:"masterIP,omitempty"`
 }
 
+
+type SuccessResponse struct {
+	Status 	string `json:"status,omitempty"`
+}
+
 type NodeServiceImpl struct {
 	Url string
 }
@@ -172,6 +181,23 @@ func (nsi *NodeServiceImpl) joinNetwork(enode string, url string) (int) {
 func (nsi *NodeServiceImpl) getCurrentNode (url string) (NodeInfo) {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
+	otherPeersResponse := ethClient.AdminPeers()
+	count := len(otherPeersResponse)
+	count = count + 1
+	r, _ := regexp.Compile("[s][t][a][r][t][_][A-Za-z0-9]*[.][s][h]")
+	files, err := ioutil.ReadDir("/home/node")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var nodename string
+	for _, f := range files {
+		match, _ := regexp.MatchString("[s][t][a][r][t][_][A-Za-z0-9]*[.][s][h]", f.Name())
+		if(match) {
+			nodename = r.FindString(f.Name())
+		}
+	}
+	nodename = strings.TrimSuffix(nodename, ".sh")
+	nodename = strings.TrimPrefix(nodename, "start_")
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	ipAddr := util.MustGetString("CURRENT_IP", p)
 	raftId := util.MustGetString("RAFT_ID", p)
@@ -209,7 +235,7 @@ func (nsi *NodeServiceImpl) getCurrentNode (url string) (NodeInfo) {
 	genesis := string(b)
 	genesis = strings.Replace(genesis, "\n","",-1)
 	conn := ConnectionInfo{ipAddr,rpcPortInt,enode}
-	responseObj := NodeInfo{conn,raftRole,raftIdInt,blockNumberInt,pendingTxCount,genesis,thisAdminInfo}
+	responseObj := NodeInfo{nodename,count,conn,raftRole,raftIdInt,blockNumberInt,pendingTxCount,genesis,thisAdminInfo}
 	return responseObj
 }
 
@@ -225,6 +251,14 @@ func (nsi *NodeServiceImpl) getOtherPeer(peerId string, url string) (client.Admi
 		}
 	}
 	return client.AdminPeers{}
+}
+
+
+func (nsi *NodeServiceImpl) getOtherPeers(url string) ([]client.AdminPeers) {
+	var nodeUrl = url
+	ethClient := client.EthClient{nodeUrl}
+	otherPeersResponse := ethClient.AdminPeers()
+	return otherPeersResponse
 }
 
 
@@ -249,6 +283,11 @@ func (nsi *NodeServiceImpl) getPendingTransactions(url string) ([]TransactionDet
 		pendingTxResponse[i].V = pendingTxResponseClient[i].V
 		pendingTxResponse[i].R = pendingTxResponseClient[i].R
 		pendingTxResponse[i].S = pendingTxResponseClient[i].S
+		if util.HexStringtoInt64(pendingTxResponseClient[i].V) == 37 || util.HexStringtoInt64(pendingTxResponseClient[i].V) == 38 {
+			pendingTxResponse[i].TransactionType = "Private or Hash Only"
+		} else {
+			pendingTxResponse[i].TransactionType = "Public"
+		}
 	}
 	return pendingTxResponse
 }
@@ -281,6 +320,7 @@ func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) (BlockDetail
 	txnNo := len(blockResponseClient.Transactions)
 	txResponse := make([]TransactionDetailsResponse, txnNo)
 	for i := 0; i < txnNo; i++ {
+		txGetClient := ethClient.GetTransactionReceipt(blockResponseClient.Transactions[i].Hash)
 		txResponse[i].BlockNumber = util.HexStringtoInt64(blockResponseClient.Transactions[i].BlockNumber)
 		txResponse[i].Gas = util.HexStringtoInt64(blockResponseClient.Transactions[i].Gas)
 		txResponse[i].GasPrice = util.HexStringtoInt64(blockResponseClient.Transactions[i].GasPrice)
@@ -295,8 +335,120 @@ func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) (BlockDetail
 		txResponse[i].V = blockResponseClient.Transactions[i].V
 		txResponse[i].R = blockResponseClient.Transactions[i].R
 		txResponse[i].S = blockResponseClient.Transactions[i].S
+		if util.HexStringtoInt64(txResponse[i].V) == 37 || util.HexStringtoInt64(txResponse[i].V) == 38 {
+			if len(txGetClient.Logs) == 0 {
+				txResponse[i].TransactionType = "Hash only"
+			} else {
+				txResponse[i].TransactionType = "Private"
+			}
+		} else {
+			txResponse[i].TransactionType = "Public"
+		}
 	}
 	blockResponse.Transactions = txResponse
+	return blockResponse
+}
+
+
+func (nsi *NodeServiceImpl) getLatestBlockInfo(count string,reference string, url string) ([]BlockDetailsResponse) {
+	countVal := util.HexStringtoInt64(count)
+	var nodeUrl = url
+	ethClient := client.EthClient{nodeUrl}
+	var blockNumber int64
+	if reference == "" {
+		blockNumber = util.HexStringtoInt64(ethClient.BlockNumber())
+	} else {
+		var err error
+		blockNumber, err = strconv.ParseInt(reference, 10, 64)
+		if err != nil {
+			fmt.Println(err)
+		}
+		blockNumber = blockNumber - 1
+	}
+	start := blockNumber - countVal + 1
+	blockResponse := make([]BlockDetailsResponse, countVal)
+	for i :=start ; i <= blockNumber; i++ {
+		blockNoHex  := strconv.FormatInt(i, 16)
+		bNoHex := fmt.Sprint("0x", blockNoHex)
+		blockResponseClient := ethClient.GetBlockByNumber(bNoHex)
+		blockResponse[blockNumber - i].Number = util.HexStringtoInt64(blockResponseClient.Number)
+		blockResponse[blockNumber - i].Hash = blockResponseClient.Hash
+		txnNo := len(blockResponseClient.Transactions)
+		txResponse := make([]TransactionDetailsResponse, txnNo)
+		for i := 0; i < txnNo; i++ {
+			txGetClient := ethClient.GetTransactionReceipt(blockResponseClient.Transactions[i].Hash)
+			txResponse[i].BlockNumber = util.HexStringtoInt64(blockResponseClient.Transactions[i].BlockNumber)
+			txResponse[i].Gas = util.HexStringtoInt64(blockResponseClient.Transactions[i].Gas)
+			txResponse[i].GasPrice = util.HexStringtoInt64(blockResponseClient.Transactions[i].GasPrice)
+			txResponse[i].TransactionIndex = util.HexStringtoInt64(blockResponseClient.Transactions[i].TransactionIndex)
+			txResponse[i].Value = util.HexStringtoInt64(blockResponseClient.Transactions[i].Value)
+			txResponse[i].Nonce = util.HexStringtoInt64(blockResponseClient.Transactions[i].Nonce)
+			txResponse[i].BlockHash = blockResponseClient.Transactions[i].BlockHash
+			txResponse[i].From = blockResponseClient.Transactions[i].From
+			txResponse[i].Hash = blockResponseClient.Transactions[i].Hash
+			txResponse[i].Input = blockResponseClient.Transactions[i].Input
+			txResponse[i].To = blockResponseClient.Transactions[i].To
+			txResponse[i].V = blockResponseClient.Transactions[i].V
+			txResponse[i].R = blockResponseClient.Transactions[i].R
+			txResponse[i].S = blockResponseClient.Transactions[i].S
+			if util.HexStringtoInt64(txResponse[i].V) == 37 || util.HexStringtoInt64(txResponse[i].V) == 38 {
+				if len(txGetClient.Logs) == 0 {
+					txResponse[i].TransactionType = "Hash Only"
+				} else {
+					txResponse[i].TransactionType = "Private"
+				}
+			} else {
+				txResponse[i].TransactionType = "Public"
+			}
+		}
+		blockResponse[blockNumber - i].Transactions = txResponse
+	}
+	return blockResponse
+}
+
+
+func (nsi *NodeServiceImpl) getLatestTransactionInfo(count string, url string) ([]BlockDetailsResponse) {
+	countVal := util.HexStringtoInt64(count)
+	var nodeUrl = url
+	ethClient := client.EthClient{nodeUrl}
+	blockNumber := util.HexStringtoInt64(ethClient.BlockNumber())
+	start := blockNumber - countVal + 1
+	blockResponse := make([]BlockDetailsResponse, countVal)
+	for i :=start ; i <= blockNumber; i++ {
+		blockNoHex  := strconv.FormatInt(i, 16)
+		bNoHex := fmt.Sprint("0x", blockNoHex)
+		blockResponseClient := ethClient.GetBlockByNumber(bNoHex)
+		blockResponse[blockNumber - i].Number = util.HexStringtoInt64(blockResponseClient.Number)
+		txnNo := len(blockResponseClient.Transactions)
+		txResponse := make([]TransactionDetailsResponse, txnNo)
+		for i := 0; i < txnNo; i++ {
+			txGetClient := ethClient.GetTransactionReceipt(blockResponseClient.Transactions[i].Hash)
+			txResponse[i].BlockNumber = util.HexStringtoInt64(blockResponseClient.Transactions[i].BlockNumber)
+			txResponse[i].Gas = util.HexStringtoInt64(blockResponseClient.Transactions[i].Gas)
+			txResponse[i].GasPrice = util.HexStringtoInt64(blockResponseClient.Transactions[i].GasPrice)
+			txResponse[i].TransactionIndex = util.HexStringtoInt64(blockResponseClient.Transactions[i].TransactionIndex)
+			txResponse[i].Value = util.HexStringtoInt64(blockResponseClient.Transactions[i].Value)
+			txResponse[i].Nonce = util.HexStringtoInt64(blockResponseClient.Transactions[i].Nonce)
+			txResponse[i].BlockHash = blockResponseClient.Transactions[i].BlockHash
+			txResponse[i].From = blockResponseClient.Transactions[i].From
+			txResponse[i].Hash = blockResponseClient.Transactions[i].Hash
+			txResponse[i].Input = blockResponseClient.Transactions[i].Input
+			txResponse[i].To = blockResponseClient.Transactions[i].To
+			txResponse[i].V = blockResponseClient.Transactions[i].V
+			txResponse[i].R = blockResponseClient.Transactions[i].R
+			txResponse[i].S = blockResponseClient.Transactions[i].S
+			if util.HexStringtoInt64(txResponse[i].V) == 37 || util.HexStringtoInt64(txResponse[i].V) == 38 {
+				if len(txGetClient.Logs) == 0 {
+					txResponse[i].TransactionType = "Hash Only"
+				} else {
+					txResponse[i].TransactionType = "Private"
+				}
+			} else {
+				txResponse[i].TransactionType = "Public"
+			}
+		}
+		blockResponse[blockNumber - i].Transactions = txResponse
+	}
 	return blockResponse
 }
 
@@ -304,6 +456,7 @@ func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) (BlockDetail
 func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) (TransactionDetailsResponse) {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
+	txGetClient := ethClient.GetTransactionReceipt(txno)
 	var txResponse TransactionDetailsResponse
 	txResponseClient := ethClient.GetTransactionByHash(txno)
 	txResponse.BlockNumber = util.HexStringtoInt64(txResponseClient.BlockNumber)
@@ -320,6 +473,15 @@ func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) (Transac
 	txResponse.V = txResponseClient.V
 	txResponse.R = txResponseClient.R
 	txResponse.S = txResponseClient.S
+	if util.HexStringtoInt64(txResponseClient.V) == 37 || util.HexStringtoInt64(txResponseClient.V) == 38 {
+		if len(txGetClient.Logs) == 0 {
+			txResponse.TransactionType = "Hash Only"
+		} else {
+			txResponse.TransactionType = "Private"
+		}
+	} else {
+		txResponse.TransactionType = "Public"
+	}
 	return txResponse
 }
 
@@ -327,6 +489,7 @@ func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) (Transac
 func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) (TransactionReceiptResponse) {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
+	txGetClient := ethClient.GetTransactionByHash(txno)
 	var txResponse TransactionReceiptResponse
 	txResponseClient := ethClient.GetTransactionReceipt(txno)
 	txResponse.BlockNumber = util.HexStringtoInt64(txResponseClient.BlockNumber)
@@ -341,6 +504,15 @@ func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) (Tran
 	txResponse.To = txResponseClient.To
 	txResponse.TransactionHash = txResponseClient.TransactionHash
 	eventNo := len(txResponseClient.Logs)
+	if util.HexStringtoInt64(txGetClient.V) == 37 || util.HexStringtoInt64(txGetClient.V) == 38 {
+		if eventNo == 0 {
+			txResponse.TransactionType = "Hash Only"
+		} else {
+			txResponse.TransactionType = "Private"
+		}
+	} else {
+		txResponse.TransactionType = "Public"
+	}
 	txResponseBuffer := make([]Logs, eventNo)
 	for i := 0; i < eventNo; i++ {
 		txResponseBuffer[i].BlockNumber = util.HexStringtoInt64(txResponseClient.Logs[i].BlockNumber)
@@ -357,9 +529,11 @@ func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) (Tran
 }
 
 
-func (nsi *NodeServiceImpl) joinRequestResponse(enode string, status string) (success bool) {
+func (nsi *NodeServiceImpl) joinRequestResponse(enode string, status string) (SuccessResponse) {
+	var successResponse SuccessResponse
 	peerMap[enode] = status
-	return true
+	successResponse.Status = fmt.Sprintf("Successfully updated status of %s to %s",enode, status)
+	return successResponse
 }
 
 
@@ -379,25 +553,25 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 	contractJsonArr := make([]ContractJson, fileNo)
 	for i := 0; i < fileNo; i++ {
 		var binOut bytes.Buffer
-		var error bytes.Buffer
+		var errorstring bytes.Buffer
 		cmd := exec.Command(solc, "-o", ".", "--overwrite", "--bin", fileName[i])
 		cmd = exec.Command(solc, "--bin", fileName[i])
 		cmd.Stdout = &binOut
-		cmd.Stderr = &error
+		cmd.Stderr = &errorstring
 		err := cmd.Run()
 		if err != nil {
-			fmt.Println(fmt.Sprint(err) + ": " + error.String())
-			contractJsonArr[i].Bytecode = "Compilation Failed: " + error.String()
+			fmt.Println(fmt.Sprint(err) + ": " + errorstring.String())
+			contractJsonArr[i].Bytecode = "Compilation Failed: " + errorstring.String()
 		}
 		var abiOut bytes.Buffer
 		cmd = exec.Command(solc, "-o", ".", "--overwrite", "--abi", fileName[i])
 		cmd = exec.Command(solc, "--abi", fileName[i])
 		cmd.Stdout = &abiOut
-		cmd.Stderr = &error
+		cmd.Stderr = &errorstring
 		err = cmd.Run()
 		if err != nil {
-			fmt.Println(fmt.Sprint(err) + ": " + error.String())
-			contractJsonArr[i].Interface = "Compilation Failed: " + error.String()
+			fmt.Println(fmt.Sprint(err) + ": " + errorstring.String())
+			contractJsonArr[i].Interface = "Compilation Failed: " + errorstring.String()
 			contractJsonArr[i].ContractAddress = "0x"
 			continue
 		}
@@ -455,45 +629,93 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 }
 
 
-func (nsi *NodeServiceImpl) createNetworkScriptCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string) (success string) {
-	cmd := exec.Command("./setup.sh","1", nodename)
-	cmd.Dir = "./Setup"
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var setupConf string
-	setupConf = "CURRENT_IP=" + currentIP + "\n" + "RPC_PORT=" + rpcPort + "\n" + "WHISPER_PORT=" + whisperPort + "\n" + "CONSTELLATION_PORT=" + constellationPort + "\n" + "RAFT_PORT=" + raftPort + "\n" + "NODEMANAGER_PORT=" + nodeManagerPort + "\n"
-	setupConfByte := []byte(setupConf)
-	err = ioutil.WriteFile("./Setup/" + nodename + "/setup.conf", setupConfByte, 0775)
-	if err != nil {
-		panic(err)
-	}
-
-	return "Successfully created new network"
+func (nsi *NodeServiceImpl) createNetworkScriptCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string) (SuccessResponse) {
+	var successResponse SuccessResponse
+	//cmd := exec.Command("./setup.sh","1", nodename)
+	//cmd.Dir = "./Setup"
+	//var out bytes.Buffer
+	//cmd.Stdout = &out
+	//err := cmd.Run()
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//
+	//var setupConf string
+	//setupConf = "CURRENT_IP=" + currentIP + "\n" + "RPC_PORT=" + rpcPort + "\n" + "WHISPER_PORT=" + whisperPort + "\n" + "CONSTELLATION_PORT=" + constellationPort + "\n" + "RAFT_PORT=" + raftPort + "\n" + "NODEMANAGER_PORT=" + nodeManagerPort + "\n"
+	//setupConfByte := []byte(setupConf)
+	//err = ioutil.WriteFile("./Setup/" + nodename + "/setup.conf", setupConfByte, 0775)
+	//if err != nil {
+	//	panic(err)
+	//}
+	successResponse.Status = "success"
+	return successResponse
 }
 
 
-func (nsi *NodeServiceImpl) joinRequestResponseCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string, masterNodeManagerPort string, masterIP string) (success string) {
-	cmd := exec.Command("./setup.sh","2", nodename, masterIP, masterNodeManagerPort, currentIP, rpcPort, whisperPort, constellationPort, raftPort, nodeManagerPort)
-	cmd.Dir = "./Setup"
+func (nsi *NodeServiceImpl) joinRequestResponseCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string, masterNodeManagerPort string, masterIP string) (SuccessResponse) {
+	var successResponse SuccessResponse
+	//cmd := exec.Command("./setup.sh","2", nodename, masterIP, masterNodeManagerPort, currentIP, rpcPort, whisperPort, constellationPort, raftPort, nodeManagerPort)
+	//cmd.Dir = "./Setup"
+	//var out bytes.Buffer
+	//cmd.Stdout = &out
+	//err := cmd.Run()
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//
+	//var setupConf string
+	//setupConf = "CURRENT_IP=" + currentIP + "\n" + "RPC_PORT=" + rpcPort + "\n" + "WHISPER_PORT=" + whisperPort + "\n" + "CONSTELLATION_PORT=" + constellationPort + "\n" + "RAFT_PORT=" + raftPort + "\n" + "THIS_NODEMANAGER_PORT=" + nodeManagerPort + "\n" + "MASTER_IP=" + masterIP + "\n"+ "NODEMANAGER_PORT=" + masterNodeManagerPort + "\n"
+	//setupConfByte := []byte(setupConf)
+	//err = ioutil.WriteFile("./Setup/" + nodename + "/setup.conf", setupConfByte, 0775)
+	//if err != nil {
+	//	panic(err)
+	//}
+	successResponse.Status = "success"
+	return successResponse
+}
+
+
+func (nsi *NodeServiceImpl) resetCurrentNode() (SuccessResponse) {
+	var successResponse SuccessResponse
+	cmd := exec.Command("./reset_chain.sh")
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
 		log.Fatal(err)
+		successResponse.Status = "failure"
+		return successResponse
 	}
+	successResponse.Status = "success"
+	return successResponse
+}
 
-	var setupConf string
-	setupConf = "CURRENT_IP=" + currentIP + "\n" + "RPC_PORT=" + rpcPort + "\n" + "WHISPER_PORT=" + whisperPort + "\n" + "CONSTELLATION_PORT=" + constellationPort + "\n" + "RAFT_PORT=" + raftPort + "\n" + "THIS_NODEMANAGER_PORT=" + nodeManagerPort + "\n" + "MASTER_IP=" + masterIP + "\n"+ "NODEMANAGER_PORT=" + masterNodeManagerPort + "\n"
-	setupConfByte := []byte(setupConf)
-	err = ioutil.WriteFile("./Setup/" + nodename + "/setup.conf", setupConfByte, 0775)
+
+func (nsi *NodeServiceImpl) restartCurrentNode() (SuccessResponse) {
+	var successResponse SuccessResponse
+	r, _ := regexp.Compile("[s][t][a][r][t][_][A-Za-z0-9]*[.][s][h]")
+	files, err := ioutil.ReadDir("/home/node")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-
-	return "Successfully joined the network"
+	var filename string
+	for _, f := range files {
+		match, _ := regexp.MatchString("[s][t][a][r][t][_][A-Za-z0-9]*[.][s][h]", f.Name())
+		if(match) {
+			filename = r.FindString(f.Name())
+		}
+	}
+	filepath := fmt.Sprint("./", filename)
+	cmd := exec.Command(filepath)
+	cmd.Dir = "/home/node"
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err = cmd.Start()
+	if err != nil {
+		log.Fatal(err)
+		successResponse.Status = "failure"
+		return successResponse
+	}
+	successResponse.Status = "success"
+	return successResponse
 }

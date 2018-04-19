@@ -15,6 +15,10 @@ import (
 	"bytes"
 )
 
+type PendingRequests struct {
+	PendingJoinRequests 	[]string `json:"pendingJoinRequests,omitempty"`
+}
+
 var cCLI = make(chan string, 1)
 var cUI = make(chan string, 1)
 
@@ -99,9 +103,22 @@ func (nsi *NodeServiceImpl) GetCurrentNodeHandler(w http.ResponseWriter, r *http
 
 func (nsi *NodeServiceImpl) GetOtherPeerHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	response := nsi.getOtherPeer(params["peer_id"],nsi.Url)
+	if params["peer_id"] == "all" {
+		response := nsi.getOtherPeers(nsi.Url)
+		json.NewEncoder(w).Encode(response)
+	} else {
+		response := nsi.getOtherPeer(params["peer_id"],nsi.Url)
+		json.NewEncoder(w).Encode(response)
+	}
+}
+
+func (nsi *NodeServiceImpl) GetLatestBlockInfoHandler(w http.ResponseWriter, r *http.Request) {
+	count := r.FormValue("number")
+	reference := r.FormValue("reference")
+	response := nsi.getLatestBlockInfo(count,reference,nsi.Url)
 	json.NewEncoder(w).Encode(response)
 }
+
 
 func (nsi *NodeServiceImpl) GetBlockInfoHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
@@ -112,6 +129,7 @@ func (nsi *NodeServiceImpl) GetBlockInfoHandler(w http.ResponseWriter, r *http.R
 	response := nsi.getBlockInfo(block,nsi.Url)
 	json.NewEncoder(w).Encode(response)
 }
+
 
 func (nsi *NodeServiceImpl) GetTransactionInfoHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
@@ -124,6 +142,14 @@ func (nsi *NodeServiceImpl) GetTransactionInfoHandler(w http.ResponseWriter, r *
 	}
 }
 
+
+func (nsi *NodeServiceImpl) GetLatestTransactionInfoHandler(w http.ResponseWriter, r *http.Request) {
+	count := r.FormValue("number")
+	response := nsi.getLatestTransactionInfo(count,nsi.Url)
+	json.NewEncoder(w).Encode(response)
+}
+
+
 func (nsi *NodeServiceImpl) GetTransactionReceiptHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	response := nsi.getTransactionReceipt(params["txn_hash"],nsi.Url)
@@ -131,28 +157,22 @@ func (nsi *NodeServiceImpl) GetTransactionReceiptHandler(w http.ResponseWriter, 
 }
 
 func (nsi *NodeServiceImpl) PendingJoinRequestsHandler(w http.ResponseWriter, r *http.Request) {
-	pendingEnodes := []string{}
+	var pendingRequests PendingRequests
 	for key, _ := range peerMap {
 		if peerMap[key] == "PENDING" {
-			pendingEnodes = append(pendingEnodes, key)
+			pendingRequests.PendingJoinRequests = append(pendingRequests.PendingJoinRequests, key)
 		}
 	}
-	json.NewEncoder(w).Encode(pendingEnodes)
+	json.NewEncoder(w).Encode(pendingRequests)
 }
 
 func (nsi *NodeServiceImpl) JoinRequestResponseHandler(w http.ResponseWriter, r *http.Request) {
 	var request JoinNetworkResponse
-	var reply string
 	_ = json.NewDecoder(r.Body).Decode(&request)
 	enode := request.EnodeID
 	status := request.Status
 	response := nsi.joinRequestResponse(enode,status)
-	if response == true {
-		reply = fmt.Sprintf("Successfully updated status of %s to %s",enode, status)
-	} else {
-		reply = fmt.Sprintf("Failed to update status of %s to %s ",enode, status)
-	}
-	json.NewEncoder(w).Encode(reply)
+	json.NewEncoder(w).Encode(response)
 	cUI <- "UI response"
 }
 
@@ -211,6 +231,7 @@ func (nsi *NodeServiceImpl) DeployContractHandler(w http.ResponseWriter, r *http
 func (nsi *NodeServiceImpl) CreateNetworkScriptCallHandler(w http.ResponseWriter, r *http.Request) {
 	var request CreateNetworkScriptArgs
 	_ = json.NewDecoder(r.Body).Decode(&request)
+	fmt.Println(request)
 	response := nsi.createNetworkScriptCall(request.Nodename,request.CurrentIP,request.RPCPort,request.WhisperPort,request.ConstellationPort,request.RaftPort,request.NodeManagerPort)
 	json.NewEncoder(w).Encode(response)
 }
@@ -219,6 +240,19 @@ func (nsi *NodeServiceImpl) CreateNetworkScriptCallHandler(w http.ResponseWriter
 func (nsi *NodeServiceImpl) JoinNetworkScriptCallHandler(w http.ResponseWriter, r *http.Request) {
 	var request JoinNetworkScriptArgs
 	_ = json.NewDecoder(r.Body).Decode(&request)
+	fmt.Println(request)
 	response := nsi.joinRequestResponseCall(request.Nodename,request.CurrentIP,request.RPCPort,request.WhisperPort,request.ConstellationPort,request.RaftPort,request.NodeManagerPort,request.MasterNodeManagerPort,request.MasterIP)
+	json.NewEncoder(w).Encode(response)
+}
+
+
+func (nsi *NodeServiceImpl) ResetHandler(w http.ResponseWriter, r *http.Request) {
+	response := nsi.resetCurrentNode()
+	json.NewEncoder(w).Encode(response)
+}
+
+
+func (nsi *NodeServiceImpl) RestartHandler(w http.ResponseWriter, r *http.Request) {
+	response := nsi.restartCurrentNode()
 	json.NewEncoder(w).Encode(response)
 }
