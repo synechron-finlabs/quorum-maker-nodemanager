@@ -631,22 +631,22 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 
 func (nsi *NodeServiceImpl) createNetworkScriptCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string) (SuccessResponse) {
 	var successResponse SuccessResponse
-	//cmd := exec.Command("./setup.sh","1", nodename)
-	//cmd.Dir = "./Setup"
-	//var out bytes.Buffer
-	//cmd.Stdout = &out
-	//err := cmd.Run()
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//
-	//var setupConf string
-	//setupConf = "CURRENT_IP=" + currentIP + "\n" + "RPC_PORT=" + rpcPort + "\n" + "WHISPER_PORT=" + whisperPort + "\n" + "CONSTELLATION_PORT=" + constellationPort + "\n" + "RAFT_PORT=" + raftPort + "\n" + "NODEMANAGER_PORT=" + nodeManagerPort + "\n"
-	//setupConfByte := []byte(setupConf)
-	//err = ioutil.WriteFile("./Setup/" + nodename + "/setup.conf", setupConfByte, 0775)
-	//if err != nil {
-	//	panic(err)
-	//}
+	cmd := exec.Command("./setup.sh","1", nodename)
+	cmd.Dir = "./Setup"
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	var setupConf string
+	setupConf = "CURRENT_IP=" + currentIP + "\n" + "RPC_PORT=" + rpcPort + "\n" + "WHISPER_PORT=" + whisperPort + "\n" + "CONSTELLATION_PORT=" + constellationPort + "\n" + "RAFT_PORT=" + raftPort + "\n" + "NODEMANAGER_PORT=" + nodeManagerPort + "\n"
+	setupConfByte := []byte(setupConf)
+	err = ioutil.WriteFile("./Setup/" + nodename + "/setup.conf", setupConfByte, 0775)
+	if err != nil {
+		panic(err)
+	}
 	successResponse.Status = "success"
 	return successResponse
 }
@@ -654,22 +654,22 @@ func (nsi *NodeServiceImpl) createNetworkScriptCall(nodename string, currentIP s
 
 func (nsi *NodeServiceImpl) joinRequestResponseCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string, masterNodeManagerPort string, masterIP string) (SuccessResponse) {
 	var successResponse SuccessResponse
-	//cmd := exec.Command("./setup.sh","2", nodename, masterIP, masterNodeManagerPort, currentIP, rpcPort, whisperPort, constellationPort, raftPort, nodeManagerPort)
-	//cmd.Dir = "./Setup"
-	//var out bytes.Buffer
-	//cmd.Stdout = &out
-	//err := cmd.Run()
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//
-	//var setupConf string
-	//setupConf = "CURRENT_IP=" + currentIP + "\n" + "RPC_PORT=" + rpcPort + "\n" + "WHISPER_PORT=" + whisperPort + "\n" + "CONSTELLATION_PORT=" + constellationPort + "\n" + "RAFT_PORT=" + raftPort + "\n" + "THIS_NODEMANAGER_PORT=" + nodeManagerPort + "\n" + "MASTER_IP=" + masterIP + "\n"+ "NODEMANAGER_PORT=" + masterNodeManagerPort + "\n"
-	//setupConfByte := []byte(setupConf)
-	//err = ioutil.WriteFile("./Setup/" + nodename + "/setup.conf", setupConfByte, 0775)
-	//if err != nil {
-	//	panic(err)
-	//}
+	cmd := exec.Command("./setup.sh","2", nodename, masterIP, masterNodeManagerPort, currentIP, rpcPort, whisperPort, constellationPort, raftPort, nodeManagerPort)
+	cmd.Dir = "./Setup"
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	var setupConf string
+	setupConf = "CURRENT_IP=" + currentIP + "\n" + "RPC_PORT=" + rpcPort + "\n" + "WHISPER_PORT=" + whisperPort + "\n" + "CONSTELLATION_PORT=" + constellationPort + "\n" + "RAFT_PORT=" + raftPort + "\n" + "THIS_NODEMANAGER_PORT=" + nodeManagerPort + "\n" + "MASTER_IP=" + masterIP + "\n"+ "NODEMANAGER_PORT=" + masterNodeManagerPort + "\n"
+	setupConfByte := []byte(setupConf)
+	err = ioutil.WriteFile("./Setup/" + nodename + "/setup.conf", setupConfByte, 0775)
+	if err != nil {
+		panic(err)
+	}
 	successResponse.Status = "success"
 	return successResponse
 }
