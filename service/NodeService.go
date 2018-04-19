@@ -22,8 +22,8 @@ type ConnectionInfo struct {
 }
 
 type NodeInfo struct {
-	NodeName	string				`json:"nodeName,omitempty"`
-	NodeCount	int				`json:"nodeCount,omitempty"`
+	NodeName	string		`json:"nodeName,omitempty"`
+	NodeCount	int			`json:"nodeCount,omitempty"`
 	ConnectionInfo  ConnectionInfo		`json:"connectionInfo,omitempty"`
 	RaftRole 	string 			`json:"raftRole,omitempty"`
 	RaftID 		int      		`json:"raftID,omitempty"`
