@@ -63,7 +63,8 @@ func StringToInt(s string) int {
 
 	n, err := strconv.ParseInt(s, 16, 32)
 	if err != nil {
-		panic(err)
+		//panic(err)
+		return 0
 	}
 
 	return int(n)

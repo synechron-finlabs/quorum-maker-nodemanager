@@ -115,7 +115,8 @@ type Payload struct {
 	From       string   `json:"from"`
 	To         string   `json:"to"`
 	Data       string   `json:"data"`
-	PrivateFor []string `json:"privateFor"`
+	Gaslimit   string   `json:"gas"`
+	PrivateFor []string `json:"privateFor,omitempty"`
 }
 
 type CallPayload struct {
@@ -268,7 +269,7 @@ func (ec *EthClient) SendTransaction(param contracthandler.ContractParam, rh con
 	rpcClient := jsonrpc.NewClient(ec.Url)
 
 	response, err := rpcClient.Call("personal_unlockAccount", param.From, param.Passwd, nil)
-	if err != nil {
+	if err != nil || response.Error != nil {
 
 		fmt.Println(err)
 	}
@@ -276,15 +277,16 @@ func (ec *EthClient) SendTransaction(param contracthandler.ContractParam, rh con
 	p := Payload{
 		param.From,
 		param.To,
-		rh.Encode(),
-		param.Parties}
+		rh.Encode(), "0x1312d00", param.Parties}
 
-	response, err = rpcClient.Call("eth_sendTransaction", p)
-	if err != nil {
+	response, err = rpcClient.Call("eth_sendTransaction", []interface{}{p})
+
+	if err != nil || response.Error != nil {
 
 		fmt.Println(err)
 	}
 
+	fmt.Printf("%s", response.Result)
 	return fmt.Sprintf("%s", response.Result)
 
 }

@@ -5,14 +5,16 @@ import (
 	"synechron.com/NodeManagerGo/contracthandler"
 )
 
-const registerNodeFunSig = "0x39817edb"
-const updateNodeFunSig = "0x5eec2813"
+const registerNodeFunSig = "0xe623db46"
+const updateNodeFunSig = "0x964e2635"
 const getNodeDetailsFunSig = "0x5afbba47"
 
 type NodeDetails struct {
-	Enode string `json:"enodeid,omitempty"`
 	Name  string `json:"name,omitempty"`
 	Role  string `json:"role,omitempty"`
+	PublicKey  string `json:"publicKey,omitempty"`
+	Enode string `json:"enodeid,omitempty"`
+
 }
 type NetworkMapContractClient struct {
 	client.EthClient
@@ -21,9 +23,9 @@ type NetworkMapContractClient struct {
 
 type GetNodeDetailsParam int
 
-func (nmc *NetworkMapContractClient) RegisterNode(enode string, role string, name string) string {
+func (nmc *NetworkMapContractClient) RegisterNode(name string, role string, publicKey string, enode string) string {
 
-	nd := NodeDetails{enode, role, name}
+	nd := NodeDetails{name, role,  publicKey, enode}
 	return nmc.SendTransaction(nmc.contractParam, RegisterUpdateNodeFuncHandler{nd, registerNodeFunSig})
 
 }
@@ -35,9 +37,29 @@ func (nmc *NetworkMapContractClient) GetNodeDetails(i int) (NodeDetails) {
 
 	return encoderDecoder.result
 }
-func (nmc *NetworkMapContractClient) UpdateNode(enode string, role string, name string) string {
 
-	nd := NodeDetails{enode, role, name}
+func (nmc *NetworkMapContractClient) GetNodeDetailsList() ([]NodeDetails) {
+
+	var list []NodeDetails
+
+	for i := 0; true ; i++ {
+		encoderDecoder := GetNodeDetailsFuncHandler{index: i, funcSig: getNodeDetailsFunSig}
+		nmc.EthCall(nmc.contractParam, encoderDecoder, &encoderDecoder)
+
+		if encoderDecoder.result.Enode != "" && len(encoderDecoder.result.Enode) > 0 {
+			list = append(list, encoderDecoder.result)
+		}else {
+			return list
+		}
+	}
+
+
+	return list
+}
+
+func (nmc *NetworkMapContractClient) UpdateNode(name string, role string, publicKey string, enode string) string {
+
+	nd := NodeDetails{name, role,  publicKey, enode}
 	return nmc.SendTransaction(nmc.contractParam, RegisterUpdateNodeFuncHandler{nd, updateNodeFunSig})
 }
 
@@ -49,11 +71,13 @@ type RegisterUpdateNodeFuncHandler struct {
 
 func (h RegisterUpdateNodeFuncHandler) Encode() string {
 
-	sig := "string,string,string"
+	sig := "string,string,string,string"
 
-	param := []interface{}{h.nd.Enode, h.nd.Name, h.nd.Role}
+	param := []interface{}{h.nd.Name, h.nd.Role, h.nd.PublicKey, h.nd.Enode, }
 
-	return h.funcSig + contracthandler.FunctionProcessor{sig, param, ""}.GetData()
+	data := h.funcSig + contracthandler.FunctionProcessor{sig, param, ""}.GetData()
+
+	return data
 }
 
 type GetNodeDetailsFuncHandler struct {
@@ -63,12 +87,18 @@ type GetNodeDetailsFuncHandler struct {
 }
 
 func (g *GetNodeDetailsFuncHandler) Decode(r string) {
+	var nd NodeDetails
 
-	sig := "string,string,string"
+	if r == "" || len(r) < 1 {
+		g.result = nd
+		return
+	}
+
+	sig := "string,string,string,string,uint256"
 
 	resultArray := contracthandler.FunctionProcessor{sig, nil, r}.GetResults()
 
-	g.result = NodeDetails{resultArray[0].(string), resultArray[1].(string), resultArray[2].(string)}
+	g.result = NodeDetails{resultArray[0].(string),resultArray[1].(string), resultArray[2].(string), resultArray[3].(string)}
 }
 
 func (g GetNodeDetailsFuncHandler) Encode() string {
