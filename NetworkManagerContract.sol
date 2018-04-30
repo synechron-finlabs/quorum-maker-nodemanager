@@ -1,0 +1,64 @@
+pragma solidity ^0.4.8;
+contract NetworkManagerContract {
+
+    uint nodeCounter;
+  
+    struct NodeDetails {
+  
+        string nodeName;
+        string role; 
+        string publickey;
+        string enode;
+    }
+
+    mapping (string => NodeDetails)nodes;
+    string[] enodeList;
+    
+    event print(string nodeName, string role,string publickey, string enode);
+
+    function registerNode(string n, string r, string p,string e) public {
+
+        nodes[e].publickey = p;
+        nodes[e].nodeName = n;
+        nodes[e].role = r;
+        enodeList.push(e);
+        print(n,r,p,e);
+    
+    }
+   
+    function getNodeDetails(uint _index) constant public returns (string n, string r,string p,string e,uint i) {
+        NodeDetails memory nodeInfo = nodes[enodeList[_index]];
+        return (
+                nodeInfo.nodeName,
+                nodeInfo.role,
+                nodeInfo.publickey,
+                enodeList[_index],
+                _index
+        );
+    }
+
+    function getNodesCounter() public constant  returns (uint) {
+        return enodeList.length;
+    }
+
+    function updateNode(string n, string r, string p,string e) public {
+
+        nodes[e].publickey = p;
+        nodes[e].nodeName = n;
+        nodes[e].role = r;
+        print(n,r,p,e);
+    }
+
+    function getNodeList(uint i)  public  constant   returns (string n, string r,string p, string e) {
+        
+        NodeDetails memory nodeInfo = nodes[enodeList[i]];
+        return (
+            nodeInfo.nodeName,
+            nodeInfo.role,
+            nodeInfo.publickey,
+            enodeList[i]
+        );
+        
+    }
+
+}
