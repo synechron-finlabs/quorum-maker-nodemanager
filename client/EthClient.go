@@ -5,84 +5,85 @@ import (
 	"github.com/ybbus/jsonrpc"
 	"log"
 	"synechron.com/NodeManagerGo/contracthandler"
+	"time"
 )
 
 type AdminInfo struct {
-	ID         string    `json:"id,omitempty"`
-	Name       string    `json:"name,omitempty"`
-	Enode      string    `json:"enode,omitempty"`
-	IP         string    `json:"ip,omitempty"`
-	Ports      Ports     `json:"ports,omitempty"`
-	ListenAddr string    `json:"listenAddr,omitempty"`
-	Protocols  Protocols `json:"protocols,omitempty"`
+	ID         string    `json:"id"`
+	Name       string    `json:"name"`
+	Enode      string    `json:"enode"`
+	IP         string    `json:"ip"`
+	Ports      Ports     `json:"ports"`
+	ListenAddr string    `json:"listenAddr"`
+	Protocols  Protocols `json:"protocols"`
 }
 
 type Ports struct {
 	Discovery int `json:"discovery"`
-	Listener  int `json:"listener,omitempty"`
+	Listener  int `json:"listener"`
 }
 
 type AdminPeers struct {
-	ID        string    `json:"id,omitempty"`
-	Name      string    `json:"name,omitempty"`
-	Caps      []string  `json:"caps,omitempty"`
-	Network   Network   `json:"network,omitempty"`
-	Protocols Protocols `json:"protocols,omitempty"`
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Caps      []string  `json:"caps"`
+	Network   Network   `json:"network"`
+	Protocols Protocols `json:"protocols"`
 }
 
 type Protocols struct {
-	Eth Eth `json:"eth,omitempty"`
+	Eth Eth `json:"eth"`
 }
 
 type Eth struct {
-	Network    int    `json:"network,omitempty"`
-	Version    int    `json:"version,omitempty"`
-	Difficulty int    `json:"difficulty,omitempty"`
-	Genesis    string `json:"genesis,omitempty"`
-	Head       string `json:"head,omitempty"`
+	Network    int    `json:"network"`
+	Version    int    `json:"version"`
+	Difficulty int    `json:"difficulty"`
+	Genesis    string `json:"genesis"`
+	Head       string `json:"head"`
 }
 
 type Network struct {
-	LocalAddress  string `json:"localAddress,omitempty"`
-	RemoteAddress string `json:"remoteAddress,omitempty"`
+	LocalAddress  string `json:"localAddress"`
+	RemoteAddress string `json:"remoteAddress"`
 }
 
 type BlockDetailsResponse struct {
-	Number           string                       `json:"number,omitempty"`
-	Hash             string                       `json:"hash,omitempty"`
-	ParentHash       string                       `json:"parentHash,omitempty"`
-	Nonce            string                       `json:"nonce,omitempty"`
-	Sha3Uncles       string                       `json:"sha3Uncles,omitempty"`
-	LogsBloom        string                       `json:"logsBloom,omitempty"`
-	TransactionsRoot string                       `json:"transactionsRoot,omitempty"`
-	StateRoot        string                       `json:"stateRoot,omitempty"`
-	Miner            string                       `json:"miner,omitempty"`
-	Difficulty       string                       `json:"difficulty,omitempty"`
-	TotalDifficulty  string                       `json:"totalDifficulty,omitempty"`
-	ExtraData        string                       `json:"extraData,omitempty"`
-	Size             string                       `json:"size,omitempty"`
-	GasLimit         string                       `json:"gasLimit,omitempty"`
-	GasUsed          string                       `json:"gasUsed,omitempty"`
-	Timestamp        string                       `json:"timestamp,omitempty"`
-	Transactions     []TransactionDetailsResponse `json:"transactions,omitempty"`
-	Uncles           []string                     `json:"uncles,omitempty"`
+	Number           string                       `json:"number"`
+	Hash             string                       `json:"hash"`
+	ParentHash       string                       `json:"parentHash"`
+	Nonce            string                       `json:"nonce"`
+	Sha3Uncles       string                       `json:"sha3Uncles"`
+	LogsBloom        string                       `json:"logsBloom"`
+	TransactionsRoot string                       `json:"transactionsRoot"`
+	StateRoot        string                       `json:"stateRoot"`
+	Miner            string                       `json:"miner"`
+	Difficulty       string                       `json:"difficulty"`
+	TotalDifficulty  string                       `json:"totalDifficulty"`
+	ExtraData        string                       `json:"extraData"`
+	Size             string                       `json:"size"`
+	GasLimit         string                       `json:"gasLimit"`
+	GasUsed          string                       `json:"gasUsed"`
+	Timestamp        string                       `json:"timestamp"`
+	Transactions     []TransactionDetailsResponse `json:"transactions"`
+	Uncles           []string                     `json:"uncles"`
 }
 
 type TransactionDetailsResponse struct {
-	BlockHash        string `json:"blockHash,omitempty"`
+	BlockHash        string `json:"blockHash"`
 	BlockNumber      string `json:"blockNumber"`
-	From             string `json:"from,omitempty"`
-	Gas              string `json:"gas,omitempty"`
+	From             string `json:"from"`
+	Gas              string `json:"gas"`
 	GasPrice         string `json:"gasPrice"`
-	Hash             string `json:"hash,omitempty"`
-	Input            string `json:"input,omitempty"`
+	Hash             string `json:"hash"`
+	Input            string `json:"input"`
 	Nonce            string `json:"nonce"`
-	To               string `json:"to,omitempty"`
+	To               string `json:"to"`
 	TransactionIndex string `json:"transactionIndex"`
-	Value            string `json:"value,omitempty"`
-	V                string `json:"v,omitempty"`
-	R                string `json:"r,omitempty"`
-	S                string `json:"s,omitempty"`
+	Value            string `json:"value"`
+	V                string `json:"v"`
+	R                string `json:"r"`
+	S                string `json:"s"`
 }
 
 type TransactionReceiptResponse struct {
@@ -113,7 +114,7 @@ type Logs struct {
 
 type Payload struct {
 	From       string   `json:"from"`
-	To         string   `json:"to"`
+	To         string   `json:"to,omitempty"`
 	Data       string   `json:"data"`
 	Gaslimit   string   `json:"gas"`
 	PrivateFor []string `json:"privateFor,omitempty"`
@@ -202,8 +203,10 @@ func (ec *EthClient) BlockNumber() (string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	var blockNumber string;
-	err = response.GetObject(&blockNumber)
+	var blockNumber string
+	if err == nil {
+		err = response.GetObject(&blockNumber)
+	}
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -216,7 +219,7 @@ func (ec *EthClient) Coinbase() (string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	var coinbase string;
+	var coinbase string
 	err = response.GetObject(&coinbase)
 	if err != nil {
 		fmt.Println(err)
@@ -230,7 +233,7 @@ func (ec *EthClient) RaftRole() (string) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	var raftRole string;
+	var raftRole string
 	err = response.GetObject(&raftRole)
 	if err != nil {
 		fmt.Println(err)
@@ -317,8 +320,24 @@ func (ec *EthClient) DeployContracts(byteCode string, pubKeys []string, private 
 	}
 
 	cont := contracthandler.DeployContractHandler{byteCode}
-	txHash := ec.SendTransaction(params,cont)
+	txHash := ec.SendTransaction(params, cont)
+
+	time.Sleep(2 * time.Second)
 
 	contractAdd := ec.GetTransactionReceipt(txHash).ContractAddress
 	return contractAdd
+}
+
+func (ec *EthClient) NetListening() (bool) {
+	rpcClient := jsonrpc.NewClient(ec.Url)
+	response, err := rpcClient.Call("net_listening")
+	if err != nil {
+		fmt.Println(err)
+	}
+	var listening bool
+	err = response.GetObject(&listening)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return listening
 }
