@@ -72,6 +72,8 @@ func main() {
 	router.HandleFunc("/logs", nodeService.LogsHandler).Methods("GET", "OPTIONS")
 	router.HandleFunc("/txnsearch/{txn_hash}", nodeService.TransactionSearchHandler).Methods("GET", "OPTIONS")
 	router.HandleFunc("/mailserver", nodeService.MailServerConfigHandler).Methods("POST", "OPTIONS")
+	router.HandleFunc("/pubkeys", nodeService.PublicKeysHandler).Methods("GET", "OPTIONS")
+
 	log.Fatal(http.ListenAndServe(listenPort, router))
 }
 

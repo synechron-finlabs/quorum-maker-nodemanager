@@ -179,10 +179,10 @@ type LatestBlockResponse struct {
 
 type NodeList struct {
 	NodeName  string `json:"nodeName"`
-	Role      string `json:"role"`
+	Role      string `json:"role,omitempty"`
 	PublicKey string `json:"publicKey"`
-	IP        string `json:"ip"`
-	Enode     string `json:"enode"`
+	IP        string `json:"ip,omitempty"`
+	Enode     string `json:"enode,omitempty"`
 }
 
 type MailServerConfig struct {
@@ -931,6 +931,6 @@ func (nsi *NodeServiceImpl) logs() (SuccessResponse) {
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	ipAddr := util.MustGetString("CURRENT_IP", p)
 	logPort := util.MustGetString("LOG_PORT", p)
-	successResponse.Status = fmt.Sprint("%s:%s", ipAddr, logPort)
+	successResponse.Status = fmt.Sprint(ipAddr, ":", logPort)
 	return successResponse
 }

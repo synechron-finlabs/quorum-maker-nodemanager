@@ -50,7 +50,7 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	foreignIP := request.IPAddress
 	nodename := request.Nodename
 
-	message := fmt.Sprint("Request for joining network has come in from node %s with enode %s and ip-address %s", nodename, enode, foreignIP)
+	message := fmt.Sprint("Request for joining network has come in from node ", nodename, " with enode ", enode, " and ip-address ", foreignIP)
 	nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Incoming Join Request", message)
 	var cUIresp = make(chan string, 1)
 	var cTimer = make(chan string, 1)
@@ -379,4 +379,16 @@ func (nsi *NodeServiceImpl) MailServerConfigHandler(w http.ResponseWriter, r *ht
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
+}
+
+func (nsi *NodeServiceImpl) PublicKeysHandler(w http.ResponseWriter, r *http.Request) {
+	nodeList := make([]NodeList, 3)
+	nodeList[0].NodeName = "Markit"
+	nodeList[0].PublicKey = "0OKTpgAGfXN9x8N4K6bIiupI4Lhb/MZaqcD/f4FTMHI="
+	nodeList[1].NodeName = "Synechron"
+	nodeList[1].PublicKey = "R1fOFUfzBbSVaXEYecrlo9rENW0dam0kmaA2pasGM14="
+	nodeList[2].NodeName = "JPMC"
+	nodeList[2].PublicKey = "Er5J8G+jXQA9O2eu7YdhkraYM+j+O5ArnMSZ24PpLQY="
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(nodeList)
 }
