@@ -6,8 +6,8 @@ import (
 	"github.com/gorilla/mux"
 	"fmt"
 	"strconv"
-	"bufio"
-	"os"
+	//"bufio"
+	//"os"
 	"strings"
 	"io"
 	"io/ioutil"
@@ -47,14 +47,14 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	var request JoinNetworkRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 	enode := request.EnodeID
-	foreignIP := request.IPAddress
+	//foreignIP := request.IPAddress
 	nodename := request.Nodename
 
-	message := fmt.Sprint("Request for joining network has come in from node ", nodename, " with enode ", enode, " and ip-address ", foreignIP)
-	nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Incoming Join Request", message)
+	//message := fmt.Sprint("Request for joining network has come in from node ", nodename, " with enode ", enode, " from ip-address ", foreignIP)
+	//nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Incoming Join Request", message)
 	var cUIresp = make(chan string, 1)
 	var cTimer = make(chan string, 1)
-	var cCLI = make(chan string, 1)
+	//var cCLI = make(chan string, 1)
 	nameMap[enode] = nodename
 	if peerMap[enode] == "" {
 		peerMap[enode] = "PENDING"
@@ -62,16 +62,16 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 
 	context++
 	ticket := context
-	fmt.Println(context)
+	//fmt.Println(context)
 
 	ticketMap[enode] = ticket
 
-	fmt.Println("context:", context)
-	fmt.Println("ticket:", ticket)
+	//fmt.Println("context:", context)
+	//fmt.Println("ticket:", ticket)
 	timer := time.NewTimer(300 * time.Second)
 	go func() {
 		<-timer.C
-		fmt.Println("Timer expired Ticket ", ticket)
+		//fmt.Println("Timer expired Ticket ", ticket)
 		cTimer <- fmt.Sprintf("Timer resp: Ticket %d", ticket)
 	}()
 
@@ -80,38 +80,38 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 		}
 		stop := timer.Stop()
 		if stop {
-			fmt.Println("Timer stopped: Ticket ", ticketCheck)
+			//fmt.Println("Timer stopped: Ticket ", ticketCheck)
 		}
 		cUIresp <- fmt.Sprintf("UI resp: Ticket %d", ticket)
 	}()
 
-	go func() {
-		fmt.Println("Request for Joining this network from", nodename, "with Enode", enode, "from IP", foreignIP, "Do you approve ? y/N")
-
-		reader := bufio.NewReader(os.Stdin)
-		reply, _ := reader.ReadString('\n')
-		stop := timer.Stop()
-		if stop {
-			fmt.Println("Timer stopped: Ticket ", ticket)
-		}
-		reader.Reset(os.Stdin)
-		reply = strings.TrimSuffix(reply, "\n")
-		if reply == "y" || reply == "Y" {
-			peerMap[enode] = "YES"
-			response := nsi.getGenesis(nsi.Url)
-			json.NewEncoder(w).Encode(response)
-		} else {
-			peerMap[enode] = "NO"
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Access denied"))
-		}
-		cCLI <- fmt.Sprintf("CLI resp: Ticket %d", ticket)
-	}()
+	//go func() {
+	//	fmt.Println("Request for Joining this network from", nodename, "with Enode", enode, "from IP", foreignIP, "Do you approve ? y/N")
+	//
+	//	reader := bufio.NewReader(os.Stdin)
+	//	reply, _ := reader.ReadString('\n')
+	//	stop := timer.Stop()
+	//	if stop {
+	//		//fmt.Println("Timer stopped: Ticket ", ticket)
+	//	}
+	//	reader.Reset(os.Stdin)
+	//	reply = strings.TrimSuffix(reply, "\n")
+	//	if reply == "y" || reply == "Y" {
+	//		peerMap[enode] = "YES"
+	//		response := nsi.getGenesis(nsi.Url)
+	//		json.NewEncoder(w).Encode(response)
+	//	} else {
+	//		peerMap[enode] = "NO"
+	//		w.WriteHeader(http.StatusForbidden)
+	//		w.Write([]byte("Access denied"))
+	//	}
+	//	cCLI <- fmt.Sprintf("CLI resp: Ticket %d", ticket)
+	//}()
 
 	select {
-	case resCLI := <-cCLI:
-		fmt.Println(resCLI)
-	case resUI := <-cUIresp:
+	//case <-cCLI:
+		//fmt.Println(resCLI)
+	case <-cUIresp:
 		if peerMap[enode] == "YES" {
 			response := nsi.getGenesis(nsi.Url)
 			json.NewEncoder(w).Encode(response)
@@ -122,12 +122,12 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 			w.WriteHeader(http.StatusAccepted)
 			w.Write([]byte("Pending user response"))
 		}
-		fmt.Println(resUI)
-	case resTimer := <-cTimer:
-		fmt.Println("Response Timed Out")
+		//fmt.Println(resUI)
+	case <-cTimer:
+		//fmt.Println("Response Timed Out")
 		w.WriteHeader(http.StatusAccepted)
 		w.Write([]byte("Pending user response"))
-		fmt.Println(resTimer)
+		//fmt.Println(resTimer)
 	}
 }
 

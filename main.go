@@ -30,8 +30,7 @@ func main() {
 	}
 	ticker := time.NewTicker(86400 * time.Second)
 	go func() {
-		for t := range ticker.C {
-			fmt.Println("Log Rotated at: ", t)
+		for range ticker.C {
 			logRotater()
 		}
 	}()

@@ -686,7 +686,7 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 
 		contractAddress := ethClient.DeployContracts(byteCode, pubKeys, private)
 
-		path := "./" + contractAddress
+		path := "./" + contractAddress + "_" + strings.Replace(fileName[i], ".sol", "", -1)
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			os.Mkdir(path, 0775)
 		}
@@ -878,10 +878,10 @@ func (nsi *NodeServiceImpl) emailServerConfig(host string, port string, username
 
 	ticker := time.NewTicker(30 * time.Second)
 	go func() {
-		for t := range ticker.C {
-			fmt.Println("Healthcheck done at: ", t)
+		for range ticker.C {
+			//fmt.Println("Healthcheck done at: ", t)
 			if warning > 0 {
-				fmt.Println("Ticker stopped")
+				//fmt.Println("Ticker stopped")
 				ticker.Stop()
 			}
 			nsi.healthCheck(url)
@@ -896,7 +896,7 @@ func (nsi *NodeServiceImpl) emailServerConfig(host string, port string, username
 func (nsi *NodeServiceImpl) healthCheck(url string) {
 	ethClient := client.EthClient{url}
 	blockNumber := ethClient.BlockNumber()
-	fmt.Println(blockNumber)
+	//fmt.Println(blockNumber)
 	if blockNumber == "" {
 		if warning > 0 {
 			nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Node is not responding", "Unfortunately this node has stopped responding")
@@ -906,7 +906,7 @@ func (nsi *NodeServiceImpl) healthCheck(url string) {
 }
 
 func (nsi *NodeServiceImpl) sendMail(host string, port string, username string, password string, subject string, mailContent string) {
-	fmt.Println("Called with warning =", warning)
+	//fmt.Println("Called with warning =", warning)
 	portNo, err := strconv.ParseInt(port, 10, 64)
 	if err != nil {
 		fmt.Println(err)
