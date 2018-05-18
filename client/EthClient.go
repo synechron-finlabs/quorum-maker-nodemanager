@@ -326,6 +326,7 @@ func (ec *EthClient) DeployContracts(byteCode string, pubKeys []string, private 
 
 	contractAdd := ec.GetTransactionReceipt(txHash).ContractAddress
 	for contractAdd == "" {
+		time.Sleep(1 * time.Second)
 		contractAdd = ec.GetTransactionReceipt(txHash).ContractAddress
 	}
 	return contractAdd

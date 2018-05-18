@@ -31,18 +31,23 @@ func main() {
 	ticker := time.NewTicker(86400 * time.Second)
 	go func() {
 		for range ticker.C {
-			logRotater()
+			logRotaterGeth()
+			logRotaterConst()
 		}
 	}()
 
 	go func() {
-		fs := http.FileServer(http.Dir("/home/node/qdata/logs/"))
+		fs := http.FileServer(http.Dir("/home/node/qdata/gethLogs/"))
 
-		http.Handle("/logs/", http.StripPrefix("/logs", fs))
+		http.Handle("/geth/", http.StripPrefix("/geth", fs))
 
-		fs1 := http.FileServer(http.Dir("/root/quorum-maker"))
+		fs1 := http.FileServer(http.Dir("/home/node/qdata/constellationLogs/"))
 
-		http.Handle("/contracts/", http.StripPrefix("/contracts", fs1))
+		http.Handle("/constellation/", http.StripPrefix("/constellation", fs1))
+
+		fs2 := http.FileServer(http.Dir("/root/quorum-maker"))
+
+		http.Handle("/contracts/", http.StripPrefix("/contracts", fs2))
 
 		http.ListenAndServe(logPort, nil)
 	}()
@@ -76,40 +81,45 @@ func main() {
 	log.Fatal(http.ListenAndServe(listenPort, router))
 }
 
-func logRotater() {
+func logRotaterGeth() {
 	command := "cat $(ls | grep log | grep -v _) > Geth_$(date| sed -e 's/ /_/g')"
 
 	command1 := "echo -en '' > $(ls | grep log | grep -v _)"
 
-	command2 := "cat $(ls | grep log | grep _) > Constellation_$(date| sed -e 's/ /_/g')"
-
-	command3 := "echo -en '' > $(ls | grep log | grep _)"
-
 	cmd := exec.Command("bash", "-c", command)
-	cmd.Dir = "/home/node/qdata/logs"
+	cmd.Dir = "/home/node/qdata/gethLogs"
 	err := cmd.Run()
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	cmd1 := exec.Command("bash", "-c", command1)
-	cmd1.Dir = "/home/node/qdata/logs"
+	cmd1.Dir = "/home/node/qdata/gethLogs"
 	err1 := cmd1.Run()
 	if err1 != nil {
 		fmt.Println(err)
 	}
 
-	cmd2 := exec.Command("bash", "-c", command2)
-	cmd2.Dir = "/home/node/qdata/logs"
-	err2 := cmd2.Run()
-	if err2 != nil {
+}
+
+func logRotaterConst() {
+
+	command := "cat $(ls | grep log | grep _) > Constellation_$(date| sed -e 's/ /_/g')"
+
+	command1 := "echo -en '' > $(ls | grep log | grep _)"
+
+	cmd := exec.Command("bash", "-c", command)
+	cmd.Dir = "/home/node/qdata/constellationLogs"
+	err := cmd.Run()
+	if err != nil {
 		fmt.Println(err)
 	}
 
-	cmd3 := exec.Command("bash", "-c", command3)
-	cmd3.Dir = "/home/node/qdata/logs"
-	err3 := cmd3.Run()
-	if err3 != nil {
+	cmd1 := exec.Command("bash", "-c", command1)
+	cmd1.Dir = "/home/node/qdata/constellationLogs"
+	err1 := cmd1.Run()
+	if err1 != nil {
 		fmt.Println(err)
 	}
+
 }
