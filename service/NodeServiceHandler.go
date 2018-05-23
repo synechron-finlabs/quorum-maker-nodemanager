@@ -110,7 +110,7 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 
 	select {
 	//case <-cCLI:
-		//fmt.Println(resCLI)
+	//fmt.Println(resCLI)
 	case <-cUIresp:
 		if peerMap[enode] == "YES" {
 			response := nsi.getGenesis(nsi.Url)
@@ -324,27 +324,6 @@ func (nsi *NodeServiceImpl) RestartHandler(w http.ResponseWriter, r *http.Reques
 	json.NewEncoder(w).Encode(response)
 }
 
-func (nsi *NodeServiceImpl) NodeListHandler(w http.ResponseWriter, r *http.Request) {
-	nodeList := make([]NodeList, 3)
-	nodeList[0].IP = "10.34.15.90"
-	nodeList[0].Enode = "5089ccd054af243df3cc7eabed10192c147cd4af611f523bd5447ee39bdd8670768f522232537456de8f15ec64cde8ccc758956e3875f605fe4979f329820b26"
-	nodeList[0].NodeName = "Markit"
-	nodeList[0].PublicKey = "0OKTpgAGfXN9x8N4K6bIiupI4Lhb/MZaqcD/f4FTMHI="
-	nodeList[0].Role = "Custodian"
-	nodeList[1].IP = "10.34.15.90"
-	nodeList[1].Enode = "e27a60a7f1abca56819574a99acad6b8d40a1866b961ee5ebb8a3f5b5c1b74f7a2abbf5ac3f0bd7f1409cccc0df0f1bdb60889d7ddc4150d45021b940f3440c6"
-	nodeList[1].NodeName = "Synechron"
-	nodeList[1].PublicKey = "R1fOFUfzBbSVaXEYecrlo9rENW0dam0kmaA2pasGM14="
-	nodeList[1].Role = "Custodian"
-	nodeList[2].IP = "10.34.15.90"
-	nodeList[2].Enode = "964d6583a58ddb04f9773d0a013860ff7d36fd18e4178c6ee0a70c2ee08bb89e047cf734810f743fda139c9a5ec1f2bb6ab97e9a054f55dc4e99610dc1aeb57d"
-	nodeList[2].NodeName = "JPMC"
-	nodeList[2].PublicKey = "Er5J8G+jXQA9O2eu7YdhkraYM+j+O5ArnMSZ24PpLQY="
-	nodeList[2].Role = "Custodian"
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	json.NewEncoder(w).Encode(nodeList)
-}
-
 func (nsi *NodeServiceImpl) LatestBlockHandler(w http.ResponseWriter, r *http.Request) {
 	response := nsi.latestBlockDetails(nsi.Url)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -374,21 +353,9 @@ func (nsi *NodeServiceImpl) MailServerConfigHandler(w http.ResponseWriter, r *ht
 	var request MailServerConfig
 	_ = json.NewDecoder(r.Body).Decode(&request)
 	response := nsi.emailServerConfig(request.Host, request.Port, request.Username, request.Password, nsi.Url)
-
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
-}
-
-func (nsi *NodeServiceImpl) PublicKeysHandler(w http.ResponseWriter, r *http.Request) {
-	nodeList := make([]NodeList, 3)
-	nodeList[0].NodeName = "Markit"
-	nodeList[0].PublicKey = "0OKTpgAGfXN9x8N4K6bIiupI4Lhb/MZaqcD/f4FTMHI="
-	nodeList[1].NodeName = "Synechron"
-	nodeList[1].PublicKey = "R1fOFUfzBbSVaXEYecrlo9rENW0dam0kmaA2pasGM14="
-	nodeList[2].NodeName = "JPMC"
-	nodeList[2].PublicKey = "Er5J8G+jXQA9O2eu7YdhkraYM+j+O5ArnMSZ24PpLQY="
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	json.NewEncoder(w).Encode(nodeList)
 }

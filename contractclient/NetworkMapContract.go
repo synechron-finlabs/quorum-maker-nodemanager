@@ -5,17 +5,18 @@ import (
 	"synechron.com/NodeManagerGo/contracthandler"
 )
 
-const registerNodeFunSig = "0xe623db46"
-const updateNodeFunSig = "0x964e2635"
-const getNodeDetailsFunSig = "0x5afbba47"
+const registerNodeFunSig = "0x82cb1a2a"
+const updateNodeFunSig = "0xe1d33203"
+const getNodeDetailsFunSig = "0x0d0d583b"
 
 type NodeDetails struct {
-	Name  string `json:"name,omitempty"`
-	Role  string `json:"role,omitempty"`
-	PublicKey  string `json:"publicKey,omitempty"`
-	Enode string `json:"enodeid,omitempty"`
-
+	Name      string `json:"nodeName,omitempty"`
+	Role      string `json:"role,omitempty"`
+	PublicKey string `json:"publicKey,omitempty"`
+	Enode     string `json:"enode,omitempty"`
+	IP        string `json:"ip,omitempty"`
 }
+
 type NetworkMapContractClient struct {
 	client.EthClient
 	contractParam contracthandler.ContractParam
@@ -23,46 +24,56 @@ type NetworkMapContractClient struct {
 
 type GetNodeDetailsParam int
 
-func (nmc *NetworkMapContractClient) RegisterNode(name string, role string, publicKey string, enode string) string {
-
-	nd := NodeDetails{name, role,  publicKey, enode}
+func (nmc *NetworkMapContractClient) RegisterNode(name string, role string, publicKey string, enode string, ip string, from string, to string, passwd string, pvtFor []string) string {
+	nmc.contractParam.From = from
+	nmc.contractParam.To = to
+	nmc.contractParam.Passwd = passwd
+	nmc.contractParam.Parties = pvtFor
+	nd := NodeDetails{name, role, publicKey, enode, ip}
 	return nmc.SendTransaction(nmc.contractParam, RegisterUpdateNodeFuncHandler{nd, registerNodeFunSig})
 
 }
 
-func (nmc *NetworkMapContractClient) GetNodeDetails(i int) (NodeDetails) {
-
+func (nmc *NetworkMapContractClient) GetNodeDetails(i int, from string, to string, passwd string, pvtFor []string) (NodeDetails) {
+	nmc.contractParam.From = from
+	nmc.contractParam.To = to
+	nmc.contractParam.Passwd = passwd
+	nmc.contractParam.Parties = pvtFor
 	encoderDecoder := GetNodeDetailsFuncHandler{index: i, funcSig: getNodeDetailsFunSig}
 	nmc.EthCall(nmc.contractParam, encoderDecoder, &encoderDecoder)
 
 	return encoderDecoder.result
 }
 
-func (nmc *NetworkMapContractClient) GetNodeDetailsList() ([]NodeDetails) {
-
+func (nmc *NetworkMapContractClient) GetNodeDetailsList(from string, to string, passwd string, pvtFor []string) ([]NodeDetails) {
+	nmc.contractParam.From = from
+	nmc.contractParam.To = to
+	nmc.contractParam.Passwd = passwd
+	nmc.contractParam.Parties = pvtFor
 	var list []NodeDetails
 
-	for i := 0; true ; i++ {
+	for i := 0; true; i++ {
 		encoderDecoder := GetNodeDetailsFuncHandler{index: i, funcSig: getNodeDetailsFunSig}
 		nmc.EthCall(nmc.contractParam, encoderDecoder, &encoderDecoder)
 
 		if encoderDecoder.result.Enode != "" && len(encoderDecoder.result.Enode) > 0 {
 			list = append(list, encoderDecoder.result)
-		}else {
+		} else {
 			return list
 		}
 	}
 
-
 	return list
 }
 
-func (nmc *NetworkMapContractClient) UpdateNode(name string, role string, publicKey string, enode string) string {
-
-	nd := NodeDetails{name, role,  publicKey, enode}
+func (nmc *NetworkMapContractClient) UpdateNode(name string, role string, publicKey string, enode string, ip string, from string, to string, passwd string, pvtFor []string) string {
+	nmc.contractParam.From = from
+	nmc.contractParam.To = to
+	nmc.contractParam.Passwd = passwd
+	nmc.contractParam.Parties = pvtFor
+	nd := NodeDetails{name, role, publicKey, enode, ip}
 	return nmc.SendTransaction(nmc.contractParam, RegisterUpdateNodeFuncHandler{nd, updateNodeFunSig})
 }
-
 
 type RegisterUpdateNodeFuncHandler struct {
 	nd      NodeDetails
@@ -71,9 +82,9 @@ type RegisterUpdateNodeFuncHandler struct {
 
 func (h RegisterUpdateNodeFuncHandler) Encode() string {
 
-	sig := "string,string,string,string"
+	sig := "string,string,string,string,string"
 
-	param := []interface{}{h.nd.Name, h.nd.Role, h.nd.PublicKey, h.nd.Enode, }
+	param := []interface{}{h.nd.Name, h.nd.Role, h.nd.PublicKey, h.nd.Enode, h.nd.IP,}
 
 	data := h.funcSig + contracthandler.FunctionProcessor{sig, param, ""}.GetData()
 
@@ -94,11 +105,11 @@ func (g *GetNodeDetailsFuncHandler) Decode(r string) {
 		return
 	}
 
-	sig := "string,string,string,string,uint256"
+	sig := "string,string,string,string,string,uint256"
 
 	resultArray := contracthandler.FunctionProcessor{sig, nil, r}.GetResults()
 
-	g.result = NodeDetails{resultArray[0].(string),resultArray[1].(string), resultArray[2].(string), resultArray[3].(string)}
+	g.result = NodeDetails{resultArray[0].(string), resultArray[1].(string), resultArray[2].(string), resultArray[4].(string), resultArray[3].(string)}
 }
 
 func (g GetNodeDetailsFuncHandler) Encode() string {

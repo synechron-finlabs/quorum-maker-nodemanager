@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"synechron.com/NodeManagerGo/service"
 	"os"
-	"os/exec"
-	"fmt"
+	"synechron.com/NodeManagerGo/contractclient"
+	"synechron.com/NodeManagerGo/client"
 	"time"
 )
 
@@ -28,11 +28,15 @@ func main() {
 	if len(os.Args) > 3 {
 		logPort = ":" + os.Args[3]
 	}
+
+	router := mux.NewRouter()
+	nodeService := service.NodeServiceImpl{nodeUrl}
+
 	ticker := time.NewTicker(86400 * time.Second)
 	go func() {
 		for range ticker.C {
-			logRotaterGeth()
-			logRotaterConst()
+			nodeService.LogRotaterGeth()
+			nodeService.LogRotaterConst()
 		}
 	}()
 
@@ -52,8 +56,13 @@ func main() {
 		http.ListenAndServe(logPort, nil)
 	}()
 
-	router := mux.NewRouter()
-	nodeService := service.NodeServiceImpl{nodeUrl}
+	go func() {
+		time.Sleep(80 * time.Second)
+		nodeService.NetworkManagerContractDeployer(nodeUrl)
+		nodeService.RegisterNodeDetails(nodeUrl)
+	}()
+
+	networkMapService := contractclient.NetworkMapContractClient{EthClient: client.EthClient{nodeUrl}}
 	router.HandleFunc("/txn/{txn_hash}", nodeService.GetTransactionInfoHandler).Methods("GET", "OPTIONS")
 	router.HandleFunc("/txn", nodeService.GetLatestTransactionInfoHandler).Methods("GET", "OPTIONS")
 	router.HandleFunc("/block/{block_no}", nodeService.GetBlockInfoHandler).Methods("GET", "OPTIONS")
@@ -70,56 +79,15 @@ func main() {
 	router.HandleFunc("/deployContract", nodeService.DeployContractHandler).Methods("POST", "OPTIONS")
 	router.HandleFunc("/reset", nodeService.ResetHandler).Methods("GET", "OPTIONS")
 	router.HandleFunc("/restart", nodeService.RestartHandler).Methods("GET", "OPTIONS")
-	router.HandleFunc("/nodeList", nodeService.NodeListHandler).Methods("GET", "OPTIONS")
 	router.HandleFunc("/latestBlock", nodeService.LatestBlockHandler).Methods("GET", "OPTIONS")
 	router.HandleFunc("/latency", nodeService.LatencyHandler).Methods("GET", "OPTIONS")
 	router.HandleFunc("/logs", nodeService.LogsHandler).Methods("GET", "OPTIONS")
 	router.HandleFunc("/txnsearch/{txn_hash}", nodeService.TransactionSearchHandler).Methods("GET", "OPTIONS")
 	router.HandleFunc("/mailserver", nodeService.MailServerConfigHandler).Methods("POST", "OPTIONS")
-	router.HandleFunc("/pubkeys", nodeService.PublicKeysHandler).Methods("GET", "OPTIONS")
+	router.HandleFunc("/registerNode", networkMapService.RegisterNodeRequestHandler).Methods("POST", "OPTIONS")
+	router.HandleFunc("/updateNode", networkMapService.UpdateNodeRequestsHandler).Methods("POST", "OPTIONS")
+	router.HandleFunc("/getNodeDetails/{index}", networkMapService.GetNodeDetailsResponseHandler).Methods("GET", "OPTIONS")
+	router.HandleFunc("/getNodeList", networkMapService.GetNodeListResponseHandler).Methods("GET", "OPTIONS")
 
 	log.Fatal(http.ListenAndServe(listenPort, router))
-}
-
-func logRotaterGeth() {
-	command := "cat $(ls | grep log | grep -v _) > Geth_$(date| sed -e 's/ /_/g')"
-
-	command1 := "echo -en '' > $(ls | grep log | grep -v _)"
-
-	cmd := exec.Command("bash", "-c", command)
-	cmd.Dir = "/home/node/qdata/gethLogs"
-	err := cmd.Run()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	cmd1 := exec.Command("bash", "-c", command1)
-	cmd1.Dir = "/home/node/qdata/gethLogs"
-	err1 := cmd1.Run()
-	if err1 != nil {
-		fmt.Println(err)
-	}
-
-}
-
-func logRotaterConst() {
-
-	command := "cat $(ls | grep log | grep _) > Constellation_$(date| sed -e 's/ /_/g')"
-
-	command1 := "echo -en '' > $(ls | grep log | grep _)"
-
-	cmd := exec.Command("bash", "-c", command)
-	cmd.Dir = "/home/node/qdata/constellationLogs"
-	err := cmd.Run()
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	cmd1 := exec.Command("bash", "-c", command1)
-	cmd1.Dir = "/home/node/qdata/constellationLogs"
-	err1 := cmd1.Run()
-	if err1 != nil {
-		fmt.Println(err)
-	}
-
 }

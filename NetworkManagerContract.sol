@@ -1,4 +1,4 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.23;
 contract NetworkManagerContract {
 
     uint nodeCounter;
@@ -22,7 +22,7 @@ contract NetworkManagerContract {
         nodes[e].nodeName = n;
         nodes[e].role = r;
         enodeList.push(e);
-        print(n,r,p,e);
+        emit print(n,r,p,e);
     
     }
    
@@ -46,7 +46,7 @@ contract NetworkManagerContract {
         nodes[e].publickey = p;
         nodes[e].nodeName = n;
         nodes[e].role = r;
-        print(n,r,p,e);
+        emit print(n,r,p,e);
     }
 
     function getNodeList(uint i)  public  constant   returns (string n, string r,string p, string e) {

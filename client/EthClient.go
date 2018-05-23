@@ -289,7 +289,7 @@ func (ec *EthClient) SendTransaction(param contracthandler.ContractParam, rh con
 		fmt.Println(err)
 	}
 
-	fmt.Printf("%s", response.Result)
+	//fmt.Printf("%s", response.Result)
 	return fmt.Sprintf("%s", response.Result)
 
 }
@@ -300,7 +300,6 @@ func (ec *EthClient) EthCall(param contracthandler.ContractParam, encoder contra
 
 	p := CallPayload{param.To, encoder.Encode()}
 	response, err := rpcClient.Call("eth_call", p, "latest")
-
 	if err != nil {
 
 		fmt.Println(err)
