@@ -212,7 +212,7 @@ func (t Bytes) Decode(data []string, index int) (int, interface{}) {
 
 	var buffer bytes.Buffer
 
-	for i, c := offset/32+1, 0; c <= length; i++ {
+	for i, c := offset/32+1, 0; c < length; i++ {
 
 		buffer.WriteString(data[i])
 

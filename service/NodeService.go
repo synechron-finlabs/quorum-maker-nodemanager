@@ -13,174 +13,234 @@ import (
 	"os/exec"
 	"regexp"
 	"os"
+	"time"
+	"gopkg.in/gomail.v2"
+	"synechron.com/NodeManagerGo/contractclient"
 )
 
 type ConnectionInfo struct {
-	IP 	string 	`json:"ip,omitempty"`
-	Port 	int 	`json:"port,omitempty"`
-	Enode 	string 	`json:"enode,omitempty"`
+	IP    string `json:"ip"`
+	Port  int    `json:"port"`
+	Enode string `json:"enode"`
+}
+
+type PendingRequests struct {
+	NodeName string `json:"nodeName"`
+	Enode    string `json:"enode"`
+	Message  string `json:"message"`
+	EnodeID  string `json:"enodeid"`
+	IP       string `json:"ip"`
 }
 
 type NodeInfo struct {
-	NodeName	string		        `json:"nodeName,omitempty"`
-	NodeCount	int			`json:"nodeCount,omitempty"`
-	ConnectionInfo  ConnectionInfo		`json:"connectionInfo,omitempty"`
-	RaftRole 	string 			`json:"raftRole,omitempty"`
-	RaftID 		int      		`json:"raftID,omitempty"`
-	BlockNumber 	int64			`json:"blockNumber"`
-	PendingTxCount 	int 			`json:"pendingTxCount"`
-	Genesis 	string			`json:"genesis,omitempty"`
-	AdminInfo	client.AdminInfo	`json:"adminInfo,omitempty"`
+	NodeName       string           `json:"nodeName"`
+	NodeCount      int              `json:"nodeCount"`
+	Active         string           `json:"active"`
+	ConnectionInfo ConnectionInfo   `json:"connectionInfo"`
+	RaftRole       string           `json:"raftRole"`
+	RaftID         int              `json:"raftID"`
+	BlockNumber    int64            `json:"blockNumber"`
+	PendingTxCount int              `json:"pendingTxCount"`
+	Genesis        string           `json:"genesis"`
+	AdminInfo      client.AdminInfo `json:"adminInfo"`
 }
 
 type JoinNetworkRequest struct {
-	EnodeID    string `json:"enode-id,omitempty"`
-	IPAddress  string `json:"ip-address,omitempty"`
+	EnodeID   string `json:"enode-id,omitempty"`
+	IPAddress string `json:"ip-address,omitempty"`
+	Nodename  string `json:"nodename,omitempty"`
 }
 
 type GetGenesisResponse struct {
-	ContstellationPort string `json:"contstellation-port, omitempty"`
-	NetID              string `json:"netID,omitempty"`
-	Genesis            string `json:"genesis, omitempty"`
+	ContstellationPort string `json:"contstellation-port"`
+	NetID              string `json:"netID"`
+	Genesis            string `json:"genesis"`
 }
 
 type BlockDetailsResponse struct {
-	Number           int64                                  `json:"number,omitempty"`
-	Hash             string                                 `json:"hash,omitempty"`
-	ParentHash       string                                 `json:"parentHash,omitempty"`
-	Nonce            string                                 `json:"nonce,omitempty"`
-	Sha3Uncles       string                                 `json:"sha3Uncles,omitempty"`
-	LogsBloom        string                                 `json:"logsBloom,omitempty"`
-	TransactionsRoot string                                 `json:"transactionsRoot,omitempty"`
-	StateRoot        string                                 `json:"stateRoot,omitempty"`
-	Miner            string                                 `json:"miner,omitempty"`
-	Difficulty       int64                                  `json:"difficulty,omitempty"`
-	TotalDifficulty  int64                                  `json:"totalDifficulty,omitempty"`
-	ExtraData        string                                 `json:"extraData,omitempty"`
-	Size             int64                                  `json:"size,omitempty"`
-	GasLimit         int64                                  `json:"gasLimit,omitempty"`
-	GasUsed          int64                                  `json:"gasUsed,omitempty"`
-	Timestamp        int64                                  `json:"timestamp,omitempty"`
-	Transactions     []TransactionDetailsResponse           `json:"transactions,omitempty"`
-	Uncles           []string                               `json:"uncles,omitempty"`
+	Number           int64                        `json:"number"`
+	Hash             string                       `json:"hash"`
+	ParentHash       string                       `json:"parentHash"`
+	Nonce            string                       `json:"nonce"`
+	Sha3Uncles       string                       `json:"sha3Uncles"`
+	LogsBloom        string                       `json:"logsBloom"`
+	TransactionsRoot string                       `json:"transactionsRoot"`
+	StateRoot        string                       `json:"stateRoot"`
+	Miner            string                       `json:"miner"`
+	Difficulty       int64                        `json:"difficulty"`
+	TotalDifficulty  int64                        `json:"totalDifficulty"`
+	ExtraData        string                       `json:"extraData"`
+	Size             int64                        `json:"size"`
+	GasLimit         int64                        `json:"gasLimit"`
+	GasUsed          int64                        `json:"gasUsed"`
+	Timestamp        int64                        `json:"timestamp"`
+	Transactions     []TransactionDetailsResponse `json:"transactions"`
+	Uncles           []string                     `json:"uncles"`
+	TimeElapsed      int64                        `json:"TimeElapsed"`
 }
 
 type TransactionDetailsResponse struct {
-	BlockHash        string `json:"blockHash,omitempty"`
+	BlockHash        string `json:"blockHash"`
 	BlockNumber      int64  `json:"blockNumber"`
-	From             string `json:"from,omitempty"`
-	Gas              int64  `json:"gas,omitempty"`
+	From             string `json:"from"`
+	Gas              int64  `json:"gas"`
 	GasPrice         int64  `json:"gasPrice"`
-	Hash             string `json:"hash,omitempty"`
-	Input            string `json:"input,omitempty"`
+	Hash             string `json:"hash"`
+	Input            string `json:"input"`
 	Nonce            int64  `json:"nonce"`
-	To               string `json:"to,omitempty"`
+	To               string `json:"to"`
 	TransactionIndex int64  `json:"transactionIndex"`
-	Value            int64  `json:"value,omitempty"`
-	V                string `json:"v,omitempty"`
-	R                string `json:"r,omitempty"`
-	S                string `json:"s,omitempty"`
-	TransactionType	 string	`json:"transactionType,omitempty"`
+	Value            int64  `json:"value"`
+	V                string `json:"v"`
+	R                string `json:"r"`
+	S                string `json:"s"`
+	TransactionType  string `json:"transactionType"`
+	TimeElapsed      int64  `json:"TimeElapsed"`
 }
 
 type TransactionReceiptResponse struct {
-	BlockHash         	string      	        `json:"blockHash"`
-	BlockNumber       	int64      		`json:"blockNumber"`
-	ContractAddress   	string 			`json:"contractAddress"`
-	CumulativeGasUsed 	int64      		`json:"cumulativeGasUsed"`
-	From              	string      	        `json:"from"`
-	GasUsed           	int64      		`json:"gasUsed"`
-	Logs              	[]Logs 			`json:"logs"`
-	LogsBloom        	string 			`json:"logsBloom"`
-	Root             	string 			`json:"root"`
-	To               	string 			`json:"to"`
-	TransactionHash  	string 			`json:"transactionHash"`
-	TransactionIndex 	int64 			`json:"transactionIndex"`
-	TransactionType	 	string			`json:"transactionType,omitempty"`
+	BlockHash         string `json:"blockHash"`
+	BlockNumber       int64  `json:"blockNumber"`
+	ContractAddress   string `json:"contractAddress"`
+	CumulativeGasUsed int64  `json:"cumulativeGasUsed"`
+	From              string `json:"from"`
+	Gas               int64  `json:"gas"`
+	GasPrice          int64  `json:"gasPrice"`
+	GasUsed           int64  `json:"gasUsed"`
+	Input             string `json:"input"`
+	Logs              []Logs `json:"logs"`
+	LogsBloom         string `json:"logsBloom"`
+	Nonce             int64  `json:"nonce"`
+	Root              string `json:"root"`
+	To                string `json:"to"`
+	TransactionHash   string `json:"transactionHash"`
+	TransactionIndex  int64  `json:"transactionIndex"`
+	Value             int64  `json:"value"`
+	V                 string `json:"v"`
+	R                 string `json:"r"`
+	S                 string `json:"s"`
+	TransactionType   string `json:"transactionType"`
+	TimeElapsed       int64  `json:"TimeElapsed"`
 }
 
 type Logs struct {
-	Address         	string    	`json:"address"`
-	BlockHash       	string  	`json:"blockHash"`
-	BlockNumber   		int64    	`json:"blockNumber"`
-	Data 			string    	`json:"data"`
-	LogIndex          	int64      	`json:"logIndex"`
-	Topics          	[]string   	`json:"topics"`
-	TransactionHash   	string 		`json:"transactionHash"`
-	TransactionIndex  	int64      	`json:"transactionIndex"`
+	Address          string   `json:"address"`
+	BlockHash        string   `json:"blockHash"`
+	BlockNumber      int64    `json:"blockNumber"`
+	Data             string   `json:"data"`
+	LogIndex         int64    `json:"logIndex"`
+	Topics           []string `json:"topics"`
+	TransactionHash  string   `json:"transactionHash"`
+	TransactionIndex int64    `json:"transactionIndex"`
 }
 
 type JoinNetworkResponse struct {
-	EnodeID string `json:"enode-id,omitempty"`
-	Status 	string `json:"status,omitempty"`
+	EnodeID string `json:"enode-id"`
+	Status  string `json:"status"`
 }
 
 type ContractJson struct {
+	Filename        string `json:"filename"`
 	Interface       string `json:"interface"`
 	Bytecode        string `json:"bytecode"`
 	ContractAddress string `json:"address"`
+	Json            string `json:"json"`
 }
 
 type CreateNetworkScriptArgs struct {
-    Nodename            string                                 `json:"nodename,omitempty"`
-    CurrentIP           string                                 `json:"currentIP,omitempty"`
-    RPCPort             string                                 `json:"rpcPort,omitempty"`
-    WhisperPort         string                                 `json:"whisperPort,omitempty"`
-    ConstellationPort   string                                 `json:"constellationPort,omitempty"`
-    RaftPort            string                                 `json:"raftPort,omitempty"`
-    NodeManagerPort     string                                 `json:"nodeManagerPort,omitempty"`
+	Nodename          string `json:"nodename,omitempty"`
+	CurrentIP         string `json:"currentIP,omitempty"`
+	RPCPort           string `json:"rpcPort,omitempty"`
+	WhisperPort       string `json:"whisperPort,omitempty"`
+	ConstellationPort string `json:"constellationPort,omitempty"`
+	RaftPort          string `json:"raftPort,omitempty"`
+	NodeManagerPort   string `json:"nodeManagerPort,omitempty"`
 }
 
 type JoinNetworkScriptArgs struct {
-    Nodename                string                                 `json:"nodename,omitempty"`
-    CurrentIP               string                                 `json:"currentIP,omitempty"`
-    RPCPort                 string                                 `json:"rpcPort,omitempty"`
-    WhisperPort             string                                 `json:"whisperPort,omitempty"`
-    ConstellationPort       string                                 `json:"constellationPort,omitempty"`
-    RaftPort                string                                 `json:"raftPort,omitempty"`
-    NodeManagerPort         string                                 `json:"nodeManagerPort,omitempty"`
-    MasterNodeManagerPort   string                                 `json:"masterNodeManagerPort,omitempty"`
-    MasterIP                string                                 `json:"masterIP,omitempty"`
+	Nodename              string `json:"nodename,omitempty"`
+	CurrentIP             string `json:"currentIP,omitempty"`
+	RPCPort               string `json:"rpcPort,omitempty"`
+	WhisperPort           string `json:"whisperPort,omitempty"`
+	ConstellationPort     string `json:"constellationPort,omitempty"`
+	RaftPort              string `json:"raftPort,omitempty"`
+	NodeManagerPort       string `json:"nodeManagerPort,omitempty"`
+	MasterNodeManagerPort string `json:"masterNodeManagerPort,omitempty"`
+	MasterIP              string `json:"masterIP,omitempty"`
 }
 
-
 type SuccessResponse struct {
-	Status 	string `json:"status,omitempty"`
+	Status string `json:"statusMessage"`
+}
+
+type LatestBlockResponse struct {
+	LatestBlockNumber int64 `json:"latestBlockNumber"`
+	TimeElapsed       int64 `json:"TimeElapsed"`
+}
+
+type NodeList struct {
+	NodeName  string `json:"nodeName"`
+	Role      string `json:"role,omitempty"`
+	PublicKey string `json:"publicKey"`
+	IP        string `json:"ip,omitempty"`
+	Enode     string `json:"enode,omitempty"`
+}
+
+type MailServerConfig struct {
+	Host     string `json:"smtpServerHost"`
+	Port     string `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type LatencyResponse struct {
+	EnodeID string `json:"enode-id"`
+	Latency string `json:"latency"`
 }
 
 type NodeServiceImpl struct {
 	Url string
 }
 
+var warning = 0
+var mailServerConfig MailServerConfig
 
 func (nsi *NodeServiceImpl) getGenesis(url string) (response GetGenesisResponse) {
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	netId := util.MustGetString("NETWORK_ID", p)
 	constl := util.MustGetString("CONSTELLATION_PORT", p)
-	
+
 	b, err := ioutil.ReadFile("/home/node/genesis.json")
 	if err != nil {
 		log.Fatal(err)
 	}
 	genesis := string(b)
-	genesis = strings.Replace(genesis, "\n","",-1)
+	genesis = strings.Replace(genesis, "\n", "", -1)
 
 	response = GetGenesisResponse{constl, netId, genesis}
 	return response
 }
 
-
-func (nsi *NodeServiceImpl) joinNetwork(enode string, url string) (int) {
+func (nsi *NodeServiceImpl) joinNetwork(enode string, url string) (string) {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	raftId := ethClient.RaftAddPeer(enode)
-	return raftId
+	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+	contractAdd := util.MustGetString("CONTRACT_ADD", p)
+	collatedInfo := fmt.Sprint(raftId, ":", contractAdd)
+	return collatedInfo
 }
 
-
-func (nsi *NodeServiceImpl) getCurrentNode (url string) (NodeInfo) {
+func (nsi *NodeServiceImpl) getCurrentNode(url string) (NodeInfo) {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
+	var activeStatus string
+	active := ethClient.NetListening()
+	if active == true {
+		activeStatus = "active"
+	} else {
+		activeStatus = "inactive"
+	}
 	otherPeersResponse := ethClient.AdminPeers()
 	count := len(otherPeersResponse)
 	count = count + 1
@@ -192,7 +252,7 @@ func (nsi *NodeServiceImpl) getCurrentNode (url string) (NodeInfo) {
 	var nodename string
 	for _, f := range files {
 		match, _ := regexp.MatchString("[s][t][a][r][t][_][A-Za-z0-9]*[.][s][h]", f.Name())
-		if(match) {
+		if match {
 			nodename = r.FindString(f.Name())
 		}
 	}
@@ -220,7 +280,7 @@ func (nsi *NodeServiceImpl) getCurrentNode (url string) (NodeInfo) {
 	pendingTxCount := len(pendingTxResponse)
 
 	blockNumber := ethClient.BlockNumber()
-	blockNumberInt :=  util.HexStringtoInt64(blockNumber)
+	blockNumberInt := util.HexStringtoInt64(blockNumber)
 
 	raftRole := ethClient.RaftRole()
 
@@ -233,12 +293,11 @@ func (nsi *NodeServiceImpl) getCurrentNode (url string) (NodeInfo) {
 	}
 
 	genesis := string(b)
-	genesis = strings.Replace(genesis, "\n","",-1)
-	conn := ConnectionInfo{ipAddr,rpcPortInt,enode}
-	responseObj := NodeInfo{nodename,count,conn,raftRole,raftIdInt,blockNumberInt,pendingTxCount,genesis,thisAdminInfo}
+	genesis = strings.Replace(genesis, "\n", "", -1)
+	conn := ConnectionInfo{ipAddr, rpcPortInt, enode}
+	responseObj := NodeInfo{nodename, count, activeStatus, conn, raftRole, raftIdInt, blockNumberInt, pendingTxCount, genesis, thisAdminInfo}
 	return responseObj
 }
-
 
 func (nsi *NodeServiceImpl) getOtherPeer(peerId string, url string) (client.AdminPeers) {
 	var nodeUrl = url
@@ -253,14 +312,12 @@ func (nsi *NodeServiceImpl) getOtherPeer(peerId string, url string) (client.Admi
 	return client.AdminPeers{}
 }
 
-
 func (nsi *NodeServiceImpl) getOtherPeers(url string) ([]client.AdminPeers) {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	otherPeersResponse := ethClient.AdminPeers()
 	return otherPeersResponse
 }
-
 
 func (nsi *NodeServiceImpl) getPendingTransactions(url string) ([]TransactionDetailsResponse) {
 	var nodeUrl = url
@@ -292,14 +349,18 @@ func (nsi *NodeServiceImpl) getPendingTransactions(url string) ([]TransactionDet
 	return pendingTxResponse
 }
 
-
 func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) (BlockDetailsResponse) {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
-	blockNoHex  := strconv.FormatInt(blockno, 16)
+	blockNoHex := strconv.FormatInt(blockno, 16)
 	bNoHex := fmt.Sprint("0x", blockNoHex)
 	var blockResponse BlockDetailsResponse
 	blockResponseClient := ethClient.GetBlockByNumber(bNoHex)
+	currentTime := time.Now().Unix()
+	creationTime := util.HexStringtoInt64(blockResponseClient.Timestamp)
+	creationTimeUnix := creationTime / 1000000000
+	elapsedTime := currentTime - creationTimeUnix
+	blockResponse.TimeElapsed = elapsedTime
 	blockResponse.Number = util.HexStringtoInt64(blockResponseClient.Number)
 	blockResponse.Difficulty = util.HexStringtoInt64(blockResponseClient.Difficulty)
 	blockResponse.TotalDifficulty = util.HexStringtoInt64(blockResponseClient.TotalDifficulty)
@@ -349,8 +410,7 @@ func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) (BlockDetail
 	return blockResponse
 }
 
-
-func (nsi *NodeServiceImpl) getLatestBlockInfo(count string,reference string, url string) ([]BlockDetailsResponse) {
+func (nsi *NodeServiceImpl) getLatestBlockInfo(count string, reference string, url string) ([]BlockDetailsResponse) {
 	countVal := util.HexStringtoInt64(count)
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
@@ -367,12 +427,17 @@ func (nsi *NodeServiceImpl) getLatestBlockInfo(count string,reference string, ur
 	}
 	start := blockNumber - countVal + 1
 	blockResponse := make([]BlockDetailsResponse, countVal)
-	for i :=start ; i <= blockNumber; i++ {
-		blockNoHex  := strconv.FormatInt(i, 16)
+	for i := start; i <= blockNumber; i++ {
+		blockNoHex := strconv.FormatInt(i, 16)
 		bNoHex := fmt.Sprint("0x", blockNoHex)
 		blockResponseClient := ethClient.GetBlockByNumber(bNoHex)
-		blockResponse[blockNumber - i].Number = util.HexStringtoInt64(blockResponseClient.Number)
-		blockResponse[blockNumber - i].Hash = blockResponseClient.Hash
+		blockResponse[blockNumber-i].Number = util.HexStringtoInt64(blockResponseClient.Number)
+		blockResponse[blockNumber-i].Hash = blockResponseClient.Hash
+		currentTime := time.Now().Unix()
+		creationTime := util.HexStringtoInt64(blockResponseClient.Timestamp)
+		creationTimeUnix := creationTime / 1000000000
+		elapsedTime := currentTime - creationTimeUnix
+		blockResponse[blockNumber-i].TimeElapsed = elapsedTime
 		txnNo := len(blockResponseClient.Transactions)
 		txResponse := make([]TransactionDetailsResponse, txnNo)
 		for i := 0; i < txnNo; i++ {
@@ -401,11 +466,10 @@ func (nsi *NodeServiceImpl) getLatestBlockInfo(count string,reference string, ur
 				txResponse[i].TransactionType = "Public"
 			}
 		}
-		blockResponse[blockNumber - i].Transactions = txResponse
+		blockResponse[blockNumber-i].Transactions = txResponse
 	}
 	return blockResponse
 }
-
 
 func (nsi *NodeServiceImpl) getLatestTransactionInfo(count string, url string) ([]BlockDetailsResponse) {
 	countVal := util.HexStringtoInt64(count)
@@ -414,11 +478,16 @@ func (nsi *NodeServiceImpl) getLatestTransactionInfo(count string, url string) (
 	blockNumber := util.HexStringtoInt64(ethClient.BlockNumber())
 	start := blockNumber - countVal + 1
 	blockResponse := make([]BlockDetailsResponse, countVal)
-	for i :=start ; i <= blockNumber; i++ {
-		blockNoHex  := strconv.FormatInt(i, 16)
+	for i := start; i <= blockNumber; i++ {
+		blockNoHex := strconv.FormatInt(i, 16)
 		bNoHex := fmt.Sprint("0x", blockNoHex)
 		blockResponseClient := ethClient.GetBlockByNumber(bNoHex)
-		blockResponse[blockNumber - i].Number = util.HexStringtoInt64(blockResponseClient.Number)
+		currentTime := time.Now().Unix()
+		creationTime := util.HexStringtoInt64(blockResponseClient.Timestamp)
+		creationTimeUnix := creationTime / 1000000000
+		elapsedTime := currentTime - creationTimeUnix
+		blockResponse[blockNumber-i].TimeElapsed = elapsedTime
+		blockResponse[blockNumber-i].Number = util.HexStringtoInt64(blockResponseClient.Number)
 		txnNo := len(blockResponseClient.Transactions)
 		txResponse := make([]TransactionDetailsResponse, txnNo)
 		for i := 0; i < txnNo; i++ {
@@ -447,11 +516,10 @@ func (nsi *NodeServiceImpl) getLatestTransactionInfo(count string, url string) (
 				txResponse[i].TransactionType = "Public"
 			}
 		}
-		blockResponse[blockNumber - i].Transactions = txResponse
+		blockResponse[blockNumber-i].Transactions = txResponse
 	}
 	return blockResponse
 }
-
 
 func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) (TransactionDetailsResponse) {
 	var nodeUrl = url
@@ -482,9 +550,14 @@ func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) (Transac
 	} else {
 		txResponse.TransactionType = "Public"
 	}
+	blockResponseClient := ethClient.GetBlockByNumber(txResponseClient.BlockNumber)
+	currentTime := time.Now().Unix()
+	creationTime := util.HexStringtoInt64(blockResponseClient.Timestamp)
+	creationTimeUnix := creationTime / 1000000000
+	elapsedTime := currentTime - creationTimeUnix
+	txResponse.TimeElapsed = elapsedTime
 	return txResponse
 }
-
 
 func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) (TransactionReceiptResponse) {
 	var nodeUrl = url
@@ -503,6 +576,14 @@ func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) (Tran
 	txResponse.Root = txResponseClient.Root
 	txResponse.To = txResponseClient.To
 	txResponse.TransactionHash = txResponseClient.TransactionHash
+	txResponse.Gas = util.HexStringtoInt64(txGetClient.Gas)
+	txResponse.GasPrice = util.HexStringtoInt64(txGetClient.GasPrice)
+	txResponse.Input = txGetClient.Input
+	txResponse.Nonce = util.HexStringtoInt64(txGetClient.Nonce)
+	txResponse.Value = util.HexStringtoInt64(txGetClient.Value)
+	txResponse.V = txGetClient.V
+	txResponse.R = txGetClient.R
+	txResponse.S = txGetClient.S
 	eventNo := len(txResponseClient.Logs)
 	if util.HexStringtoInt64(txGetClient.V) == 37 || util.HexStringtoInt64(txGetClient.V) == 38 {
 		if eventNo == 0 {
@@ -525,26 +606,47 @@ func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) (Tran
 		txResponseBuffer[i].Topics = txResponseClient.Logs[i].Topics
 	}
 	txResponse.Logs = txResponseBuffer
+	blockResponseClient := ethClient.GetBlockByNumber(txResponseClient.BlockNumber)
+	currentTime := time.Now().Unix()
+	creationTime := util.HexStringtoInt64(blockResponseClient.Timestamp)
+	creationTimeUnix := creationTime / 1000000000
+	elapsedTime := currentTime - creationTimeUnix
+	txResponse.TimeElapsed = elapsedTime
 	return txResponse
 }
-
 
 func (nsi *NodeServiceImpl) joinRequestResponse(enode string, status string) (SuccessResponse) {
 	var successResponse SuccessResponse
 	peerMap[enode] = status
-	successResponse.Status = fmt.Sprintf("Successfully updated status of %s to %s",enode, status)
+	var enodeString []string
+	var ipString []string
+	enodeVal := strings.TrimPrefix(enode, "enode://")
+	enodeString = strings.Split(enodeVal, "@")
+	ipString = strings.Split(enodeString[1], ":")
+	ip := ipString[0]
+	successResponse.Status = fmt.Sprintf("Successfully updated status of %s node with IP: %s to %s", nameMap[enode], ip, status)
 	return successResponse
 }
-
 
 func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, private bool, url string) []ContractJson {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
-
+	fromAddress := ethClient.Coinbase()
+	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+	contractAdd := util.MustGetString("CONTRACT_ADD", p)
+	nms := contractclient.NetworkMapContractClient{EthClient: client.EthClient{url}}
 	if private == true && pubKeys[0] == "" {
-		pubKeys = []string{"F/vdZBFpbIzi7vyRCRba0jvvEpYHGeZdBbKYwIiy1SE=","IgD5KZV+kZBhxfIReFR24JDQZVtz3UBeA+llw8vLpT4=","E/vdZBFpbIzi7vyRCRba0jvvEpYHGeZdBbKYwIiy1SF="}
+		enode := ethClient.AdminNodeInfo().ID
+		peerNo := len(nms.GetNodeDetailsList(fromAddress, contractAdd, "", nil))
+		publicKeys := make([]string, peerNo-1)
+		for i := 0; i < peerNo; i++ {
+			if enode != nms.GetNodeDetails(i, fromAddress, contractAdd, "", nil).Enode {
+				publicKeys[i-1] = nms.GetNodeDetails(i, fromAddress, contractAdd, "", nil).PublicKey
+			}
+		}
+		//pubKeys = []string{"R1fOFUfzBbSVaXEYecrlo9rENW0dam0kmaA2pasGM14=", "Er5J8G+jXQA9O2eu7YdhkraYM+j+O5ArnMSZ24PpLQY="}
+		pubKeys = publicKeys
 	}
-
 	var solc string
 	if solc == "" {
 		solc = "solc"
@@ -561,6 +663,8 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 		err := cmd.Run()
 		if err != nil {
 			fmt.Println(fmt.Sprint(err) + ": " + errorstring.String())
+			contractJsonArr[i].Filename = strings.Replace(fileName[i], ".sol", "", -1)
+			contractJsonArr[i].Json = "Compilation Failed: JSON could not be created"
 			contractJsonArr[i].Bytecode = "Compilation Failed: " + errorstring.String()
 		}
 		var abiOut bytes.Buffer
@@ -582,7 +686,7 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 		index := re.FindStringIndex(byteCode)
 		var start int
 		start = index[1] + 3
-		byteCode = byteCode[start:len(byteCode)]
+		byteCode = byteCode[start:]
 		byteCode = "0x" + byteCode
 
 		abiStr := abiOut.String()
@@ -590,37 +694,39 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 		re = regexp.MustCompile("ABI?")
 		index = re.FindStringIndex(abiStr)
 		start = index[1] + 2
-		abiStr = abiStr[start:len(abiStr)]
+		abiStr = abiStr[start:]
 
 		reg, err := regexp.Compile("[^a-zA-Z0-9]+")
 		byteCode = reg.ReplaceAllString(byteCode, "")
 
 		contractAddress := ethClient.DeployContracts(byteCode, pubKeys, private)
 
-		path := "./" + contractAddress
+		path := "./" + contractAddress + "_" + strings.Replace(fileName[i], ".sol", "", -1)
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			os.Mkdir(path, 0775)
 		}
 
-		contractJsonArr[i].Interface = abiStr
+		contractJsonArr[i].Interface = strings.Replace(strings.Replace(abiStr, "\n", "", -1), "\\", "", -1)
 		contractJsonArr[i].Bytecode = byteCode
 		contractJsonArr[i].ContractAddress = contractAddress
 
 		js := util.ComposeJSON(abiStr, byteCode, contractAddress)
 
-		filePath := path + "/" + strings.Replace(fileName[i], ".sol","",-1) + ".json"
+		contractJsonArr[i].Filename = strings.Replace(fileName[i], ".sol", "", -1)
+		contractJsonArr[i].Json = strings.Replace(strings.Replace(js, "\n", "", -1), "\\", "", -1)
+		filePath := path + "/" + strings.Replace(fileName[i], ".sol", "", -1) + ".json"
 		jsByte := []byte(js)
 		err = ioutil.WriteFile(filePath, jsByte, 0775)
 		if err != nil {
 			panic(err)
 		}
 		abi := []byte(abiStr)
-		err = ioutil.WriteFile(path + "/ABI", abi, 0775)
+		err = ioutil.WriteFile(path+"/ABI", abi, 0775)
 		if err != nil {
 			panic(err)
 		}
 		bin := []byte(byteCode)
-		err = ioutil.WriteFile(path + "/BIN", bin, 0775)
+		err = ioutil.WriteFile(path+"/BIN", bin, 0775)
 		if err != nil {
 			panic(err)
 		}
@@ -628,10 +734,9 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 	return contractJsonArr
 }
 
-
 func (nsi *NodeServiceImpl) createNetworkScriptCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string) (SuccessResponse) {
 	var successResponse SuccessResponse
-	cmd := exec.Command("./setup.sh","1", nodename)
+	cmd := exec.Command("./setup.sh", "1", nodename)
 	cmd.Dir = "./Setup"
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -639,11 +744,11 @@ func (nsi *NodeServiceImpl) createNetworkScriptCall(nodename string, currentIP s
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	var setupConf string
 	setupConf = "CURRENT_IP=" + currentIP + "\n" + "RPC_PORT=" + rpcPort + "\n" + "WHISPER_PORT=" + whisperPort + "\n" + "CONSTELLATION_PORT=" + constellationPort + "\n" + "RAFT_PORT=" + raftPort + "\n" + "NODEMANAGER_PORT=" + nodeManagerPort + "\n"
 	setupConfByte := []byte(setupConf)
-	err = ioutil.WriteFile("./Setup/" + nodename + "/setup.conf", setupConfByte, 0775)
+	err = ioutil.WriteFile("./Setup/"+nodename+"/setup.conf", setupConfByte, 0775)
 	if err != nil {
 		panic(err)
 	}
@@ -651,10 +756,9 @@ func (nsi *NodeServiceImpl) createNetworkScriptCall(nodename string, currentIP s
 	return successResponse
 }
 
-
 func (nsi *NodeServiceImpl) joinRequestResponseCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string, masterNodeManagerPort string, masterIP string) (SuccessResponse) {
 	var successResponse SuccessResponse
-	cmd := exec.Command("./setup.sh","2", nodename, masterIP, masterNodeManagerPort, currentIP, rpcPort, whisperPort, constellationPort, raftPort, nodeManagerPort)
+	cmd := exec.Command("./setup.sh", "2", nodename, masterIP, masterNodeManagerPort, currentIP, rpcPort, whisperPort, constellationPort, raftPort, nodeManagerPort)
 	cmd.Dir = "./Setup"
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -662,18 +766,17 @@ func (nsi *NodeServiceImpl) joinRequestResponseCall(nodename string, currentIP s
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	var setupConf string
-	setupConf = "CURRENT_IP=" + currentIP + "\n" + "RPC_PORT=" + rpcPort + "\n" + "WHISPER_PORT=" + whisperPort + "\n" + "CONSTELLATION_PORT=" + constellationPort + "\n" + "RAFT_PORT=" + raftPort + "\n" + "THIS_NODEMANAGER_PORT=" + nodeManagerPort + "\n" + "MASTER_IP=" + masterIP + "\n"+ "NODEMANAGER_PORT=" + masterNodeManagerPort + "\n"
+	setupConf = "CURRENT_IP=" + currentIP + "\n" + "RPC_PORT=" + rpcPort + "\n" + "WHISPER_PORT=" + whisperPort + "\n" + "CONSTELLATION_PORT=" + constellationPort + "\n" + "RAFT_PORT=" + raftPort + "\n" + "THIS_NODEMANAGER_PORT=" + nodeManagerPort + "\n" + "MASTER_IP=" + masterIP + "\n" + "NODEMANAGER_PORT=" + masterNodeManagerPort + "\n"
 	setupConfByte := []byte(setupConf)
-	err = ioutil.WriteFile("./Setup/" + nodename + "/setup.conf", setupConfByte, 0775)
+	err = ioutil.WriteFile("./Setup/"+nodename+"/setup.conf", setupConfByte, 0775)
 	if err != nil {
 		panic(err)
 	}
 	successResponse.Status = "success"
 	return successResponse
 }
-
 
 func (nsi *NodeServiceImpl) resetCurrentNode() (SuccessResponse) {
 	var successResponse SuccessResponse
@@ -690,7 +793,6 @@ func (nsi *NodeServiceImpl) resetCurrentNode() (SuccessResponse) {
 	return successResponse
 }
 
-
 func (nsi *NodeServiceImpl) restartCurrentNode() (SuccessResponse) {
 	var successResponse SuccessResponse
 	r, _ := regexp.Compile("[s][t][a][r][t][_][A-Za-z0-9]*[.][s][h]")
@@ -701,7 +803,7 @@ func (nsi *NodeServiceImpl) restartCurrentNode() (SuccessResponse) {
 	var filename string
 	for _, f := range files {
 		match, _ := regexp.MatchString("[s][t][a][r][t][_][A-Za-z0-9]*[.][s][h]", f.Name())
-		if(match) {
+		if match {
 			filename = r.FindString(f.Name())
 		}
 	}
@@ -718,4 +820,232 @@ func (nsi *NodeServiceImpl) restartCurrentNode() (SuccessResponse) {
 	}
 	successResponse.Status = "success"
 	return successResponse
+}
+
+func (nsi *NodeServiceImpl) latestBlockDetails(url string) (LatestBlockResponse) {
+	var latestBlockResponse LatestBlockResponse
+	var nodeUrl = url
+	ethClient := client.EthClient{nodeUrl}
+	currentTime := time.Now().Unix()
+	blockNumber := ethClient.BlockNumber()
+	blockResponseClient := ethClient.GetBlockByNumber(blockNumber)
+	blockNumberInt := util.HexStringtoInt64(blockNumber)
+	creationTime := blockResponseClient.Timestamp
+	creationTimeInt := util.HexStringtoInt64(creationTime)
+	creationTimeUnix := creationTimeInt / 1000000000
+	elapsedTime := currentTime - creationTimeUnix
+	latestBlockResponse.LatestBlockNumber = blockNumberInt
+	latestBlockResponse.TimeElapsed = elapsedTime
+	return latestBlockResponse
+}
+
+//func (nsi *NodeServiceImpl) latency(url string) ([]LatencyResponse) {
+//	var nodeUrl = url
+//	ethClient := client.EthClient{nodeUrl}
+//	otherPeersResponse := ethClient.AdminPeers()
+//	peerCount := len(otherPeersResponse)
+//	latencyResponse := make([]LatencyResponse, peerCount+1)
+//	for i := 0; i < peerCount+1; i++ {
+//		var latOut bytes.Buffer
+//		var ip string
+//		if i == peerCount {
+//			ip = "localhost"
+//			thisAdminInfo := ethClient.AdminNodeInfo()
+//			latencyResponse[i].EnodeID = thisAdminInfo.ID
+//		} else {
+//			ip = otherPeersResponse[i].Network.LocalAddress
+//			ipString := strings.Split(ip, ":")
+//			ip = ipString[0]
+//			latencyResponse[i].EnodeID = otherPeersResponse[i].ID
+//		}
+//		command := fmt.Sprint("ping -c 4 ", ip, " |  awk -F'/' '{ print $5 }' | tail -1")
+//		cmd := exec.Command("bash", "-c", command)
+//		cmd.Stdout = &latOut
+//		err := cmd.Run()
+//		if err != nil {
+//			fmt.Println(err)
+//		}
+//		latencyString := strings.TrimSuffix(latOut.String(), "\n")
+//		latency, err := strconv.ParseFloat(latencyString, 10)
+//		latency = latency * 1000
+//		latencyStr := strconv.FormatFloat(latency, 'f', 0, 64)
+//		latencyResponse[i].Latency = latencyStr
+//	}
+//	return latencyResponse
+//}
+
+func (nsi *NodeServiceImpl) latency(url string) ([]LatencyResponse) {
+	var nodeUrl = url
+	ethClient := client.EthClient{nodeUrl}
+	fromAddress := ethClient.Coinbase()
+	nms := contractclient.NetworkMapContractClient{EthClient: client.EthClient{url}}
+	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+	contractAdd := util.MustGetString("CONTRACT_ADD", p)
+	peerNo := len(nms.GetNodeDetailsList(fromAddress, contractAdd, "", nil))
+
+	latencyResponse := make([]LatencyResponse, peerNo)
+	for i := 0; i < peerNo; i++ {
+		var latOut bytes.Buffer
+		ip := nms.GetNodeDetails(i, fromAddress, contractAdd, "", nil).IP
+		latencyResponse[i].EnodeID = nms.GetNodeDetails(i, fromAddress, contractAdd, "", nil).Enode
+		command := fmt.Sprint("ping -c 4 ", ip, " |  awk -F'/' '{ print $5 }' | tail -1")
+		cmd := exec.Command("bash", "-c", command)
+		cmd.Stdout = &latOut
+		err := cmd.Run()
+		if err != nil {
+			fmt.Println(err)
+		}
+		latencyString := strings.TrimSuffix(latOut.String(), "\n")
+		latency, err := strconv.ParseFloat(latencyString, 10)
+		latency = latency * 1000
+		latencyStr := strconv.FormatFloat(latency, 'f', 0, 64)
+		latencyResponse[i].Latency = latencyStr
+	}
+	return latencyResponse
+}
+
+func (nsi *NodeServiceImpl) transactionSearchDetails(txno string, url string) (BlockDetailsResponse) {
+	var nodeUrl = url
+	ethClient := client.EthClient{nodeUrl}
+	txGetClient := ethClient.GetTransactionReceipt(txno)
+	blockNumber := util.HexStringtoInt64(txGetClient.BlockNumber)
+	blockDetailsResponse := nsi.getBlockInfo(blockNumber, url)
+	return blockDetailsResponse
+}
+
+func (nsi *NodeServiceImpl) emailServerConfig(host string, port string, username string, password string, url string) (SuccessResponse) {
+	var successResponse SuccessResponse
+
+	mailServerConfig.Host = host
+	mailServerConfig.Port = port
+	mailServerConfig.Username = username
+	mailServerConfig.Password = password
+
+	ticker := time.NewTicker(30 * time.Second)
+	go func() {
+		for range ticker.C {
+			//fmt.Println("Healthcheck done at: ", t)
+			if warning > 0 {
+				//fmt.Println("Ticker stopped")
+				ticker.Stop()
+			}
+			nsi.healthCheck(url)
+
+		}
+	}()
+
+	successResponse.Status = "success"
+	return successResponse
+}
+
+func (nsi *NodeServiceImpl) healthCheck(url string) {
+	ethClient := client.EthClient{url}
+	blockNumber := ethClient.BlockNumber()
+	if blockNumber == "" {
+		if warning > 0 {
+			nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Node is not responding", "Unfortunately this node has stopped responding")
+		}
+		warning ++
+	}
+}
+
+func (nsi *NodeServiceImpl) sendMail(host string, port string, username string, password string, subject string, mailContent string) {
+	//fmt.Println("Called with warning =", warning)
+	portNo, err := strconv.ParseInt(port, 10, 64)
+	if err != nil {
+		fmt.Println(err)
+	}
+	m := gomail.NewMessage()
+	m.SetHeader("From", username)
+	m.SetHeader("To", username)
+	//m.SetAddressHeader("Cc", host, host)
+	m.SetHeader("Subject", subject)
+	m.SetBody("text", mailContent)
+	//m.Attach("")
+
+	d := gomail.NewDialer(host, int(portNo), username, password)
+
+	if err := d.DialAndSend(m); err != nil {
+		log.Println(err)
+	}
+}
+
+func (nsi *NodeServiceImpl) logs() (SuccessResponse) {
+	var successResponse SuccessResponse
+	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+	ipAddr := util.MustGetString("CURRENT_IP", p)
+	logPort := util.MustGetString("LOG_PORT", p)
+	successResponse.Status = fmt.Sprint(ipAddr, ":", logPort)
+	return successResponse
+}
+
+func (nsi *NodeServiceImpl) LogRotaterGeth() {
+	command := "cat $(ls | grep log | grep -v _) > Geth_$(date| sed -e 's/ /_/g')"
+
+	command1 := "echo -en '' > $(ls | grep log | grep -v _)"
+
+	cmd := exec.Command("bash", "-c", command)
+	cmd.Dir = "/home/node/qdata/gethLogs"
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	cmd1 := exec.Command("bash", "-c", command1)
+	cmd1.Dir = "/home/node/qdata/gethLogs"
+	err1 := cmd1.Run()
+	if err1 != nil {
+		fmt.Println(err)
+	}
+
+}
+
+func (nsi *NodeServiceImpl) LogRotaterConst() {
+
+	command := "cat $(ls | grep log | grep _) > Constellation_$(date| sed -e 's/ /_/g')"
+
+	command1 := "echo -en '' > $(ls | grep log | grep _)"
+
+	cmd := exec.Command("bash", "-c", command)
+	cmd.Dir = "/home/node/qdata/constellationLogs"
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	cmd1 := exec.Command("bash", "-c", command1)
+	cmd1.Dir = "/home/node/qdata/constellationLogs"
+	err1 := cmd1.Run()
+	if err1 != nil {
+		fmt.Println(err)
+	}
+
+}
+
+func (nsi *NodeServiceImpl) RegisterNodeDetails(url string) {
+	var nodeUrl = url
+	ethClient := client.EthClient{nodeUrl}
+	nms := contractclient.NetworkMapContractClient{EthClient: client.EthClient{url}}
+	enode := ethClient.AdminNodeInfo().ID
+	fromAddress := ethClient.Coinbase()
+	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+	ipAddr := util.MustGetString("CURRENT_IP", p)
+	nodename := util.MustGetString("NODENAME", p)
+	pubKey := util.MustGetString("PUBKEY", p)
+	role := util.MustGetString("ROLE", p)
+	contractAdd := util.MustGetString("CONTRACT_ADD", p)
+	fmt.Println(ipAddr, nodename, pubKey, role, enode, fromAddress, contractAdd)
+	nms.RegisterNode(nodename, role, pubKey, enode, ipAddr, fromAddress, contractAdd, "", nil)
+}
+
+func (nsi *NodeServiceImpl) NetworkManagerContractDeployer(url string) {
+	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+	contractAdd := util.MustGetString("CONTRACT_ADD", p)
+	if contractAdd == "" {
+		filename := []string{"NetworkManagerContract.sol"}
+		deployedContract := nsi.deployContract(nil, filename, false, url)
+		contAdd := deployedContract[0].ContractAddress
+		contAddAppend := fmt.Sprint("CONTRACT_ADD=", contAdd)
+		util.AppendStringToFile("/home/setup.conf", contAddAppend)
+	}
 }

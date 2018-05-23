@@ -89,7 +89,7 @@ func TestGetNodeDetails(t *testing.T) {
 
 	nmc := NetworkMapContractClient{ec, cp}
 
-	nd := nmc.GetNodeDetails(20)
+	nd := nmc.GetNodeDetails(0)
 
 	fmt.Println(nd.Name)
 }
@@ -111,8 +111,8 @@ func TestGetNodeDetailsList(t *testing.T) {
 
 func getContractParam() contracthandler.ContractParam {
 	return contracthandler.ContractParam{
-		"0xe8e838a80d79c921ee51a44cc95b7ee57c672896",
-		"0x99e9feaa7c6755f86e91b831df3f96dc89792482",
+		"0x044802df9659bbfa78615dc2af3d4740464cb714",
+		"0x32072a0bfac753633914661def1c0ae31839dc28",
 		"",
 		nil,
 	}

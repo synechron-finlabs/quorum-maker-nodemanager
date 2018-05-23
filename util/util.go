@@ -8,6 +8,7 @@ import (
 	"github.com/magiconair/properties"
 	"encoding/hex"
 	"time"
+	"os"
 )
 
 func TakeSliceArg(arg interface{}) (out []interface{}, ok bool) {
@@ -99,3 +100,16 @@ func TotalTime(start int) {
 	fmt.Println("Total time took = ", time.Now().Nanosecond()-start)
 }
 
+func AppendStringToFile(path, text string) error {
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(text)
+	if err != nil {
+		return err
+	}
+	return nil
+}
