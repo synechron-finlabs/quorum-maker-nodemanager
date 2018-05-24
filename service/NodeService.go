@@ -1024,18 +1024,24 @@ func (nsi *NodeServiceImpl) LogRotaterConst() {
 
 func (nsi *NodeServiceImpl) RegisterNodeDetails(url string) {
 	var nodeUrl = url
-	ethClient := client.EthClient{nodeUrl}
-	nms := contractclient.NetworkMapContractClient{EthClient: client.EthClient{url}}
-	enode := ethClient.AdminNodeInfo().ID
-	fromAddress := ethClient.Coinbase()
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-	ipAddr := util.MustGetString("CURRENT_IP", p)
-	nodename := util.MustGetString("NODENAME", p)
-	pubKey := util.MustGetString("PUBKEY", p)
-	role := util.MustGetString("ROLE", p)
-	contractAdd := util.MustGetString("CONTRACT_ADD", p)
-	fmt.Println(ipAddr, nodename, pubKey, role, enode, fromAddress, contractAdd)
-	nms.RegisterNode(nodename, role, pubKey, enode, ipAddr, fromAddress, contractAdd, "", nil)
+	registeredVal := util.MustGetString("REGISTERED", p)
+	if registeredVal != "TRUE" {
+		ethClient := client.EthClient{nodeUrl}
+		nms := contractclient.NetworkMapContractClient{EthClient: client.EthClient{url}}
+		enode := ethClient.AdminNodeInfo().ID
+		fromAddress := ethClient.Coinbase()
+		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+		ipAddr := util.MustGetString("CURRENT_IP", p)
+		nodename := util.MustGetString("NODENAME", p)
+		pubKey := util.MustGetString("PUBKEY", p)
+		role := util.MustGetString("ROLE", p)
+		contractAdd := util.MustGetString("CONTRACT_ADD", p)
+		//fmt.Println(ipAddr, nodename, pubKey, role, enode, fromAddress, contractAdd)
+		registered := fmt.Sprint("REGISTERED=TRUE", "\n")
+		util.AppendStringToFile("/home/setup.conf", registered)
+		nms.RegisterNode(nodename, role, pubKey, enode, ipAddr, fromAddress, contractAdd, "", nil)
+	}
 }
 
 func (nsi *NodeServiceImpl) NetworkManagerContractDeployer(url string) {
@@ -1045,7 +1051,7 @@ func (nsi *NodeServiceImpl) NetworkManagerContractDeployer(url string) {
 		filename := []string{"NetworkManagerContract.sol"}
 		deployedContract := nsi.deployContract(nil, filename, false, url)
 		contAdd := deployedContract[0].ContractAddress
-		contAddAppend := fmt.Sprint("CONTRACT_ADD=", contAdd)
+		contAddAppend := fmt.Sprint("CONTRACT_ADD=", contAdd,"\n")
 		util.AppendStringToFile("/home/setup.conf", contAddAppend)
 	}
 }
