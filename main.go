@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/gorilla/mux"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"synechron.com/NodeManagerGo/service"
 	"os"
@@ -14,6 +14,12 @@ import (
 var nodeUrl = "http://localhost:22000"
 var listenPort = ":8000"
 var logPort = ":3000"
+
+func init() {
+	log.SetFormatter(&log.JSONFormatter{})
+	log.SetOutput(os.Stdout)
+	log.SetLevel(log.DebugLevel)
+}
 
 func main() {
 
@@ -35,6 +41,7 @@ func main() {
 	ticker := time.NewTicker(86400 * time.Second)
 	go func() {
 		for range ticker.C {
+			log.Debug("Rotating log for Geth and Constellation.")
 			nodeService.LogRotaterGeth()
 			nodeService.LogRotaterConst()
 		}
@@ -58,6 +65,7 @@ func main() {
 
 	go func() {
 		time.Sleep(80 * time.Second)
+		log.Info("Deploying Network Manager Contract")
 		nodeService.NetworkManagerContractDeployer(nodeUrl)
 		nodeService.RegisterNodeDetails(nodeUrl)
 	}()
@@ -89,5 +97,6 @@ func main() {
 	router.HandleFunc("/getNodeDetails/{index}", networkMapService.GetNodeDetailsResponseHandler).Methods("GET", "OPTIONS")
 	router.HandleFunc("/getNodeList", networkMapService.GetNodeListResponseHandler).Methods("GET", "OPTIONS")
 
+	log.WithFields(log.Fields{"url" : nodeUrl, "port" : listenPort}).Info("Node Manager listening...")
 	log.Fatal(http.ListenAndServe(listenPort, router))
 }
