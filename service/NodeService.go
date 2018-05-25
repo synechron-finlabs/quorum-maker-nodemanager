@@ -231,6 +231,7 @@ func (nsi *NodeServiceImpl) joinNetwork(enode string, url string) (string) {
 	return collatedInfo
 }
 
+//@TODO: If this function is repeatedly called from UI, please cache the static informations.
 func (nsi *NodeServiceImpl) getCurrentNode(url string) (NodeInfo) {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
@@ -244,7 +245,11 @@ func (nsi *NodeServiceImpl) getCurrentNode(url string) (NodeInfo) {
 	otherPeersResponse := ethClient.AdminPeers()
 	count := len(otherPeersResponse)
 	count = count + 1
+
+	//@TODO: Cant the regex be simply start*.sh ?
 	r, _ := regexp.Compile("[s][t][a][r][t][_][A-Za-z0-9]*[.][s][h]")
+
+	//@TODO: Use of absolute path (starting with "/") is highly error prone
 	files, err := ioutil.ReadDir("/home/node")
 	if err != nil {
 		log.Fatal(err)
@@ -256,6 +261,8 @@ func (nsi *NodeServiceImpl) getCurrentNode(url string) (NodeInfo) {
 			nodename = r.FindString(f.Name())
 		}
 	}
+
+	//@TODO: use grouping in regex to find the name of the node. Refer to whats app message.
 	nodename = strings.TrimSuffix(nodename, ".sh")
 	nodename = strings.TrimPrefix(nodename, "start_")
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
@@ -326,6 +333,8 @@ func (nsi *NodeServiceImpl) getPendingTransactions(url string) ([]TransactionDet
 	pendingTxCount := len(pendingTxResponseClient)
 	pendingTxResponse := make([]TransactionDetailsResponse, pendingTxCount)
 	for i := 0; i < pendingTxCount; i++ {
+
+		//@TODO: Create a Utility function to convert transaction to readable transaction object and call from here
 		pendingTxResponse[i].BlockNumber = util.HexStringtoInt64(pendingTxResponseClient[i].BlockNumber)
 		pendingTxResponse[i].Gas = util.HexStringtoInt64(pendingTxResponseClient[i].Gas)
 		pendingTxResponse[i].GasPrice = util.HexStringtoInt64(pendingTxResponseClient[i].GasPrice)
@@ -361,6 +370,8 @@ func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) (BlockDetail
 	creationTimeUnix := creationTime / 1000000000
 	elapsedTime := currentTime - creationTimeUnix
 	blockResponse.TimeElapsed = elapsedTime
+
+	//@TODO: Create a utility function to convert block object to readable object.
 	blockResponse.Number = util.HexStringtoInt64(blockResponseClient.Number)
 	blockResponse.Difficulty = util.HexStringtoInt64(blockResponseClient.Difficulty)
 	blockResponse.TotalDifficulty = util.HexStringtoInt64(blockResponseClient.TotalDifficulty)
@@ -381,6 +392,8 @@ func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) (BlockDetail
 	txnNo := len(blockResponseClient.Transactions)
 	txResponse := make([]TransactionDetailsResponse, txnNo)
 	for i := 0; i < txnNo; i++ {
+
+		//@TODO: call the utility function to convert to readeable object
 		txGetClient := ethClient.GetTransactionReceipt(blockResponseClient.Transactions[i].Hash)
 		txResponse[i].BlockNumber = util.HexStringtoInt64(blockResponseClient.Transactions[i].BlockNumber)
 		txResponse[i].Gas = util.HexStringtoInt64(blockResponseClient.Transactions[i].Gas)
@@ -427,6 +440,8 @@ func (nsi *NodeServiceImpl) getLatestBlockInfo(count string, reference string, u
 	}
 	start := blockNumber - countVal + 1
 	blockResponse := make([]BlockDetailsResponse, countVal)
+
+	//@TODO: call the utility function to convert to readable block object
 	for i := start; i <= blockNumber; i++ {
 		blockNoHex := strconv.FormatInt(i, 16)
 		bNoHex := fmt.Sprint("0x", blockNoHex)
@@ -441,6 +456,7 @@ func (nsi *NodeServiceImpl) getLatestBlockInfo(count string, reference string, u
 		txnNo := len(blockResponseClient.Transactions)
 		txResponse := make([]TransactionDetailsResponse, txnNo)
 		for i := 0; i < txnNo; i++ {
+			//@TODO: Call the utility function to convert to readable transaction object
 			txGetClient := ethClient.GetTransactionReceipt(blockResponseClient.Transactions[i].Hash)
 			txResponse[i].BlockNumber = util.HexStringtoInt64(blockResponseClient.Transactions[i].BlockNumber)
 			txResponse[i].Gas = util.HexStringtoInt64(blockResponseClient.Transactions[i].Gas)
@@ -620,6 +636,8 @@ func (nsi *NodeServiceImpl) joinRequestResponse(enode string, status string) (Su
 	peerMap[enode] = status
 	var enodeString []string
 	var ipString []string
+
+	//@TODO: Use regex grouping to extract parts
 	enodeVal := strings.TrimPrefix(enode, "enode://")
 	enodeString = strings.Split(enodeVal, "@")
 	ipString = strings.Split(enodeString[1], ":")
@@ -632,6 +650,8 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	fromAddress := ethClient.Coinbase()
+
+	//@TODO: Dont use absolute paths
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
 	nms := contractclient.NetworkMapContractClient{EthClient: client.EthClient{url}}
@@ -648,7 +668,7 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 		pubKeys = publicKeys
 	}
 	var solc string
-	if solc == "" {
+	if solc == "" { //@TODO huh ???
 		solc = "solc"
 	}
 	fileNo := len(fileName)
@@ -979,6 +999,7 @@ func (nsi *NodeServiceImpl) logs() (SuccessResponse) {
 	return successResponse
 }
 
+//@TODO: Implement logrotate command to do this.
 func (nsi *NodeServiceImpl) LogRotaterGeth() {
 	command := "cat $(ls | grep log | grep -v _) > Geth_$(date| sed -e 's/ /_/g')"
 
