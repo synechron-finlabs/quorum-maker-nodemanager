@@ -9,8 +9,8 @@ contract NetworkManagerContract {
         string role; 
         string publickey;
         string enode;
-	    string ip;
-	    string id;
+	string ip;
+	string id;
     }
 
     mapping (string => NodeDetails)nodes;
