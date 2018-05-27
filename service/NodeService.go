@@ -35,6 +35,7 @@ type PendingRequests struct {
 type NodeInfo struct {
 	NodeName       string           `json:"nodeName"`
 	NodeCount      int              `json:"nodeCount"`
+	TotalNodeCount int              `json:"totalNodeCount"`
 	Active         string           `json:"active"`
 	ConnectionInfo ConnectionInfo   `json:"connectionInfo"`
 	RaftRole       string           `json:"raftRole"`
@@ -187,11 +188,12 @@ type NodeList struct {
 }
 
 type MailServerConfig struct {
-	Host     string `json:"smtpServerHost"`
-	Port     string `json:"port"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
+	Host          string `json:"smtpServerHost"`
+	Port          string `json:"port"`
+	Username      string `json:"username"`
+	Password      string `json:"password"`
+	RecipientList string `json:"recipientList"`
+};
 
 type LatencyResponse struct {
 	EnodeID string `json:"enode-id"`
@@ -235,6 +237,11 @@ func (nsi *NodeServiceImpl) joinNetwork(enode string, url string) (string) {
 func (nsi *NodeServiceImpl) getCurrentNode(url string) (NodeInfo) {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
+	fromAddress := ethClient.Coinbase()
+	nms := contractclient.NetworkMapContractClient{EthClient: client.EthClient{url}}
+	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+	contractAdd := util.MustGetString("CONTRACT_ADD", p)
+	totalCount := len(nms.GetNodeDetailsList(fromAddress, contractAdd, "", nil))
 	var activeStatus string
 	active := ethClient.NetListening()
 	if active == true {
@@ -265,7 +272,7 @@ func (nsi *NodeServiceImpl) getCurrentNode(url string) (NodeInfo) {
 	//@TODO: use grouping in regex to find the name of the node. Refer to whats app message.
 	nodename = strings.TrimSuffix(nodename, ".sh")
 	nodename = strings.TrimPrefix(nodename, "start_")
-	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+
 	ipAddr := util.MustGetString("CURRENT_IP", p)
 	raftId := util.MustGetString("RAFT_ID", p)
 	rpcPort := util.MustGetString("RPC_PORT", p)
@@ -302,7 +309,7 @@ func (nsi *NodeServiceImpl) getCurrentNode(url string) (NodeInfo) {
 	genesis := string(b)
 	genesis = strings.Replace(genesis, "\n", "", -1)
 	conn := ConnectionInfo{ipAddr, rpcPortInt, enode}
-	responseObj := NodeInfo{nodename, count, activeStatus, conn, raftRole, raftIdInt, blockNumberInt, pendingTxCount, genesis, thisAdminInfo}
+	responseObj := NodeInfo{nodename, count, totalCount, activeStatus, conn, raftRole, raftIdInt, blockNumberInt, pendingTxCount, genesis, thisAdminInfo}
 	return responseObj
 }
 
@@ -933,13 +940,14 @@ func (nsi *NodeServiceImpl) transactionSearchDetails(txno string, url string) (B
 	return blockDetailsResponse
 }
 
-func (nsi *NodeServiceImpl) emailServerConfig(host string, port string, username string, password string, url string) (SuccessResponse) {
+func (nsi *NodeServiceImpl) emailServerConfig(host string, port string, username string, password string, recipientList string, url string) (SuccessResponse) {
 	var successResponse SuccessResponse
 
 	mailServerConfig.Host = host
 	mailServerConfig.Port = port
 	mailServerConfig.Username = username
 	mailServerConfig.Password = password
+	mailServerConfig.RecipientList = recipientList
 
 	ticker := time.NewTicker(30 * time.Second)
 	go func() {
@@ -963,13 +971,16 @@ func (nsi *NodeServiceImpl) healthCheck(url string) {
 	blockNumber := ethClient.BlockNumber()
 	if blockNumber == "" {
 		if warning > 0 {
-			nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Node is not responding", "Unfortunately this node has stopped responding")
+			recipients := strings.Split(mailServerConfig.RecipientList, ",")
+			for i := 0; i < len(recipients); i++ {
+				nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Node is not responding", "Unfortunately this node has stopped responding", recipients[i])
+			}
 		}
 		warning ++
 	}
 }
 
-func (nsi *NodeServiceImpl) sendMail(host string, port string, username string, password string, subject string, mailContent string) {
+func (nsi *NodeServiceImpl) sendMail(host string, port string, username string, password string, subject string, mailContent string, to string) {
 	//fmt.Println("Called with warning =", warning)
 	portNo, err := strconv.ParseInt(port, 10, 64)
 	if err != nil {
@@ -977,7 +988,7 @@ func (nsi *NodeServiceImpl) sendMail(host string, port string, username string, 
 	}
 	m := gomail.NewMessage()
 	m.SetHeader("From", username)
-	m.SetHeader("To", username)
+	m.SetHeader("To", to)
 	//m.SetAddressHeader("Cc", host, host)
 	m.SetHeader("Subject", subject)
 	m.SetBody("text", mailContent)
@@ -1057,11 +1068,12 @@ func (nsi *NodeServiceImpl) RegisterNodeDetails(url string) {
 		nodename := util.MustGetString("NODENAME", p)
 		pubKey := util.MustGetString("PUBKEY", p)
 		role := util.MustGetString("ROLE", p)
+		id := util.MustGetString("RAFT_ID", p)
 		contractAdd := util.MustGetString("CONTRACT_ADD", p)
 		//fmt.Println(ipAddr, nodename, pubKey, role, enode, fromAddress, contractAdd)
 		registered := fmt.Sprint("REGISTERED=TRUE", "\n")
 		util.AppendStringToFile("/home/setup.conf", registered)
-		nms.RegisterNode(nodename, role, pubKey, enode, ipAddr, fromAddress, contractAdd, "", nil)
+		nms.RegisterNode(nodename, role, pubKey, enode, ipAddr, id, fromAddress, contractAdd, "", nil)
 	}
 }
 
@@ -1072,7 +1084,7 @@ func (nsi *NodeServiceImpl) NetworkManagerContractDeployer(url string) {
 		filename := []string{"NetworkManagerContract.sol"}
 		deployedContract := nsi.deployContract(nil, filename, false, url)
 		contAdd := deployedContract[0].ContractAddress
-		contAddAppend := fmt.Sprint("CONTRACT_ADD=", contAdd,"\n")
+		contAddAppend := fmt.Sprint("CONTRACT_ADD=", contAdd, "\n")
 		util.AppendStringToFile("/home/setup.conf", contAddAppend)
 	}
 }

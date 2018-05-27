@@ -5,8 +5,8 @@ import (
 	"synechron.com/NodeManagerGo/contracthandler"
 )
 
-const registerNodeFunSig = "0x82cb1a2a"
-const updateNodeFunSig = "0xe1d33203"
+const registerNodeFunSig = "0x3072b1b2"
+const updateNodeFunSig = "0xaeffe3b7"
 const getNodeDetailsFunSig = "0x0d0d583b"
 
 type NodeDetails struct {
@@ -15,6 +15,7 @@ type NodeDetails struct {
 	PublicKey string `json:"publicKey,omitempty"`
 	Enode     string `json:"enode,omitempty"`
 	IP        string `json:"ip,omitempty"`
+	ID        string `json:"id,omitempty"`
 }
 
 type NetworkMapContractClient struct {
@@ -24,12 +25,12 @@ type NetworkMapContractClient struct {
 
 type GetNodeDetailsParam int
 
-func (nmc *NetworkMapContractClient) RegisterNode(name string, role string, publicKey string, enode string, ip string, from string, to string, passwd string, pvtFor []string) string {
+func (nmc *NetworkMapContractClient) RegisterNode(name string, role string, publicKey string, enode string, ip string, id string, from string, to string, passwd string, pvtFor []string) string {
 	nmc.contractParam.From = from
 	nmc.contractParam.To = to
 	nmc.contractParam.Passwd = passwd
 	nmc.contractParam.Parties = pvtFor
-	nd := NodeDetails{name, role, publicKey, enode, ip}
+	nd := NodeDetails{name, role, publicKey, enode, ip, id}
 	return nmc.SendTransaction(nmc.contractParam, RegisterUpdateNodeFuncHandler{nd, registerNodeFunSig})
 
 }
@@ -66,12 +67,12 @@ func (nmc *NetworkMapContractClient) GetNodeDetailsList(from string, to string, 
 	return list
 }
 
-func (nmc *NetworkMapContractClient) UpdateNode(name string, role string, publicKey string, enode string, ip string, from string, to string, passwd string, pvtFor []string) string {
+func (nmc *NetworkMapContractClient) UpdateNode(name string, role string, publicKey string, enode string, ip string, id string, from string, to string, passwd string, pvtFor []string) string {
 	nmc.contractParam.From = from
 	nmc.contractParam.To = to
 	nmc.contractParam.Passwd = passwd
 	nmc.contractParam.Parties = pvtFor
-	nd := NodeDetails{name, role, publicKey, enode, ip}
+	nd := NodeDetails{name, role, publicKey, enode, ip, id}
 	return nmc.SendTransaction(nmc.contractParam, RegisterUpdateNodeFuncHandler{nd, updateNodeFunSig})
 }
 
@@ -82,9 +83,9 @@ type RegisterUpdateNodeFuncHandler struct {
 
 func (h RegisterUpdateNodeFuncHandler) Encode() string {
 
-	sig := "string,string,string,string,string"
+	sig := "string,string,string,string,string,string"
 
-	param := []interface{}{h.nd.Name, h.nd.Role, h.nd.PublicKey, h.nd.Enode, h.nd.IP,}
+	param := []interface{}{h.nd.Name, h.nd.Role, h.nd.PublicKey, h.nd.Enode, h.nd.IP, h.nd.ID,}
 
 	data := h.funcSig + contracthandler.FunctionProcessor{sig, param, ""}.GetData()
 
@@ -105,11 +106,11 @@ func (g *GetNodeDetailsFuncHandler) Decode(r string) {
 		return
 	}
 
-	sig := "string,string,string,string,string,uint256"
+	sig := "string,string,string,string,string,string,uint256"
 
 	resultArray := contracthandler.FunctionProcessor{sig, nil, r}.GetResults()
 
-	g.result = NodeDetails{resultArray[0].(string), resultArray[1].(string), resultArray[2].(string), resultArray[4].(string), resultArray[3].(string)}
+	g.result = NodeDetails{resultArray[0].(string), resultArray[1].(string), resultArray[2].(string), resultArray[4].(string), resultArray[3].(string), resultArray[5].(string)}
 }
 
 func (g GetNodeDetailsFuncHandler) Encode() string {

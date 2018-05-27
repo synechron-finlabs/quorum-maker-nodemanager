@@ -49,9 +49,11 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	enode := request.EnodeID
 	//foreignIP := request.IPAddress
 	nodename := request.Nodename
-
+	//recipients := strings.Split(mailServerConfig.RecipientList, ",")
+	//for i := 0; i < len(recipients); i++ {
 	//message := fmt.Sprint("Request for joining network has come in from node ", nodename, " with enode ", enode, " from ip-address ", foreignIP)
 	//nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Incoming Join Request", message)
+	//}
 	var cUIresp = make(chan string, 1)
 	var cTimer = make(chan string, 1)
 	//var cCLI = make(chan string, 1)
@@ -352,7 +354,16 @@ func (nsi *NodeServiceImpl) TransactionSearchHandler(w http.ResponseWriter, r *h
 func (nsi *NodeServiceImpl) MailServerConfigHandler(w http.ResponseWriter, r *http.Request) {
 	var request MailServerConfig
 	_ = json.NewDecoder(r.Body).Decode(&request)
-	response := nsi.emailServerConfig(request.Host, request.Port, request.Username, request.Password, nsi.Url)
+	response := nsi.emailServerConfig(request.Host, request.Port, request.Username, request.Password, request.RecipientList, nsi.Url)
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (nsi *NodeServiceImpl) OptionsHandler(w http.ResponseWriter, r *http.Request) {
+	response := "Options Handled"
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
