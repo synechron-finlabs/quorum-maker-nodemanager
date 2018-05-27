@@ -36,7 +36,7 @@ contract NetworkManagerContract {
                 nodeInfo.nodeName,
                 nodeInfo.role,
                 nodeInfo.publickey,
-	        	nodeInfo.ip,
+	        nodeInfo.ip,
                 enodeList[_index],
 		    nodeInfo.id,
                 _index
@@ -52,7 +52,7 @@ contract NetworkManagerContract {
         nodes[e].publickey = p;
         nodes[e].nodeName = n;
         nodes[e].role = r;
-	    nodes[e].ip = ip;
+	nodes[e].ip = ip;
 	nodes[e].id = id;
         emit print(n,r,p,e,ip,id);
     }
@@ -64,9 +64,9 @@ contract NetworkManagerContract {
             nodeInfo.nodeName,
             nodeInfo.role,
             nodeInfo.publickey,
-	        nodeInfo.ip,
+	    nodeInfo.ip,
             enodeList[i],
-        nodeInfo.id
+            nodeInfo.id
         );
         
     }
