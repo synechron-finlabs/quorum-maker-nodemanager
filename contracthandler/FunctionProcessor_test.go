@@ -3,7 +3,7 @@ package contracthandler
 import (
 	"testing"
 	"reflect"
-	"synechron.com/NodeManagerGo/util"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
 	"time"
 )
 

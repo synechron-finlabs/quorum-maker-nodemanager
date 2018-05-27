@@ -2,10 +2,10 @@ package contractclient
 
 import (
 	"testing"
-	"synechron.com/NodeManagerGo/contracthandler"
-	"synechron.com/NodeManagerGo/client"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/contracthandler"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/client"
 	"fmt"
-	"synechron.com/NodeManagerGo/util"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
 	"time"
 	"net/http/httptest"
 	"net/http"

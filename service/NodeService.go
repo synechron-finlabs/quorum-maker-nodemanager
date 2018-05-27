@@ -3,8 +3,8 @@ package service
 import (
 	"io/ioutil"
 	"log"
-	"synechron.com/NodeManagerGo/client"
-	"synechron.com/NodeManagerGo/util"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/client"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
 	"strings"
 	"fmt"
 	"strconv"
@@ -15,7 +15,7 @@ import (
 	"os"
 	"time"
 	"gopkg.in/gomail.v2"
-	"synechron.com/NodeManagerGo/contractclient"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/contractclient"
 )
 
 type ConnectionInfo struct {

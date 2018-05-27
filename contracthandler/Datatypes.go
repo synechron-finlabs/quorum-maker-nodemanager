@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"regexp"
 	"strings"
-	"synechron.com/NodeManagerGo/util"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
 )
 
 var mdt map[*regexp.Regexp]DataType

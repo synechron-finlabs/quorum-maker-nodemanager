@@ -4,10 +4,10 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 	"net/http"
-	"synechron.com/NodeManagerGo/service"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/service"
 	"os"
-	"synechron.com/NodeManagerGo/contractclient"
-	"synechron.com/NodeManagerGo/client"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/contractclient"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/client"
 	"time"
 )
 

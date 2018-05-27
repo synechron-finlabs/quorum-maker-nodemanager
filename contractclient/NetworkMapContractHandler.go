@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"fmt"
 	"github.com/magiconair/properties"
-	"synechron.com/NodeManagerGo/util"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
 )
 
 type NodeDetailsSelf struct {

@@ -3,7 +3,7 @@ package contracthandler
 import (
 	"bytes"
 	"strings"
-	"synechron.com/NodeManagerGo/util"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
 )
 
 type DataType interface {

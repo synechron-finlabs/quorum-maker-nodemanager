@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/ybbus/jsonrpc"
 	"log"
-	"synechron.com/NodeManagerGo/contracthandler"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/contracthandler"
 	"time"
 )
 
