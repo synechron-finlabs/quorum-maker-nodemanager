@@ -85,7 +85,7 @@ func main() {
 	router.PathPrefix("/contracts").Handler(http.StripPrefix("/contracts", http.FileServer(http.Dir("/root/quorum-maker/contracts"))))
 	router.PathPrefix("/geth").Handler(http.StripPrefix("/geth", http.FileServer(http.Dir("/home/node/qdata/gethLogs"))))
 	router.PathPrefix("/constellation").Handler(http.StripPrefix("/constellation", http.FileServer(http.Dir("/home/node/qdata/constellationLogs"))))
-	router.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("NodeManagerUI"))))
+	router.PathPrefix("/").Handler(http.StripPrefix("/", NewFileServer("NodeManagerUI")))
 
 	log.WithFields(log.Fields{"url": nodeUrl, "port": listenPort}).Info("Node Manager listening...")
 
@@ -124,4 +124,25 @@ func main() {
 	// to finalize based on context cancellation.
 	log.Info("Node Manager Shutting down")
 	os.Exit(0)
+}
+
+type MyFileServer struct {
+	name    string
+	handler http.Handler
+}
+
+func NewFileServer(file string) *MyFileServer {
+
+	return &MyFileServer{file, http.FileServer(http.Dir(file))}
+
+}
+func (mf *MyFileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	_, err := os.Open(mf.name + "/" + r.URL.Path)
+	if err != nil {
+		r.URL.Path = "/"
+	}
+
+
+	mf.handler.ServeHTTP(w, r)
 }
