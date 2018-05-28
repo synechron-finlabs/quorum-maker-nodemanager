@@ -34,6 +34,11 @@ func (nms *NetworkMapContractClient) UpdateNodeRequestsHandler(w http.ResponseWr
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
 
+	if contractAdd == ""  {
+		json.NewEncoder(w).Encode("")
+		return
+	}
+
 	cp := contracthandler.ContractParam{coinbase, contractAdd, "", nil}
 
 	nms.SetContractParam(cp)
@@ -60,6 +65,11 @@ func (nms *NetworkMapContractClient) RegisterNodeRequestHandler(w http.ResponseW
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
 
+	if contractAdd == ""  {
+		json.NewEncoder(w).Encode("")
+		return
+	}
+
 	cp := contracthandler.ContractParam{coinbase, contractAdd, "", nil}
 	nms.SetContractParam(cp)
 
@@ -82,6 +92,11 @@ func (nms *NetworkMapContractClient) GetNodeDetailsResponseHandler(w http.Respon
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
 
+	if contractAdd == ""  {
+		json.NewEncoder(w).Encode("")
+		return
+	}
+
 	cp := contracthandler.ContractParam{coinbase, contractAdd, "", nil}
 	nms.SetContractParam(cp)
 
@@ -97,6 +112,11 @@ func (nms *NetworkMapContractClient) GetNodeListResponseHandler(w http.ResponseW
 	coinbase := nms.EthClient.Coinbase()
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
+
+	if contractAdd == ""  {
+		json.NewEncoder(w).Encode("")
+		return
+	}
 
 	cp := contracthandler.ContractParam{coinbase, contractAdd, "", nil}
 	nms.SetContractParam(cp)
@@ -114,6 +134,11 @@ func (nms *NetworkMapContractClient) GetNodeListSelfResponseHandler(w http.Respo
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
 	nodename := util.MustGetString("NODENAME", p)
+
+	if contractAdd == ""  {
+		json.NewEncoder(w).Encode("")
+		return
+	}
 
 	cp := contracthandler.ContractParam{coinbase, contractAdd, "", nil}
 	nms.SetContractParam(cp)

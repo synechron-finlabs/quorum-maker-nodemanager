@@ -4,7 +4,15 @@ import (
 	"bytes"
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
 	"strings"
+	log "github.com/sirupsen/logrus"
+	"os"
 )
+
+func init() {
+	log.SetFormatter(&log.JSONFormatter{})
+	log.SetOutput(os.Stdout)
+	log.SetLevel(log.DebugLevel)
+}
 
 type DataType interface {
 	IsDynamic() bool
@@ -94,6 +102,8 @@ func (fp FunctionProcessor) GetData() string {
 }
 
 func (fp FunctionProcessor) GetResults() []interface{} {
+
+	log.Debug("Ethereum Result " + fp.Result)
 
 	length := len(fp.Result) / 64
 

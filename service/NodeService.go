@@ -243,6 +243,7 @@ func (nsi *NodeServiceImpl) getCurrentNode(url string) NodeInfo {
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
 
+
 	nms := contractclient.NetworkMapContractClient{client.EthClient{url}, contracthandler.ContractParam{fromAddress, contractAdd, "", nil}}
 
 	totalCount := len(nms.GetNodeDetailsList())
