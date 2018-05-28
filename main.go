@@ -13,7 +13,6 @@ import (
 
 var nodeUrl = "http://localhost:22000"
 var listenPort = ":8000"
-var logPort = ":3000"
 
 func init() {
 	log.SetFormatter(&log.JSONFormatter{})
@@ -29,10 +28,6 @@ func main() {
 
 	if len(os.Args) > 2 {
 		listenPort = ":" + os.Args[2]
-	}
-
-	if len(os.Args) > 3 {
-		logPort = ":" + os.Args[3]
 	}
 
 	router := mux.NewRouter()
@@ -85,10 +80,10 @@ func main() {
 	router.HandleFunc("/getNodeDetails/{index}", networkMapService.GetNodeDetailsResponseHandler).Methods("GET")
 	router.HandleFunc("/getNodeList", networkMapService.GetNodeListSelfResponseHandler).Methods("GET")
 
-	router.PathPrefix("/").Handler(http.FileServer(http.Dir("/root/quorum-maker/NodeManagerUI")))
-	router.PathPrefix("/geth/").Handler(http.FileServer(http.Dir("/home/node/qdata/gethLogs/")))
-	router.PathPrefix("/constellation/").Handler(http.FileServer(http.Dir("/home/node/qdata/gethLogs/")))
-	router.PathPrefix("/contracts/").Handler(http.FileServer(http.Dir("/root/quorum-maker/contracts")))
+	router.PathPrefix("/contracts").Handler(http.StripPrefix("/contracts", http.FileServer(http.Dir("/root/quorum-maker/contracts"))))
+	router.PathPrefix("/geth").Handler(http.StripPrefix("/geth", http.FileServer(http.Dir("/home/node/qdata/gethLogs"))))
+	router.PathPrefix("/constellation").Handler(http.StripPrefix("/constellation", http.FileServer(http.Dir("/home/node/qdata/constellationLogs"))))
+	router.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("NodeManagerUI"))))
 
 	log.WithFields(log.Fields{"url": nodeUrl, "port": listenPort}).Info("Node Manager listening...")
 	log.Fatal(http.ListenAndServe(listenPort, router))
