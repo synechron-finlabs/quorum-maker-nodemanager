@@ -48,22 +48,6 @@ func main() {
 	}()
 
 	go func() {
-		fs := http.FileServer(http.Dir("/home/node/qdata/gethLogs/"))
-
-		http.Handle("/geth/", http.StripPrefix("/geth", fs))
-
-		fs1 := http.FileServer(http.Dir("/home/node/qdata/constellationLogs/"))
-
-		http.Handle("/constellation/", http.StripPrefix("/constellation", fs1))
-
-		fs2 := http.FileServer(http.Dir("/root/quorum-maker"))
-
-		http.Handle("/contracts/", http.StripPrefix("/contracts", fs2))
-
-		http.ListenAndServe(logPort, nil)
-	}()
-
-	go func() {
 		time.Sleep(80 * time.Second)
 		log.Info("Deploying Network Manager Contract")
 		nodeService.NetworkManagerContractDeployer(nodeUrl)
@@ -100,6 +84,11 @@ func main() {
 	router.HandleFunc("/updateNode", networkMapService.UpdateNodeRequestsHandler).Methods("POST")
 	router.HandleFunc("/getNodeDetails/{index}", networkMapService.GetNodeDetailsResponseHandler).Methods("GET")
 	router.HandleFunc("/getNodeList", networkMapService.GetNodeListSelfResponseHandler).Methods("GET")
+
+	router.PathPrefix("/").Handler(http.FileServer(http.Dir("/root/quorum-maker/NodeManagerUI")))
+	router.PathPrefix("/geth/").Handler(http.FileServer(http.Dir("/home/node/qdata/gethLogs/")))
+	router.PathPrefix("/constellation/").Handler(http.FileServer(http.Dir("/home/node/qdata/gethLogs/")))
+	router.PathPrefix("/contracts/").Handler(http.FileServer(http.Dir("/root/quorum-maker/contracts")))
 
 	log.WithFields(log.Fields{"url": nodeUrl, "port": listenPort}).Info("Node Manager listening...")
 	log.Fatal(http.ListenAndServe(listenPort, router))
