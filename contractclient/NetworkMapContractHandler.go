@@ -1,13 +1,14 @@
 package contractclient
 
 import (
-	"net/http"
 	"encoding/json"
-	"github.com/gorilla/mux"
-	"strconv"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/magiconair/properties"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/contracthandler"
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
+	"net/http"
+	"strconv"
 )
 
 type NodeDetailsSelf struct {
@@ -33,7 +34,12 @@ func (nms *NetworkMapContractClient) UpdateNodeRequestsHandler(w http.ResponseWr
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
 
-	response := nms.UpdateNode(nodeName, role, publickey, enode, ip, id, coinbase, contractAdd, "", nil)
+	cp := contracthandler.ContractParam{coinbase, contractAdd, "", nil}
+
+	nms.SetContractParam(cp)
+
+	//, coinbase, contractAdd, "", nil
+	response := nms.UpdateNode(nodeName, role, publickey, enode, ip, id)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
@@ -54,7 +60,11 @@ func (nms *NetworkMapContractClient) RegisterNodeRequestHandler(w http.ResponseW
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
 
-	response := nms.RegisterNode(nodeName, role, publickey, enode, ip, id, coinbase, contractAdd, "", nil)
+	cp := contracthandler.ContractParam{coinbase, contractAdd, "", nil}
+	nms.SetContractParam(cp)
+
+	response := nms.RegisterNode(nodeName, role, publickey, enode, ip, id)
+
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
@@ -72,7 +82,11 @@ func (nms *NetworkMapContractClient) GetNodeDetailsResponseHandler(w http.Respon
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
 
-	response := nms.GetNodeDetails(i, coinbase, contractAdd, "", nil)
+	cp := contracthandler.ContractParam{coinbase, contractAdd, "", nil}
+	nms.SetContractParam(cp)
+
+	response := nms.GetNodeDetails(i)
+
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
@@ -83,7 +97,12 @@ func (nms *NetworkMapContractClient) GetNodeListResponseHandler(w http.ResponseW
 	coinbase := nms.EthClient.Coinbase()
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
-	response := nms.GetNodeDetailsList(coinbase, contractAdd, "", nil)
+
+	cp := contracthandler.ContractParam{coinbase, contractAdd, "", nil}
+	nms.SetContractParam(cp)
+
+	response := nms.GetNodeDetailsList()
+
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
@@ -95,7 +114,11 @@ func (nms *NetworkMapContractClient) GetNodeListSelfResponseHandler(w http.Respo
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
 	nodename := util.MustGetString("NODENAME", p)
-	nodeList := nms.GetNodeDetailsList(coinbase, contractAdd, "", nil)
+
+	cp := contracthandler.ContractParam{coinbase, contractAdd, "", nil}
+	nms.SetContractParam(cp)
+
+	nodeList := nms.GetNodeDetailsList()
 	response := make([]NodeDetailsSelf, len(nodeList))
 	for i := 0; i < len(nodeList); i++ {
 		response[i].ID = nodeList[i].ID

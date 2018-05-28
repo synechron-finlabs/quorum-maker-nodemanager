@@ -2,8 +2,8 @@ package contracthandler
 
 import (
 	"bytes"
-	"strings"
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
+	"strings"
 )
 
 type DataType interface {
@@ -36,7 +36,6 @@ type FunctionProcessor struct {
 }
 
 func (fp FunctionProcessor) GetData() string {
-
 
 	datatypes := ParseParameters(fp)
 
@@ -76,7 +75,7 @@ func (fp FunctionProcessor) GetData() string {
 
 			index = 0
 
-			loc ++
+			loc++
 		} else {
 			loc += dt0.Length()
 
@@ -101,7 +100,7 @@ func (fp FunctionProcessor) GetResults() []interface{} {
 	data := make([]string, length)
 
 	for i, j := 0, 0; i < length; i++ {
-		data[i] = fp.Result[j: j+64]
+		data[i] = fp.Result[j : j+64]
 
 		j += 64
 

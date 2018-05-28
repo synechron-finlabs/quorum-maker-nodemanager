@@ -1,21 +1,22 @@
 package service
 
 import (
+	"bytes"
+	"fmt"
+	"github.com/magiconair/properties"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/client"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/contractclient"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/contracthandler"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
+	"gopkg.in/gomail.v2"
 	"io/ioutil"
 	"log"
-	"github.com/synechron-finlabs/quorum-maker-nodemanager/client"
-	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
-	"strings"
-	"fmt"
-	"strconv"
-	"github.com/magiconair/properties"
-	"bytes"
+	"os"
 	"os/exec"
 	"regexp"
-	"os"
+	"strconv"
+	"strings"
 	"time"
-	"gopkg.in/gomail.v2"
-	"github.com/synechron-finlabs/quorum-maker-nodemanager/contractclient"
 )
 
 type ConnectionInfo struct {
@@ -193,7 +194,7 @@ type MailServerConfig struct {
 	Username      string `json:"username"`
 	Password      string `json:"password"`
 	RecipientList string `json:"recipientList"`
-};
+}
 
 type LatencyResponse struct {
 	EnodeID string `json:"enode-id"`
@@ -223,7 +224,7 @@ func (nsi *NodeServiceImpl) getGenesis(url string) (response GetGenesisResponse)
 	return response
 }
 
-func (nsi *NodeServiceImpl) joinNetwork(enode string, url string) (string) {
+func (nsi *NodeServiceImpl) joinNetwork(enode string, url string) string {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	raftId := ethClient.RaftAddPeer(enode)
@@ -234,14 +235,17 @@ func (nsi *NodeServiceImpl) joinNetwork(enode string, url string) (string) {
 }
 
 //@TODO: If this function is repeatedly called from UI, please cache the static informations.
-func (nsi *NodeServiceImpl) getCurrentNode(url string) (NodeInfo) {
+func (nsi *NodeServiceImpl) getCurrentNode(url string) NodeInfo {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	fromAddress := ethClient.Coinbase()
-	nms := contractclient.NetworkMapContractClient{EthClient: client.EthClient{url}}
+
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
-	totalCount := len(nms.GetNodeDetailsList(fromAddress, contractAdd, "", nil))
+
+	nms := contractclient.NetworkMapContractClient{client.EthClient{url}, contracthandler.ContractParam{fromAddress, contractAdd, "", nil}}
+
+	totalCount := len(nms.GetNodeDetailsList())
 	var activeStatus string
 	active := ethClient.NetListening()
 	if active == true {
@@ -313,7 +317,7 @@ func (nsi *NodeServiceImpl) getCurrentNode(url string) (NodeInfo) {
 	return responseObj
 }
 
-func (nsi *NodeServiceImpl) getOtherPeer(peerId string, url string) (client.AdminPeers) {
+func (nsi *NodeServiceImpl) getOtherPeer(peerId string, url string) client.AdminPeers {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	otherPeersResponse := ethClient.AdminPeers()
@@ -326,14 +330,14 @@ func (nsi *NodeServiceImpl) getOtherPeer(peerId string, url string) (client.Admi
 	return client.AdminPeers{}
 }
 
-func (nsi *NodeServiceImpl) getOtherPeers(url string) ([]client.AdminPeers) {
+func (nsi *NodeServiceImpl) getOtherPeers(url string) []client.AdminPeers {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	otherPeersResponse := ethClient.AdminPeers()
 	return otherPeersResponse
 }
 
-func (nsi *NodeServiceImpl) getPendingTransactions(url string) ([]TransactionDetailsResponse) {
+func (nsi *NodeServiceImpl) getPendingTransactions(url string) []TransactionDetailsResponse {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	pendingTxResponseClient := ethClient.PendingTransactions()
@@ -365,7 +369,7 @@ func (nsi *NodeServiceImpl) getPendingTransactions(url string) ([]TransactionDet
 	return pendingTxResponse
 }
 
-func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) (BlockDetailsResponse) {
+func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) BlockDetailsResponse {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	blockNoHex := strconv.FormatInt(blockno, 16)
@@ -430,7 +434,7 @@ func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) (BlockDetail
 	return blockResponse
 }
 
-func (nsi *NodeServiceImpl) getLatestBlockInfo(count string, reference string, url string) ([]BlockDetailsResponse) {
+func (nsi *NodeServiceImpl) getLatestBlockInfo(count string, reference string, url string) []BlockDetailsResponse {
 	countVal := util.HexStringtoInt64(count)
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
@@ -494,7 +498,7 @@ func (nsi *NodeServiceImpl) getLatestBlockInfo(count string, reference string, u
 	return blockResponse
 }
 
-func (nsi *NodeServiceImpl) getLatestTransactionInfo(count string, url string) ([]BlockDetailsResponse) {
+func (nsi *NodeServiceImpl) getLatestTransactionInfo(count string, url string) []BlockDetailsResponse {
 	countVal := util.HexStringtoInt64(count)
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
@@ -544,7 +548,7 @@ func (nsi *NodeServiceImpl) getLatestTransactionInfo(count string, url string) (
 	return blockResponse
 }
 
-func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) (TransactionDetailsResponse) {
+func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) TransactionDetailsResponse {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	txGetClient := ethClient.GetTransactionReceipt(txno)
@@ -582,7 +586,7 @@ func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) (Transac
 	return txResponse
 }
 
-func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) (TransactionReceiptResponse) {
+func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) TransactionReceiptResponse {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	txGetClient := ethClient.GetTransactionByHash(txno)
@@ -638,7 +642,7 @@ func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) (Tran
 	return txResponse
 }
 
-func (nsi *NodeServiceImpl) joinRequestResponse(enode string, status string) (SuccessResponse) {
+func (nsi *NodeServiceImpl) joinRequestResponse(enode string, status string) SuccessResponse {
 	var successResponse SuccessResponse
 	peerMap[enode] = status
 	var enodeString []string
@@ -661,14 +665,14 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 	//@TODO: Dont use absolute paths
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
-	nms := contractclient.NetworkMapContractClient{EthClient: client.EthClient{url}}
+	nms := contractclient.NetworkMapContractClient{client.EthClient{url}, contracthandler.ContractParam{fromAddress, contractAdd, "", nil}}
 	if private == true && pubKeys[0] == "" {
 		enode := ethClient.AdminNodeInfo().ID
-		peerNo := len(nms.GetNodeDetailsList(fromAddress, contractAdd, "", nil))
+		peerNo := len(nms.GetNodeDetailsList())
 		publicKeys := make([]string, peerNo-1)
 		for i := 0; i < peerNo; i++ {
-			if enode != nms.GetNodeDetails(i, fromAddress, contractAdd, "", nil).Enode {
-				publicKeys[i-1] = nms.GetNodeDetails(i, fromAddress, contractAdd, "", nil).PublicKey
+			if enode != nms.GetNodeDetails(i).Enode {
+				publicKeys[i-1] = nms.GetNodeDetails(i).PublicKey
 			}
 		}
 		//pubKeys = []string{"R1fOFUfzBbSVaXEYecrlo9rENW0dam0kmaA2pasGM14=", "Er5J8G+jXQA9O2eu7YdhkraYM+j+O5ArnMSZ24PpLQY="}
@@ -761,7 +765,7 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 	return contractJsonArr
 }
 
-func (nsi *NodeServiceImpl) createNetworkScriptCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string) (SuccessResponse) {
+func (nsi *NodeServiceImpl) createNetworkScriptCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string) SuccessResponse {
 	var successResponse SuccessResponse
 	cmd := exec.Command("./setup.sh", "1", nodename)
 	cmd.Dir = "./Setup"
@@ -783,7 +787,7 @@ func (nsi *NodeServiceImpl) createNetworkScriptCall(nodename string, currentIP s
 	return successResponse
 }
 
-func (nsi *NodeServiceImpl) joinRequestResponseCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string, masterNodeManagerPort string, masterIP string) (SuccessResponse) {
+func (nsi *NodeServiceImpl) joinRequestResponseCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string, masterNodeManagerPort string, masterIP string) SuccessResponse {
 	var successResponse SuccessResponse
 	cmd := exec.Command("./setup.sh", "2", nodename, masterIP, masterNodeManagerPort, currentIP, rpcPort, whisperPort, constellationPort, raftPort, nodeManagerPort)
 	cmd.Dir = "./Setup"
@@ -805,7 +809,7 @@ func (nsi *NodeServiceImpl) joinRequestResponseCall(nodename string, currentIP s
 	return successResponse
 }
 
-func (nsi *NodeServiceImpl) resetCurrentNode() (SuccessResponse) {
+func (nsi *NodeServiceImpl) resetCurrentNode() SuccessResponse {
 	var successResponse SuccessResponse
 	cmd := exec.Command("./reset_chain.sh")
 	var out bytes.Buffer
@@ -820,7 +824,7 @@ func (nsi *NodeServiceImpl) resetCurrentNode() (SuccessResponse) {
 	return successResponse
 }
 
-func (nsi *NodeServiceImpl) restartCurrentNode() (SuccessResponse) {
+func (nsi *NodeServiceImpl) restartCurrentNode() SuccessResponse {
 	var successResponse SuccessResponse
 	r, _ := regexp.Compile("[s][t][a][r][t][_][A-Za-z0-9]*[.][s][h]")
 	files, err := ioutil.ReadDir("/home/node")
@@ -849,7 +853,7 @@ func (nsi *NodeServiceImpl) restartCurrentNode() (SuccessResponse) {
 	return successResponse
 }
 
-func (nsi *NodeServiceImpl) latestBlockDetails(url string) (LatestBlockResponse) {
+func (nsi *NodeServiceImpl) latestBlockDetails(url string) LatestBlockResponse {
 	var latestBlockResponse LatestBlockResponse
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
@@ -901,20 +905,23 @@ func (nsi *NodeServiceImpl) latestBlockDetails(url string) (LatestBlockResponse)
 //	return latencyResponse
 //}
 
-func (nsi *NodeServiceImpl) latency(url string) ([]LatencyResponse) {
+func (nsi *NodeServiceImpl) latency(url string) []LatencyResponse {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	fromAddress := ethClient.Coinbase()
-	nms := contractclient.NetworkMapContractClient{EthClient: client.EthClient{url}}
+
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
-	peerNo := len(nms.GetNodeDetailsList(fromAddress, contractAdd, "", nil))
+
+	nms := contractclient.NetworkMapContractClient{client.EthClient{url}, contracthandler.ContractParam{fromAddress, contractAdd, "", nil}}
+
+	peerNo := len(nms.GetNodeDetailsList())
 
 	latencyResponse := make([]LatencyResponse, peerNo)
 	for i := 0; i < peerNo; i++ {
 		var latOut bytes.Buffer
-		ip := nms.GetNodeDetails(i, fromAddress, contractAdd, "", nil).IP
-		latencyResponse[i].EnodeID = nms.GetNodeDetails(i, fromAddress, contractAdd, "", nil).Enode
+		ip := nms.GetNodeDetails(i).IP
+		latencyResponse[i].EnodeID = nms.GetNodeDetails(i).Enode
 		command := fmt.Sprint("ping -c 4 ", ip, " |  awk -F'/' '{ print $5 }' | tail -1")
 		cmd := exec.Command("bash", "-c", command)
 		cmd.Stdout = &latOut
@@ -931,7 +938,7 @@ func (nsi *NodeServiceImpl) latency(url string) ([]LatencyResponse) {
 	return latencyResponse
 }
 
-func (nsi *NodeServiceImpl) transactionSearchDetails(txno string, url string) (BlockDetailsResponse) {
+func (nsi *NodeServiceImpl) transactionSearchDetails(txno string, url string) BlockDetailsResponse {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	txGetClient := ethClient.GetTransactionReceipt(txno)
@@ -940,7 +947,7 @@ func (nsi *NodeServiceImpl) transactionSearchDetails(txno string, url string) (B
 	return blockDetailsResponse
 }
 
-func (nsi *NodeServiceImpl) emailServerConfig(host string, port string, username string, password string, recipientList string, url string) (SuccessResponse) {
+func (nsi *NodeServiceImpl) emailServerConfig(host string, port string, username string, password string, recipientList string, url string) SuccessResponse {
 	var successResponse SuccessResponse
 
 	mailServerConfig.Host = host
@@ -976,7 +983,7 @@ func (nsi *NodeServiceImpl) healthCheck(url string) {
 				nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Node is not responding", "Unfortunately this node has stopped responding", recipients[i])
 			}
 		}
-		warning ++
+		warning++
 	}
 }
 
@@ -1001,7 +1008,7 @@ func (nsi *NodeServiceImpl) sendMail(host string, port string, username string, 
 	}
 }
 
-func (nsi *NodeServiceImpl) logs() (SuccessResponse) {
+func (nsi *NodeServiceImpl) logs() SuccessResponse {
 	var successResponse SuccessResponse
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	ipAddr := util.MustGetString("CURRENT_IP", p)
@@ -1060,9 +1067,10 @@ func (nsi *NodeServiceImpl) RegisterNodeDetails(url string) {
 	registeredVal := util.MustGetString("REGISTERED", p)
 	if registeredVal != "TRUE" {
 		ethClient := client.EthClient{nodeUrl}
-		nms := contractclient.NetworkMapContractClient{EthClient: client.EthClient{url}}
+
 		enode := ethClient.AdminNodeInfo().ID
 		fromAddress := ethClient.Coinbase()
+
 		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 		ipAddr := util.MustGetString("CURRENT_IP", p)
 		nodename := util.MustGetString("NODENAME", p)
@@ -1073,7 +1081,9 @@ func (nsi *NodeServiceImpl) RegisterNodeDetails(url string) {
 		//fmt.Println(ipAddr, nodename, pubKey, role, enode, fromAddress, contractAdd)
 		registered := fmt.Sprint("REGISTERED=TRUE", "\n")
 		util.AppendStringToFile("/home/setup.conf", registered)
-		nms.RegisterNode(nodename, role, pubKey, enode, ipAddr, id, fromAddress, contractAdd, "", nil)
+
+		nms := contractclient.NetworkMapContractClient{client.EthClient{url}, contracthandler.ContractParam{fromAddress, contractAdd, "", nil}}
+		nms.RegisterNode(nodename, role, pubKey, enode, ipAddr, id)
 	}
 }
 

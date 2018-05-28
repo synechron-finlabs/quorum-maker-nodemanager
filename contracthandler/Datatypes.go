@@ -3,9 +3,9 @@ package contracthandler
 import (
 	"bytes"
 	"encoding/hex"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
 	"regexp"
 	"strings"
-	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
 )
 
 var mdt map[*regexp.Regexp]DataType
@@ -85,7 +85,6 @@ func (t Uint256) Encode() []string {
 
 type Bool struct {
 	Uint256
-
 }
 
 func (t Bool) New(i interface{}, sig string) DataType {
@@ -106,7 +105,6 @@ func (t Bool) Decode(data []string, index int) (int, interface{}) {
 type Uint32_DA struct {
 	BaseDataType
 }
-
 
 func (t Uint32_DA) Decode(data []string, index int) (int, interface{}) {
 
@@ -274,7 +272,7 @@ func (t Bytes) Encode() []string {
 
 			copy(b, s[j:])
 		} else {
-			b = s[j: k]
+			b = s[j:k]
 		}
 		d = append(d, hex.EncodeToString(b))
 	}

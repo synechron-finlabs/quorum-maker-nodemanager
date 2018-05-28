@@ -1,11 +1,11 @@
 package client
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
-func TestBlockNumber(t *testing.T)  {
+func TestBlockNumber(t *testing.T) {
 
 	ec := EthClient{"http://localhost:22000"}
 
@@ -19,7 +19,7 @@ func TestBlockNumber(t *testing.T)  {
 
 }
 
-func TestCoinbase(t *testing.T)  {
+func TestCoinbase(t *testing.T) {
 
 	ec := EthClient{"http://localhost:22000"}
 

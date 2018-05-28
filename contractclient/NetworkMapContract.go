@@ -20,42 +20,37 @@ type NodeDetails struct {
 
 type NetworkMapContractClient struct {
 	client.EthClient
-	contractParam contracthandler.ContractParam
+	ContractParam contracthandler.ContractParam
 }
 
 type GetNodeDetailsParam int
 
-func (nmc *NetworkMapContractClient) RegisterNode(name string, role string, publicKey string, enode string, ip string, id string, from string, to string, passwd string, pvtFor []string) string {
-	nmc.contractParam.From = from
-	nmc.contractParam.To = to
-	nmc.contractParam.Passwd = passwd
-	nmc.contractParam.Parties = pvtFor
+func (nmc *NetworkMapContractClient) SetContractParam(cp contracthandler.ContractParam) {
+	nmc.ContractParam = cp
+}
+
+func (nmc *NetworkMapContractClient) RegisterNode(name string, role string, publicKey string, enode string, ip string, id string) string {
+
 	nd := NodeDetails{name, role, publicKey, enode, ip, id}
-	return nmc.SendTransaction(nmc.contractParam, RegisterUpdateNodeFuncHandler{nd, registerNodeFunSig})
+	return nmc.SendTransaction(nmc.ContractParam, RegisterUpdateNodeFuncHandler{nd, registerNodeFunSig})
 
 }
 
-func (nmc *NetworkMapContractClient) GetNodeDetails(i int, from string, to string, passwd string, pvtFor []string) (NodeDetails) {
-	nmc.contractParam.From = from
-	nmc.contractParam.To = to
-	nmc.contractParam.Passwd = passwd
-	nmc.contractParam.Parties = pvtFor
+func (nmc *NetworkMapContractClient) GetNodeDetails(i int) NodeDetails {
+
 	encoderDecoder := GetNodeDetailsFuncHandler{index: i, funcSig: getNodeDetailsFunSig}
-	nmc.EthCall(nmc.contractParam, encoderDecoder, &encoderDecoder)
+	nmc.EthCall(nmc.ContractParam, encoderDecoder, &encoderDecoder)
 
 	return encoderDecoder.result
 }
 
-func (nmc *NetworkMapContractClient) GetNodeDetailsList(from string, to string, passwd string, pvtFor []string) ([]NodeDetails) {
-	nmc.contractParam.From = from
-	nmc.contractParam.To = to
-	nmc.contractParam.Passwd = passwd
-	nmc.contractParam.Parties = pvtFor
+func (nmc *NetworkMapContractClient) GetNodeDetailsList() []NodeDetails {
+
 	var list []NodeDetails
 
 	for i := 0; true; i++ {
 		encoderDecoder := GetNodeDetailsFuncHandler{index: i, funcSig: getNodeDetailsFunSig}
-		nmc.EthCall(nmc.contractParam, encoderDecoder, &encoderDecoder)
+		nmc.EthCall(nmc.ContractParam, encoderDecoder, &encoderDecoder)
 
 		if encoderDecoder.result.Enode != "" && len(encoderDecoder.result.Enode) > 0 {
 			list = append(list, encoderDecoder.result)
@@ -67,13 +62,10 @@ func (nmc *NetworkMapContractClient) GetNodeDetailsList(from string, to string, 
 	return list
 }
 
-func (nmc *NetworkMapContractClient) UpdateNode(name string, role string, publicKey string, enode string, ip string, id string, from string, to string, passwd string, pvtFor []string) string {
-	nmc.contractParam.From = from
-	nmc.contractParam.To = to
-	nmc.contractParam.Passwd = passwd
-	nmc.contractParam.Parties = pvtFor
+func (nmc *NetworkMapContractClient) UpdateNode(name string, role string, publicKey string, enode string, ip string, id string) string {
+
 	nd := NodeDetails{name, role, publicKey, enode, ip, id}
-	return nmc.SendTransaction(nmc.contractParam, RegisterUpdateNodeFuncHandler{nd, updateNodeFunSig})
+	return nmc.SendTransaction(nmc.ContractParam, RegisterUpdateNodeFuncHandler{nd, updateNodeFunSig})
 }
 
 type RegisterUpdateNodeFuncHandler struct {
@@ -85,7 +77,7 @@ func (h RegisterUpdateNodeFuncHandler) Encode() string {
 
 	sig := "string,string,string,string,string,string"
 
-	param := []interface{}{h.nd.Name, h.nd.Role, h.nd.PublicKey, h.nd.Enode, h.nd.IP, h.nd.ID,}
+	param := []interface{}{h.nd.Name, h.nd.Role, h.nd.PublicKey, h.nd.Enode, h.nd.IP, h.nd.ID}
 
 	data := h.funcSig + contracthandler.FunctionProcessor{sig, param, ""}.GetData()
 

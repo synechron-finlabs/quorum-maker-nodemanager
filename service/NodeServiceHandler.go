@@ -1,17 +1,17 @@
 package service
 
 import (
-	"net/http"
 	"encoding/json"
-	"github.com/gorilla/mux"
 	"fmt"
+	"github.com/gorilla/mux"
+	"net/http"
 	"strconv"
 	//"bufio"
 	//"os"
-	"strings"
+	"bytes"
 	"io"
 	"io/ioutil"
-	"bytes"
+	"strings"
 	"time"
 )
 

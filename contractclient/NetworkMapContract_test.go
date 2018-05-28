@@ -1,16 +1,16 @@
 package contractclient
 
 import (
-	"testing"
-	"github.com/synechron-finlabs/quorum-maker-nodemanager/contracthandler"
-	"github.com/synechron-finlabs/quorum-maker-nodemanager/client"
 	"fmt"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/client"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/contracthandler"
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
-	"time"
-	"net/http/httptest"
-	"net/http"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"testing"
+	"time"
 )
 
 // needed to retrieve requests that arrived at httpServer for further investigation
@@ -21,6 +21,7 @@ type RequestData struct {
 	request *http.Request
 	body    string
 }
+
 var responseBody = ""
 
 var httpServer *httptest.Server
@@ -55,30 +56,36 @@ func TestRegisterNode(t *testing.T) {
 		"Bank",
 		"0x4308aa060c5e193191ea96650a3c7b44ef1e9090",
 		"0x4308aa060c5e193191ea96650a3c7b44ef1e9091",
-		)
+		"10.0.2.15",
+		"1",
+	)
 
 	if txRec == "" {
 		t.Error("Error Registering Node")
 	}
 }
 
-//func TestUpdateNode(t *testing.T) {
-//
-//	cp := getContractParam()
-//
-//	ec := client.EthClient{"http://localhost:22000"}
-//
-//	nmc := NetworkMapContractClient{ec, cp}
-//
-//	txRec := nmc.UpdateNode(
-//		"c5f4b39a1c40c5affc99ec6f7be64e7c20d78c96ac55f20ee1156ce87175732a9c2b518aa6897f1590ea78b911be0c6a524d8496a420107651251048332bb04e",
-//		"BB&T",
-//		"Bank")
-//
-//	if txRec == "" {
-//		t.Error("Error Updating Node")
-//	}
-//}
+func TestUpdateNode(t *testing.T) {
+
+	cp := getContractParam()
+
+	ec := client.EthClient{"http://localhost:22000"}
+
+	nmc := NetworkMapContractClient{ec, cp}
+
+	txRec := nmc.UpdateNode(
+		"RBC1",
+		"Custodian",
+		"0x4308aa060c5e193191ea96650a3c7b44ef1e9090",
+		"0x4308aa060c5e193191ea96650a3c7b44ef1e9091",
+		"10.0.2.15",
+		"1",
+	)
+
+	if txRec == "" {
+		t.Error("Error Updating Node")
+	}
+}
 
 func TestGetNodeDetails(t *testing.T) {
 
@@ -89,7 +96,7 @@ func TestGetNodeDetails(t *testing.T) {
 
 	nmc := NetworkMapContractClient{ec, cp}
 
-	nd := nmc.GetNodeDetails(0)
+	nd := nmc.GetNodeDetails(1)
 
 	fmt.Println(nd.Name)
 }
@@ -111,8 +118,8 @@ func TestGetNodeDetailsList(t *testing.T) {
 
 func getContractParam() contracthandler.ContractParam {
 	return contracthandler.ContractParam{
-		"0x044802df9659bbfa78615dc2af3d4740464cb714",
-		"0x32072a0bfac753633914661def1c0ae31839dc28",
+		"0x75302f1f561b2896a11639a92da6c09adfb87541",
+		"0xd2dbb4c020bba5b0d8eef5d1e482d797bb15cc40",
 		"",
 		nil,
 	}

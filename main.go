@@ -1,16 +1,16 @@
 package main
 
 import (
+	"context"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"github.com/synechron-finlabs/quorum-maker-nodemanager/service"
-	"os"
-	"github.com/synechron-finlabs/quorum-maker-nodemanager/contractclient"
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/client"
-	"time"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/contractclient"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/service"
+	"net/http"
+	"os"
 	"os/signal"
-	"context"
+	"time"
 )
 
 var nodeUrl = "http://localhost:22000"
@@ -89,10 +89,9 @@ func main() {
 
 	log.WithFields(log.Fields{"url": nodeUrl, "port": listenPort}).Info("Node Manager listening...")
 
-
 	srv := &http.Server{
-		Handler:      router,
-		Addr:         "0.0.0.0" + listenPort,
+		Handler: router,
+		Addr:    "0.0.0.0" + listenPort,
 
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
@@ -142,7 +141,6 @@ func (mf *MyFileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		r.URL.Path = "/"
 	}
-
 
 	mf.handler.ServeHTTP(w, r)
 }

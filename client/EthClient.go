@@ -2,9 +2,9 @@ package client
 
 import (
 	"fmt"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/contracthandler"
 	"github.com/ybbus/jsonrpc"
 	"log"
-	"github.com/synechron-finlabs/quorum-maker-nodemanager/contracthandler"
 	"time"
 )
 
@@ -129,7 +129,7 @@ type EthClient struct {
 	Url string
 }
 
-func (ec *EthClient) GetTransactionByHash(txNo string) (TransactionDetailsResponse) {
+func (ec *EthClient) GetTransactionByHash(txNo string) TransactionDetailsResponse {
 	rpcClient := jsonrpc.NewClient(ec.Url)
 	response, err := rpcClient.Call("eth_getTransactionByHash", txNo)
 
@@ -144,7 +144,7 @@ func (ec *EthClient) GetTransactionByHash(txNo string) (TransactionDetailsRespon
 	return txResponse
 }
 
-func (ec *EthClient) GetBlockByNumber(blockNo string) (BlockDetailsResponse) {
+func (ec *EthClient) GetBlockByNumber(blockNo string) BlockDetailsResponse {
 	rpcClient := jsonrpc.NewClient(ec.Url)
 	response, err := rpcClient.Call("eth_getBlockByNumber", blockNo, true)
 	if err != nil {
@@ -158,7 +158,7 @@ func (ec *EthClient) GetBlockByNumber(blockNo string) (BlockDetailsResponse) {
 	return blockResponse
 }
 
-func (ec *EthClient) PendingTransactions() ([]TransactionDetailsResponse) {
+func (ec *EthClient) PendingTransactions() []TransactionDetailsResponse {
 	rpcClient := jsonrpc.NewClient(ec.Url)
 	response, err := rpcClient.Call("eth_pendingTransactions")
 	if err != nil {
@@ -172,7 +172,7 @@ func (ec *EthClient) PendingTransactions() ([]TransactionDetailsResponse) {
 	return pendingTxResponse
 }
 
-func (ec *EthClient) AdminPeers() ([]AdminPeers) {
+func (ec *EthClient) AdminPeers() []AdminPeers {
 	rpcClient := jsonrpc.NewClient(ec.Url)
 	response, err := rpcClient.Call("admin_peers")
 	if err != nil {
@@ -186,7 +186,7 @@ func (ec *EthClient) AdminPeers() ([]AdminPeers) {
 	return otherPeersResponse
 }
 
-func (ec *EthClient) AdminNodeInfo() (AdminInfo) {
+func (ec *EthClient) AdminNodeInfo() AdminInfo {
 	rpcClient := jsonrpc.NewClient(ec.Url)
 	response, err := rpcClient.Call("admin_nodeInfo")
 	if err != nil {
@@ -197,7 +197,7 @@ func (ec *EthClient) AdminNodeInfo() (AdminInfo) {
 	return thisAdminInfo
 }
 
-func (ec *EthClient) BlockNumber() (string) {
+func (ec *EthClient) BlockNumber() string {
 	rpcClient := jsonrpc.NewClient(ec.Url)
 	response, err := rpcClient.Call("eth_blockNumber")
 	if err != nil {
@@ -213,7 +213,7 @@ func (ec *EthClient) BlockNumber() (string) {
 	return blockNumber
 }
 
-func (ec *EthClient) Coinbase() (string) {
+func (ec *EthClient) Coinbase() string {
 	rpcClient := jsonrpc.NewClient(ec.Url)
 	response, err := rpcClient.Call("eth_coinbase")
 	if err != nil {
@@ -227,7 +227,7 @@ func (ec *EthClient) Coinbase() (string) {
 	return coinbase
 }
 
-func (ec *EthClient) RaftRole() (string) {
+func (ec *EthClient) RaftRole() string {
 	rpcClient := jsonrpc.NewClient(ec.Url)
 	response, err := rpcClient.Call("raft_role")
 	if err != nil {
@@ -241,7 +241,7 @@ func (ec *EthClient) RaftRole() (string) {
 	return raftRole
 }
 
-func (ec *EthClient) RaftAddPeer(request string) (int) {
+func (ec *EthClient) RaftAddPeer(request string) int {
 	rpcClient := jsonrpc.NewClient(ec.Url)
 	response, err := rpcClient.Call("raft_addPeer", request)
 	var raftId int
@@ -252,7 +252,7 @@ func (ec *EthClient) RaftAddPeer(request string) (int) {
 	return raftId
 }
 
-func (ec *EthClient) GetTransactionReceipt(txNo string) (TransactionReceiptResponse) {
+func (ec *EthClient) GetTransactionReceipt(txNo string) TransactionReceiptResponse {
 	rpcClient := jsonrpc.NewClient(ec.Url)
 	response, err := rpcClient.Call("eth_getTransactionReceipt", txNo)
 
@@ -331,7 +331,7 @@ func (ec *EthClient) DeployContracts(byteCode string, pubKeys []string, private 
 	return contractAdd
 }
 
-func (ec *EthClient) NetListening() (bool) {
+func (ec *EthClient) NetListening() bool {
 	rpcClient := jsonrpc.NewClient(ec.Url)
 	response, err := rpcClient.Call("net_listening")
 	if err != nil {
