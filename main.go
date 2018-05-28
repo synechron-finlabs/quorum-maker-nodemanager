@@ -9,6 +9,8 @@ import (
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/contractclient"
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/client"
 	"time"
+	"os/signal"
+	"context"
 )
 
 var nodeUrl = "http://localhost:22000"
@@ -86,5 +88,40 @@ func main() {
 	router.PathPrefix("/").Handler(http.StripPrefix("/", http.FileServer(http.Dir("NodeManagerUI"))))
 
 	log.WithFields(log.Fields{"url": nodeUrl, "port": listenPort}).Info("Node Manager listening...")
-	log.Fatal(http.ListenAndServe(listenPort, router))
+
+
+	srv := &http.Server{
+		Handler:      router,
+		Addr:         "0.0.0.0" + listenPort,
+
+		WriteTimeout: 15 * time.Second,
+		ReadTimeout:  15 * time.Second,
+		IdleTimeout:  time.Second * 60,
+	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
+	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
+	signal.Notify(c, os.Interrupt)
+
+	// Block until we receive our signal.
+	<-c
+
+	// Create a deadline to wait for.
+	ctx, cancel := context.WithTimeout(context.Background(), 15)
+	defer cancel()
+	// Doesn't block if no connections, but will otherwise wait
+	// until the timeout deadline.
+	srv.Shutdown(ctx)
+	// Optionally, you could run srv.Shutdown in a goroutine and block on
+	// <-ctx.Done() if your application should wait for other services
+	// to finalize based on context cancellation.
+	log.Info("Node Manager Shutting down")
+	os.Exit(0)
 }
