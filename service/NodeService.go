@@ -733,11 +733,14 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 
 		contractAddress := ethClient.DeployContracts(byteCode, pubKeys, private)
 
-		path := "./" + contractAddress + "_" + strings.Replace(fileName[i], ".sol", "", -1)
+		path := "./contracts"
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			os.Mkdir(path, 0775)
 		}
-
+		path = "./contracts/" + contractAddress + "_" + strings.Replace(fileName[i], ".sol", "", -1)
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			os.Mkdir(path, 0775)
+		}
 		contractJsonArr[i].Interface = strings.Replace(strings.Replace(abiStr, "\n", "", -1), "\\", "", -1)
 		contractJsonArr[i].Bytecode = byteCode
 		contractJsonArr[i].ContractAddress = contractAddress

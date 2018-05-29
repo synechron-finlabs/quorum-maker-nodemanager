@@ -1,26 +1,24 @@
 package service
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/gorilla/mux"
 	"net/http"
+	"encoding/json"
+	"github.com/gorilla/mux"
+	"fmt"
 	"strconv"
 	//"bufio"
 	//"os"
-	"bytes"
+	"strings"
 	"io"
 	"io/ioutil"
-	"strings"
+	"bytes"
 	"time"
 )
 
-var context = 0
-var ticketCheck = 0
-
-var ticketMap = map[string]int{}
+var pendCount = 0
 var nameMap = map[string]string{}
 var peerMap = map[string]string{}
+var channelMap = make(map[string](chan string))
 
 func (nsi *NodeServiceImpl) JoinNetworkHandler(w http.ResponseWriter, r *http.Request) {
 	var request JoinNetworkRequest
@@ -47,45 +45,19 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	var request JoinNetworkRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 	enode := request.EnodeID
-	//foreignIP := request.IPAddress
+	foreignIP := request.IPAddress
 	nodename := request.Nodename
-	//recipients := strings.Split(mailServerConfig.RecipientList, ",")
-	//for i := 0; i < len(recipients); i++ {
-	//message := fmt.Sprint("Request for joining network has come in from node ", nodename, " with enode ", enode, " from ip-address ", foreignIP)
-	//nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Incoming Join Request", message)
-	//}
+	recipients := strings.Split(mailServerConfig.RecipientList, ",")
+	for i := 0; i < len(recipients); i++ {
+		message := fmt.Sprint("Request for joining network has come in from node ", nodename, " with enode ", enode, " from ip-address ", foreignIP)
+		nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Incoming Join Request", message, recipients[i])
+	}
 	var cUIresp = make(chan string, 1)
-	var cTimer = make(chan string, 1)
-	//var cCLI = make(chan string, 1)
+	channelMap[enode] = cUIresp
 	nameMap[enode] = nodename
 	if peerMap[enode] == "" {
 		peerMap[enode] = "PENDING"
 	}
-
-	context++
-	ticket := context
-	//fmt.Println(context)
-
-	ticketMap[enode] = ticket
-
-	//fmt.Println("context:", context)
-	//fmt.Println("ticket:", ticket)
-	timer := time.NewTimer(300 * time.Second)
-	go func() {
-		<-timer.C
-		//fmt.Println("Timer expired Ticket ", ticket)
-		cTimer <- fmt.Sprintf("Timer resp: Ticket %d", ticket)
-	}()
-
-	go func() {
-		for ticket != ticketCheck {
-		}
-		stop := timer.Stop()
-		if stop {
-			//fmt.Println("Timer stopped: Ticket ", ticketCheck)
-		}
-		cUIresp <- fmt.Sprintf("UI resp: Ticket %d", ticket)
-	}()
 
 	//go func() {
 	//	fmt.Println("Request for Joining this network from", nodename, "with Enode", enode, "from IP", foreignIP, "Do you approve ? y/N")
@@ -113,11 +85,11 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	select {
 	//case <-cCLI:
 	//fmt.Println(resCLI)
-	case <-cUIresp:
-		if peerMap[enode] == "YES" {
+	case uiResp := <-cUIresp:
+		if uiResp == "YES" {
 			response := nsi.getGenesis(nsi.Url)
 			json.NewEncoder(w).Encode(response)
-		} else if peerMap[enode] == "NO" {
+		} else if uiResp == "NO" {
 			w.WriteHeader(http.StatusForbidden)
 			w.Write([]byte("Access denied"))
 		} else {
@@ -125,7 +97,7 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 			w.Write([]byte("Pending user response"))
 		}
 		//fmt.Println(resUI)
-	case <-cTimer:
+	case <-time.After(time.Second * 300):
 		//fmt.Println("Response Timed Out")
 		w.WriteHeader(http.StatusAccepted)
 		w.Write([]byte("Pending user response"))
@@ -139,7 +111,8 @@ func (nsi *NodeServiceImpl) JoinRequestResponseHandler(w http.ResponseWriter, r 
 	enode := request.EnodeID
 	status := request.Status
 	response := nsi.joinRequestResponse(enode, status)
-	ticketCheck = ticketMap[enode]
+	channelMap[enode] <- status
+	delete(channelMap, enode);
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	w.Header().Set("Access-Control-Allow-Origin", "*")

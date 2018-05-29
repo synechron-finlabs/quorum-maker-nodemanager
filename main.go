@@ -93,9 +93,9 @@ func main() {
 		Handler: router,
 		Addr:    "0.0.0.0" + listenPort,
 
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
-		IdleTimeout:  time.Second * 60,
+		//WriteTimeout: 15 * time.Second,
+		//ReadTimeout:  15 * time.Second,
+		//IdleTimeout:  time.Second * 60,
 	}
 
 	go func() {
