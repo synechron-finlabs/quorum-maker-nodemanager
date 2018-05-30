@@ -865,7 +865,7 @@ func (nsi *NodeServiceImpl) emailServerConfig(host string, port string, username
 	mailServerConfig.RecipientList = recipientList
 
 	registered := fmt.Sprint("RECIPIENTLIST=", recipientList, "\n")
-	util.AppendStringToFile("/home//setup.conf", registered)
+	util.AppendStringToFile("/home/setup.conf", registered)
 
 	ticker := time.NewTicker(30 * time.Second)
 	go func() {
