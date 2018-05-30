@@ -19,7 +19,12 @@ type NodeDetailsSelf struct {
 	IP        string `json:"ip,omitempty"`
 	ID        string `json:"id,omitempty"`
 	Self      string `json:"self,omitempty"`
-	Active	  string `json:"active,omitempty"`
+	Active    string `json:"active,omitempty"`
+}
+
+type ActiveNodes struct {
+	NodeCount      int `json:"nodeCount,omitempty"`
+	TotalNodeCount int `json:"totalNodeCount,omitempty"`
 }
 
 func (nms *NetworkMapContractClient) UpdateNodeRequestsHandler(w http.ResponseWriter, r *http.Request) {
@@ -145,6 +150,24 @@ func (nms *NetworkMapContractClient) GetNodeListSelfResponseHandler(w http.Respo
 			}
 		}
 	}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (nms *NetworkMapContractClient) ActiveNodesHandler(w http.ResponseWriter, r *http.Request) {
+	coinbase := nms.EthClient.Coinbase()
+	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+	contractAdd := util.MustGetString("CONTRACT_ADD", p)
+
+	cp := contracthandler.ContractParam{coinbase, contractAdd, "", nil}
+	nms.SetContractParam(cp)
+	adminPeers := nms.EthClient.AdminPeers()
+	activeNodes := len(adminPeers) + 1
+	contractResponse := nms.GetNodeDetailsList()
+	totalNodes := len(contractResponse)
+	response := ActiveNodes{activeNodes, totalNodes}
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")

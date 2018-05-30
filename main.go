@@ -81,6 +81,7 @@ func main() {
 	router.HandleFunc("/updateNode", networkMapService.UpdateNodeRequestsHandler).Methods("POST")
 	router.HandleFunc("/getNodeDetails/{index}", networkMapService.GetNodeDetailsResponseHandler).Methods("GET")
 	router.HandleFunc("/getNodeList", networkMapService.GetNodeListSelfResponseHandler).Methods("GET")
+	router.HandleFunc("/activeNodes", networkMapService.ActiveNodesHandler).Methods("GET")
 
 	router.PathPrefix("/contracts").Handler(http.StripPrefix("/contracts", http.FileServer(http.Dir("/root/quorum-maker/contracts"))))
 	router.PathPrefix("/geth").Handler(http.StripPrefix("/geth", http.FileServer(http.Dir("/home/node/qdata/gethLogs"))))
