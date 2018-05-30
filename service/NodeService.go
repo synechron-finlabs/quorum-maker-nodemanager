@@ -243,7 +243,6 @@ func (nsi *NodeServiceImpl) getCurrentNode(url string) NodeInfo {
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
 
-
 	nms := contractclient.NetworkMapContractClient{client.EthClient{url}, contracthandler.ContractParam{fromAddress, contractAdd, "", nil}}
 
 	totalCount := len(nms.GetNodeDetailsList())
@@ -341,34 +340,18 @@ func (nsi *NodeServiceImpl) getOtherPeers(url string) []client.AdminPeers {
 func (nsi *NodeServiceImpl) getPendingTransactions(url string) []TransactionDetailsResponse {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
-	pendingTxResponseClient := ethClient.PendingTransactions()
-	pendingTxCount := len(pendingTxResponseClient)
-	pendingTxResponse := make([]TransactionDetailsResponse, pendingTxCount)
-	for i := 0; i < pendingTxCount; i++ {
+	clientPendingTxResponses := ethClient.PendingTransactions()
 
-		//@TODO: Create a Utility function to convert transaction to readable transaction object and call from here
-		pendingTxResponse[i].BlockNumber = util.HexStringtoInt64(pendingTxResponseClient[i].BlockNumber)
-		pendingTxResponse[i].Gas = util.HexStringtoInt64(pendingTxResponseClient[i].Gas)
-		pendingTxResponse[i].GasPrice = util.HexStringtoInt64(pendingTxResponseClient[i].GasPrice)
-		pendingTxResponse[i].TransactionIndex = util.HexStringtoInt64(pendingTxResponseClient[i].TransactionIndex)
-		pendingTxResponse[i].Value = util.HexStringtoInt64(pendingTxResponseClient[i].Value)
-		pendingTxResponse[i].Nonce = util.HexStringtoInt64(pendingTxResponseClient[i].Nonce)
-		pendingTxResponse[i].BlockHash = pendingTxResponseClient[i].BlockHash
-		pendingTxResponse[i].From = pendingTxResponseClient[i].From
-		pendingTxResponse[i].Hash = pendingTxResponseClient[i].Hash
-		pendingTxResponse[i].Input = pendingTxResponseClient[i].Input
-		pendingTxResponse[i].To = pendingTxResponseClient[i].To
-		pendingTxResponse[i].V = pendingTxResponseClient[i].V
-		pendingTxResponse[i].R = pendingTxResponseClient[i].R
-		pendingTxResponse[i].S = pendingTxResponseClient[i].S
-		if util.HexStringtoInt64(pendingTxResponseClient[i].V) == 37 || util.HexStringtoInt64(pendingTxResponseClient[i].V) == 38 {
-			pendingTxResponse[i].TransactionType = "Private or Hash Only"
-		} else {
-			pendingTxResponse[i].TransactionType = "Public"
-		}
+	pendingTxResponse := make([]TransactionDetailsResponse, len(clientPendingTxResponses))
+
+	for i, clientPendingTxResponse := range clientPendingTxResponses{
+
+		pendingTxResponse[i] = ConvertToReadable(clientPendingTxResponse, true, true)
 	}
+
 	return pendingTxResponse
 }
+
 
 func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) BlockDetailsResponse {
 	var nodeUrl = url
@@ -403,33 +386,11 @@ func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) BlockDetails
 	blockResponse.Uncles = blockResponseClient.Uncles
 	txnNo := len(blockResponseClient.Transactions)
 	txResponse := make([]TransactionDetailsResponse, txnNo)
-	for i := 0; i < txnNo; i++ {
+	for i, clientTransactions := range blockResponseClient.Transactions {
 
-		//@TODO: call the utility function to convert to readeable object
-		txGetClient := ethClient.GetTransactionReceipt(blockResponseClient.Transactions[i].Hash)
-		txResponse[i].BlockNumber = util.HexStringtoInt64(blockResponseClient.Transactions[i].BlockNumber)
-		txResponse[i].Gas = util.HexStringtoInt64(blockResponseClient.Transactions[i].Gas)
-		txResponse[i].GasPrice = util.HexStringtoInt64(blockResponseClient.Transactions[i].GasPrice)
-		txResponse[i].TransactionIndex = util.HexStringtoInt64(blockResponseClient.Transactions[i].TransactionIndex)
-		txResponse[i].Value = util.HexStringtoInt64(blockResponseClient.Transactions[i].Value)
-		txResponse[i].Nonce = util.HexStringtoInt64(blockResponseClient.Transactions[i].Nonce)
-		txResponse[i].BlockHash = blockResponseClient.Transactions[i].BlockHash
-		txResponse[i].From = blockResponseClient.Transactions[i].From
-		txResponse[i].Hash = blockResponseClient.Transactions[i].Hash
-		txResponse[i].Input = blockResponseClient.Transactions[i].Input
-		txResponse[i].To = blockResponseClient.Transactions[i].To
-		txResponse[i].V = blockResponseClient.Transactions[i].V
-		txResponse[i].R = blockResponseClient.Transactions[i].R
-		txResponse[i].S = blockResponseClient.Transactions[i].S
-		if util.HexStringtoInt64(txResponse[i].V) == 37 || util.HexStringtoInt64(txResponse[i].V) == 38 {
-			if len(txGetClient.Logs) == 0 {
-				txResponse[i].TransactionType = "Hash only"
-			} else {
-				txResponse[i].TransactionType = "Private"
-			}
-		} else {
-			txResponse[i].TransactionType = "Public"
-		}
+		txGetClient := ethClient.GetTransactionReceipt(clientTransactions.Hash)
+		txResponse[i] = ConvertToReadable(clientTransactions, false, len(txGetClient.Logs) == 0)
+
 	}
 	blockResponse.Transactions = txResponse
 	return blockResponse
@@ -467,33 +428,14 @@ func (nsi *NodeServiceImpl) getLatestBlockInfo(count string, reference string, u
 		blockResponse[blockNumber-i].TimeElapsed = elapsedTime
 		txnNo := len(blockResponseClient.Transactions)
 		txResponse := make([]TransactionDetailsResponse, txnNo)
-		for i := 0; i < txnNo; i++ {
-			//@TODO: Call the utility function to convert to readable transaction object
-			txGetClient := ethClient.GetTransactionReceipt(blockResponseClient.Transactions[i].Hash)
-			txResponse[i].BlockNumber = util.HexStringtoInt64(blockResponseClient.Transactions[i].BlockNumber)
-			txResponse[i].Gas = util.HexStringtoInt64(blockResponseClient.Transactions[i].Gas)
-			txResponse[i].GasPrice = util.HexStringtoInt64(blockResponseClient.Transactions[i].GasPrice)
-			txResponse[i].TransactionIndex = util.HexStringtoInt64(blockResponseClient.Transactions[i].TransactionIndex)
-			txResponse[i].Value = util.HexStringtoInt64(blockResponseClient.Transactions[i].Value)
-			txResponse[i].Nonce = util.HexStringtoInt64(blockResponseClient.Transactions[i].Nonce)
-			txResponse[i].BlockHash = blockResponseClient.Transactions[i].BlockHash
-			txResponse[i].From = blockResponseClient.Transactions[i].From
-			txResponse[i].Hash = blockResponseClient.Transactions[i].Hash
-			txResponse[i].Input = blockResponseClient.Transactions[i].Input
-			txResponse[i].To = blockResponseClient.Transactions[i].To
-			txResponse[i].V = blockResponseClient.Transactions[i].V
-			txResponse[i].R = blockResponseClient.Transactions[i].R
-			txResponse[i].S = blockResponseClient.Transactions[i].S
-			if util.HexStringtoInt64(txResponse[i].V) == 37 || util.HexStringtoInt64(txResponse[i].V) == 38 {
-				if len(txGetClient.Logs) == 0 {
-					txResponse[i].TransactionType = "Hash Only"
-				} else {
-					txResponse[i].TransactionType = "Private"
-				}
-			} else {
-				txResponse[i].TransactionType = "Public"
-			}
+
+		for i, clientTransactions := range blockResponseClient.Transactions {
+
+			txGetClient := ethClient.GetTransactionReceipt(clientTransactions.Hash)
+			txResponse[i] = ConvertToReadable(clientTransactions, false, len(txGetClient.Logs) == 0)
+
 		}
+
 		blockResponse[blockNumber-i].Transactions = txResponse
 	}
 	return blockResponse
@@ -518,32 +460,14 @@ func (nsi *NodeServiceImpl) getLatestTransactionInfo(count string, url string) [
 		blockResponse[blockNumber-i].Number = util.HexStringtoInt64(blockResponseClient.Number)
 		txnNo := len(blockResponseClient.Transactions)
 		txResponse := make([]TransactionDetailsResponse, txnNo)
-		for i := 0; i < txnNo; i++ {
-			txGetClient := ethClient.GetTransactionReceipt(blockResponseClient.Transactions[i].Hash)
-			txResponse[i].BlockNumber = util.HexStringtoInt64(blockResponseClient.Transactions[i].BlockNumber)
-			txResponse[i].Gas = util.HexStringtoInt64(blockResponseClient.Transactions[i].Gas)
-			txResponse[i].GasPrice = util.HexStringtoInt64(blockResponseClient.Transactions[i].GasPrice)
-			txResponse[i].TransactionIndex = util.HexStringtoInt64(blockResponseClient.Transactions[i].TransactionIndex)
-			txResponse[i].Value = util.HexStringtoInt64(blockResponseClient.Transactions[i].Value)
-			txResponse[i].Nonce = util.HexStringtoInt64(blockResponseClient.Transactions[i].Nonce)
-			txResponse[i].BlockHash = blockResponseClient.Transactions[i].BlockHash
-			txResponse[i].From = blockResponseClient.Transactions[i].From
-			txResponse[i].Hash = blockResponseClient.Transactions[i].Hash
-			txResponse[i].Input = blockResponseClient.Transactions[i].Input
-			txResponse[i].To = blockResponseClient.Transactions[i].To
-			txResponse[i].V = blockResponseClient.Transactions[i].V
-			txResponse[i].R = blockResponseClient.Transactions[i].R
-			txResponse[i].S = blockResponseClient.Transactions[i].S
-			if util.HexStringtoInt64(txResponse[i].V) == 37 || util.HexStringtoInt64(txResponse[i].V) == 38 {
-				if len(txGetClient.Logs) == 0 {
-					txResponse[i].TransactionType = "Hash Only"
-				} else {
-					txResponse[i].TransactionType = "Private"
-				}
-			} else {
-				txResponse[i].TransactionType = "Public"
-			}
+
+		for i, clientTransactions := range blockResponseClient.Transactions {
+
+			txGetClient := ethClient.GetTransactionReceipt(clientTransactions.Hash)
+			txResponse[i] = ConvertToReadable(clientTransactions, false, len(txGetClient.Logs) == 0)
+
 		}
+
 		blockResponse[blockNumber-i].Transactions = txResponse
 	}
 	return blockResponse
@@ -555,29 +479,9 @@ func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) Transact
 	txGetClient := ethClient.GetTransactionReceipt(txno)
 	var txResponse TransactionDetailsResponse
 	txResponseClient := ethClient.GetTransactionByHash(txno)
-	txResponse.BlockNumber = util.HexStringtoInt64(txResponseClient.BlockNumber)
-	txResponse.Gas = util.HexStringtoInt64(txResponseClient.Gas)
-	txResponse.GasPrice = util.HexStringtoInt64(txResponseClient.GasPrice)
-	txResponse.TransactionIndex = util.HexStringtoInt64(txResponseClient.TransactionIndex)
-	txResponse.Value = util.HexStringtoInt64(txResponseClient.Value)
-	txResponse.Nonce = util.HexStringtoInt64(txResponseClient.Nonce)
-	txResponse.BlockHash = txResponseClient.BlockHash
-	txResponse.From = txResponseClient.From
-	txResponse.Hash = txResponseClient.Hash
-	txResponse.Input = txResponseClient.Input
-	txResponse.To = txResponseClient.To
-	txResponse.V = txResponseClient.V
-	txResponse.R = txResponseClient.R
-	txResponse.S = txResponseClient.S
-	if util.HexStringtoInt64(txResponseClient.V) == 37 || util.HexStringtoInt64(txResponseClient.V) == 38 {
-		if len(txGetClient.Logs) == 0 {
-			txResponse.TransactionType = "Hash Only"
-		} else {
-			txResponse.TransactionType = "Private"
-		}
-	} else {
-		txResponse.TransactionType = "Public"
-	}
+
+	txResponse = ConvertToReadable(txResponseClient, false, len(txGetClient.Logs) == 0)
+
 	blockResponseClient := ethClient.GetBlockByNumber(txResponseClient.BlockNumber)
 	currentTime := time.Now().Unix()
 	creationTime := util.HexStringtoInt64(blockResponseClient.Timestamp)
@@ -1101,4 +1005,39 @@ func (nsi *NodeServiceImpl) NetworkManagerContractDeployer(url string) {
 		contAddAppend := fmt.Sprint("CONTRACT_ADD=", contAdd, "\n")
 		util.AppendStringToFile("/home/setup.conf", contAddAppend)
 	}
+}
+
+func ConvertToReadable(p client.TransactionDetailsResponse, pending bool ,hash bool) TransactionDetailsResponse {
+	var readableTransactionDetailsResponse TransactionDetailsResponse
+
+
+
+	readableTransactionDetailsResponse.BlockNumber = util.HexStringtoInt64(p.BlockNumber)
+	readableTransactionDetailsResponse.Gas = util.HexStringtoInt64(p.Gas)
+	readableTransactionDetailsResponse.GasPrice = util.HexStringtoInt64(p.GasPrice)
+	readableTransactionDetailsResponse.TransactionIndex = util.HexStringtoInt64(p.TransactionIndex)
+	readableTransactionDetailsResponse.Value = util.HexStringtoInt64(p.Value)
+	readableTransactionDetailsResponse.Nonce = util.HexStringtoInt64(p.Nonce)
+	readableTransactionDetailsResponse.BlockHash = p.BlockHash
+	readableTransactionDetailsResponse.From = p.From
+	readableTransactionDetailsResponse.Hash = p.Hash
+	readableTransactionDetailsResponse.Input = p.Input
+	readableTransactionDetailsResponse.To = p.To
+	readableTransactionDetailsResponse.V = p.V
+	readableTransactionDetailsResponse.R = p.R
+	readableTransactionDetailsResponse.S = p.S
+	if util.HexStringtoInt64(p.V) == 37 || util.HexStringtoInt64(p.V) == 38 {
+		if pending {
+			readableTransactionDetailsResponse.TransactionType = "Private or Hash Only"
+		} else if hash {
+			readableTransactionDetailsResponse.TransactionType = "Hash Only"
+		}else {
+			readableTransactionDetailsResponse.TransactionType = "Private"
+		}
+
+	} else {
+		readableTransactionDetailsResponse.TransactionType = "Public"
+	}
+
+	return readableTransactionDetailsResponse
 }
