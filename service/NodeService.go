@@ -864,6 +864,9 @@ func (nsi *NodeServiceImpl) emailServerConfig(host string, port string, username
 	mailServerConfig.Password = password
 	mailServerConfig.RecipientList = recipientList
 
+	registered := fmt.Sprint("RECIPIENTLIST=", recipientList, "\n")
+	util.AppendStringToFile("/home/setup.conf", registered)
+
 	ticker := time.NewTicker(30 * time.Second)
 	go func() {
 		for range ticker.C {
@@ -886,7 +889,9 @@ func (nsi *NodeServiceImpl) healthCheck(url string) {
 	blockNumber := ethClient.BlockNumber()
 	if blockNumber == "" {
 		if warning > 0 {
-			recipients := strings.Split(mailServerConfig.RecipientList, ",")
+			p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+			recipientList := util.MustGetString("RECIPIENTLIST", p)
+			recipients := strings.Split(recipientList, ",")
 			for i := 0; i < len(recipients); i++ {
 				nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Node is not responding", "Unfortunately this node has stopped responding", recipients[i])
 			}

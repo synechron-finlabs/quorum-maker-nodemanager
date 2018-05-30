@@ -13,6 +13,8 @@ import (
 	"io/ioutil"
 	"bytes"
 	"time"
+	"github.com/magiconair/properties"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
 )
 
 var pendCount = 0
@@ -47,7 +49,10 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	enode := request.EnodeID
 	foreignIP := request.IPAddress
 	nodename := request.Nodename
-	recipients := strings.Split(mailServerConfig.RecipientList, ",")
+	//recipients := strings.Split(mailServerConfig.RecipientList, ",")
+	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+	recipientList := util.MustGetString("RECIPIENTLIST", p)
+	recipients := strings.Split(recipientList, ",")
 	for i := 0; i < len(recipients); i++ {
 		message := fmt.Sprint("Request for joining network has come in from node ", nodename, " with enode ", enode, " from ip-address ", foreignIP)
 		nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Incoming Join Request", message, recipients[i])
