@@ -220,7 +220,9 @@ func (ec *EthClient) Coinbase() string {
 		fmt.Println(err)
 	}
 	var coinbase string
-	err = response.GetObject(&coinbase)
+	if err == nil {
+		err = response.GetObject(&coinbase)
+	}
 	if err != nil {
 		fmt.Println(err)
 	}

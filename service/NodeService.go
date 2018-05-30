@@ -344,14 +344,13 @@ func (nsi *NodeServiceImpl) getPendingTransactions(url string) []TransactionDeta
 
 	pendingTxResponse := make([]TransactionDetailsResponse, len(clientPendingTxResponses))
 
-	for i, clientPendingTxResponse := range clientPendingTxResponses{
+	for i, clientPendingTxResponse := range clientPendingTxResponses {
 
 		pendingTxResponse[i] = ConvertToReadable(clientPendingTxResponse, true, true)
 	}
 
 	return pendingTxResponse
 }
-
 
 func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) BlockDetailsResponse {
 	var nodeUrl = url
@@ -1021,10 +1020,8 @@ func (nsi *NodeServiceImpl) NetworkManagerContractDeployer(url string) {
 	}
 }
 
-func ConvertToReadable(p client.TransactionDetailsResponse, pending bool ,hash bool) TransactionDetailsResponse {
+func ConvertToReadable(p client.TransactionDetailsResponse, pending bool, hash bool) TransactionDetailsResponse {
 	var readableTransactionDetailsResponse TransactionDetailsResponse
-
-
 
 	readableTransactionDetailsResponse.BlockNumber = util.HexStringtoInt64(p.BlockNumber)
 	readableTransactionDetailsResponse.Gas = util.HexStringtoInt64(p.Gas)
@@ -1045,7 +1042,7 @@ func ConvertToReadable(p client.TransactionDetailsResponse, pending bool ,hash b
 			readableTransactionDetailsResponse.TransactionType = "Private or Hash Only"
 		} else if hash {
 			readableTransactionDetailsResponse.TransactionType = "Hash Only"
-		}else {
+		} else {
 			readableTransactionDetailsResponse.TransactionType = "Private"
 		}
 
@@ -1054,4 +1051,14 @@ func ConvertToReadable(p client.TransactionDetailsResponse, pending bool ,hash b
 	}
 
 	return readableTransactionDetailsResponse
+}
+
+func (nsi *NodeServiceImpl) CheckGethStatus(url string) bool {
+	ethClient := client.EthClient{url}
+	var coinbase string
+	for coinbase == "" {
+		time.Sleep(1 * time.Second)
+		coinbase = ethClient.Coinbase()
+	}
+	return true
 }

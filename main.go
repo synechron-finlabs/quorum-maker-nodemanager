@@ -45,7 +45,8 @@ func main() {
 	}()
 
 	go func() {
-		time.Sleep(80 * time.Second)
+		//time.Sleep(80 * time.Second)
+		nodeService.CheckGethStatus(nodeUrl)
 		log.Info("Deploying Network Manager Contract")
 		nodeService.NetworkManagerContractDeployer(nodeUrl)
 		nodeService.RegisterNodeDetails(nodeUrl)
