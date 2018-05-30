@@ -38,7 +38,6 @@ func HexStringtoInt64(hexVal string) (intVal int64) {
 	hexVal = strings.TrimPrefix(hexVal, "0x")
 	intVal, err := strconv.ParseInt(hexVal, 16, 64)
 	if err != nil {
-		fmt.Println(err)
 	}
 	return intVal
 }

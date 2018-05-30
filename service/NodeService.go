@@ -419,19 +419,10 @@ func (nsi *NodeServiceImpl) getLatestBlockInfo(count string, reference string, u
 		blockNoHex := strconv.FormatInt(i, 16)
 		bNoHex := fmt.Sprint("0x", blockNoHex)
 		blockResponseClient := ethClient.GetBlockByNumber(bNoHex)
-		if (blockNumber < countVal) {
-			blockResponse[blockNumber-i].Number = 0
-		} else {
-			blockResponse[blockNumber-i].Number = util.HexStringtoInt64(blockResponseClient.Number)
-		}
+		blockResponse[blockNumber-i].Number = util.HexStringtoInt64(blockResponseClient.Number)
 		blockResponse[blockNumber-i].Hash = blockResponseClient.Hash
 		currentTime := time.Now().Unix()
-		var creationTime int64
-		if (blockNumber < countVal) {
-			creationTime = 0
-		} else {
-			creationTime = util.HexStringtoInt64(blockResponseClient.Timestamp)
-		}
+		creationTime := util.HexStringtoInt64(blockResponseClient.Timestamp)
 		creationTimeUnix := creationTime / 1000000000
 		elapsedTime := currentTime - creationTimeUnix
 		blockResponse[blockNumber-i].TimeElapsed = elapsedTime

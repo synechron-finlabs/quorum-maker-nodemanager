@@ -51,23 +51,25 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	foreignIP := request.IPAddress
 	nodename := request.Nodename
 	//recipients := strings.Split(mailServerConfig.RecipientList, ",")
+	go func() {
+		b, err := ioutil.ReadFile("/root/quorum-maker/JoinRequestTemplate.txt")
 
-	b, err := ioutil.ReadFile("/root/quorum-maker/JoinRequestTemplate.txt")
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	if err != nil {
-		log.Fatal(err)
-	}
+		mailCont := string(b)
+		mailCont = strings.Replace(mailCont, "\n", "", -1)
 
-	mailCont := string(b)
-	mailCont = strings.Replace(mailCont, "\n", "", -1)
+		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+		recipientList := util.MustGetString("RECIPIENTLIST", p)
+		recipients := strings.Split(recipientList, ",")
+		for i := 0; i < len(recipients); i++ {
+			message := fmt.Sprintf(mailCont, nodename, enode, foreignIP)
+			nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Incoming Join Request", message, recipients[i])
+		}
+	}()
 
-	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-	recipientList := util.MustGetString("RECIPIENTLIST", p)
-	recipients := strings.Split(recipientList, ",")
-	for i := 0; i < len(recipients); i++ {
-		message := fmt.Sprintf(mailCont, nodename, enode, foreignIP)
-		nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Incoming Join Request", message, recipients[i])
-	}
 	var cUIresp = make(chan string, 1)
 	channelMap[enode] = cUIresp
 	nameMap[enode] = nodename
