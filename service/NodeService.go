@@ -920,7 +920,7 @@ func (nsi *NodeServiceImpl) logs() SuccessResponse {
 	var successResponse SuccessResponse
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	ipAddr := util.MustGetString("CURRENT_IP", p)
-	logPort := util.MustGetString("NODEMANAGER_PORT", p)
+	logPort := util.MustGetString("MAIN_NODEMANAGER_PORT", p)
 	successResponse.Status = fmt.Sprint(ipAddr, ":", logPort)
 	return successResponse
 }
