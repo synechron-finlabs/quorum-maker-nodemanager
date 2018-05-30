@@ -19,6 +19,7 @@ type NodeDetailsSelf struct {
 	IP        string `json:"ip,omitempty"`
 	ID        string `json:"id,omitempty"`
 	Self      string `json:"self,omitempty"`
+	Active	  string `json:"active,omitempty"`
 }
 
 func (nms *NetworkMapContractClient) UpdateNodeRequestsHandler(w http.ResponseWriter, r *http.Request) {
@@ -117,7 +118,12 @@ func (nms *NetworkMapContractClient) GetNodeListSelfResponseHandler(w http.Respo
 
 	cp := contracthandler.ContractParam{coinbase, contractAdd, "", nil}
 	nms.SetContractParam(cp)
+	adminPeers := nms.EthClient.AdminPeers()
 
+	var peerEnodes = map[string]bool{}
+	for i := 0; i < len(adminPeers); i++ {
+		peerEnodes[adminPeers[i].ID] = true
+	}
 	nodeList := nms.GetNodeDetailsList()
 	response := make([]NodeDetailsSelf, len(nodeList))
 	for i := 0; i < len(nodeList); i++ {
@@ -129,8 +135,14 @@ func (nms *NetworkMapContractClient) GetNodeListSelfResponseHandler(w http.Respo
 		response[i].Name = nodeList[i].Name
 		if nodeList[i].Name == nodename {
 			response[i].Self = "true"
+			response[i].Active = "true"
 		} else {
 			response[i].Self = "false"
+			if peerEnodes[nodeList[i].Enode] {
+				response[i].Active = "true"
+			} else {
+				response[i].Active = "false"
+			}
 		}
 	}
 	w.Header().Set("Access-Control-Allow-Origin", "*")
