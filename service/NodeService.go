@@ -865,7 +865,7 @@ func (nsi *NodeServiceImpl) emailServerConfig(host string, port string, username
 	mailServerConfig.RecipientList = recipientList
 
 	registered := fmt.Sprint("RECIPIENTLIST=", recipientList, "\n")
-	util.AppendStringToFile("/home/setup.conf", registered)
+	util.AppendStringToFile("/home//setup.conf", registered)
 
 	ticker := time.NewTicker(30 * time.Second)
 	go func() {
@@ -892,8 +892,17 @@ func (nsi *NodeServiceImpl) healthCheck(url string) {
 			p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 			recipientList := util.MustGetString("RECIPIENTLIST", p)
 			recipients := strings.Split(recipientList, ",")
+
+			b, err := ioutil.ReadFile("/root/quorum-maker/NodeUnavailableTemplate.txt")
+
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			mailCont := string(b)
+			mailCont = strings.Replace(mailCont, "\n", "", -1)
 			for i := 0; i < len(recipients); i++ {
-				nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Node is not responding", "Unfortunately this node has stopped responding", recipients[i])
+				nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Node is not responding", mailCont, recipients[i])
 			}
 		}
 		warning++
