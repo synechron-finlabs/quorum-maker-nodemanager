@@ -31,12 +31,20 @@ func (nmc *NetworkMapContractClient) SetContractParam(cp contracthandler.Contrac
 
 func (nmc *NetworkMapContractClient) RegisterNode(name string, role string, publicKey string, enode string, ip string, id string) string {
 
+	if nmc.ContractParam.To == "" || nmc.ContractParam.From == "" {
+		return ""
+	}
+
 	nd := NodeDetails{name, role, publicKey, enode, ip, id}
 	return nmc.SendTransaction(nmc.ContractParam, RegisterUpdateNodeFuncHandler{nd, registerNodeFunSig})
 
 }
 
 func (nmc *NetworkMapContractClient) GetNodeDetails(i int) NodeDetails {
+
+	if nmc.ContractParam.To == "" || nmc.ContractParam.From == "" {
+		return NodeDetails{}
+	}
 
 	encoderDecoder := GetNodeDetailsFuncHandler{index: i, funcSig: getNodeDetailsFunSig}
 	nmc.EthCall(nmc.ContractParam, encoderDecoder, &encoderDecoder)
@@ -45,6 +53,10 @@ func (nmc *NetworkMapContractClient) GetNodeDetails(i int) NodeDetails {
 }
 
 func (nmc *NetworkMapContractClient) GetNodeDetailsList() []NodeDetails {
+
+	if nmc.ContractParam.To == "" || nmc.ContractParam.From == "" {
+		return []NodeDetails{}
+	}
 
 	var list []NodeDetails
 
@@ -63,6 +75,10 @@ func (nmc *NetworkMapContractClient) GetNodeDetailsList() []NodeDetails {
 }
 
 func (nmc *NetworkMapContractClient) UpdateNode(name string, role string, publicKey string, enode string, ip string, id string) string {
+
+	if nmc.ContractParam.To == "" || nmc.ContractParam.From == "" {
+		return ""
+	}
 
 	nd := NodeDetails{name, role, publicKey, enode, ip, id}
 	return nmc.SendTransaction(nmc.ContractParam, RegisterUpdateNodeFuncHandler{nd, updateNodeFunSig})
