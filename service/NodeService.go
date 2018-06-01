@@ -10,13 +10,13 @@ import (
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
 	"gopkg.in/gomail.v2"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+	log "github.com/sirupsen/logrus"
 )
 
 type ConnectionInfo struct {
@@ -888,20 +888,23 @@ func (nsi *NodeServiceImpl) healthCheck(url string) {
 	blockNumber := ethClient.BlockNumber()
 	if blockNumber == "" {
 		if warning > 0 {
-			p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-			recipientList := util.MustGetString("RECIPIENTLIST", p)
-			recipients := strings.Split(recipientList, ",")
+			exists := util.PropertyExists("RECIPIENTLIST", "/home/setup.conf")
+			if exists != "" {
+				p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+				recipientList := util.MustGetString("RECIPIENTLIST", p)
+				recipients := strings.Split(recipientList, ",")
 
-			b, err := ioutil.ReadFile("/root/quorum-maker/NodeUnavailableTemplate.txt")
+				b, err := ioutil.ReadFile("/root/quorum-maker/NodeUnavailableTemplate.txt")
 
-			if err != nil {
-				log.Fatal(err)
-			}
+				if err != nil {
+					log.Fatal(err)
+				}
 
-			mailCont := string(b)
-			mailCont = strings.Replace(mailCont, "\n", "", -1)
-			for i := 0; i < len(recipients); i++ {
-				nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Node is not responding", mailCont, recipients[i])
+				mailCont := string(b)
+				mailCont = strings.Replace(mailCont, "\n", "", -1)
+				for i := 0; i < len(recipients); i++ {
+					nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Node is not responding", mailCont, recipients[i])
+				}
 			}
 		}
 		warning++
@@ -931,7 +934,7 @@ func (nsi *NodeServiceImpl) sendMail(host string, port string, username string, 
 
 func (nsi *NodeServiceImpl) logs() SuccessResponse {
 	var successResponse SuccessResponse
-	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+	p := properties.MustLoadFile("./setup.conf", properties.UTF8)
 	ipAddr := util.MustGetString("CURRENT_IP", p)
 	logPort := util.MustGetString("THIS_NODEMANAGER_PORT", p)
 	successResponse.Status = fmt.Sprint(ipAddr, ":", logPort)
@@ -1012,6 +1015,7 @@ func (nsi *NodeServiceImpl) NetworkManagerContractDeployer(url string) {
 	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	contractAdd := util.MustGetString("CONTRACT_ADD", p)
 	if contractAdd == "" {
+		log.Info("Deploying Network Manager Contract")
 		filename := []string{"NetworkManagerContract.sol"}
 		deployedContract := nsi.deployContract(nil, filename, false, url)
 		contAdd := deployedContract[0].ContractAddress

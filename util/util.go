@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"os/exec"
 )
 
 func TakeSliceArg(arg interface{}) (out []interface{}, ok bool) {
@@ -111,4 +112,13 @@ func AppendStringToFile(path, text string) error {
 		return err
 	}
 	return nil
+}
+
+func PropertyExists (property string, filepath string) string{
+	command := fmt.Sprint("grep -R ", "\"", property, "\" ", "\"", filepath, "\"")
+	out, err := exec.Command("bash", "-c", command).Output()
+	if err != nil {
+		fmt.Println(err)
+	}
+	 return string(out)
 }
