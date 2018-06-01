@@ -280,7 +280,7 @@ func (nsi *NodeServiceImpl) getCurrentNode(url string) NodeInfo {
 	ipAddr := util.MustGetString("CURRENT_IP", p)
 	raftId := util.MustGetString("RAFT_ID", p)
 	rpcPort := util.MustGetString("RPC_PORT", p)
-
+	nodeName := util.MustGetString("NODENAME", p)
 	raftIdInt, err := strconv.Atoi(raftId)
 	if err != nil {
 		log.Fatal(err)
@@ -313,7 +313,7 @@ func (nsi *NodeServiceImpl) getCurrentNode(url string) NodeInfo {
 	genesis := string(b)
 	genesis = strings.Replace(genesis, "\n", "", -1)
 	conn := ConnectionInfo{ipAddr, rpcPortInt, enode}
-	responseObj := NodeInfo{nodename, count, totalCount, activeStatus, conn, raftRole, raftIdInt, blockNumberInt, pendingTxCount, genesis, thisAdminInfo}
+	responseObj := NodeInfo{nodeName, count, totalCount, activeStatus, conn, raftRole, raftIdInt, blockNumberInt, pendingTxCount, genesis, thisAdminInfo}
 	return responseObj
 }
 

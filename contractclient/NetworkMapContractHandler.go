@@ -27,6 +27,11 @@ type ActiveNodes struct {
 	TotalNodeCount int `json:"totalNodeCount,omitempty"`
 }
 
+type UpdateNode struct {
+	NodeName string `json:"nodeName,omitempty"`
+	Role     string `json:"role,omitempty"`
+}
+
 func (nms *NetworkMapContractClient) UpdateNodeRequestsHandler(w http.ResponseWriter, r *http.Request) {
 	coinbase := nms.EthClient.Coinbase()
 	var request NodeDetails
@@ -44,7 +49,6 @@ func (nms *NetworkMapContractClient) UpdateNodeRequestsHandler(w http.ResponseWr
 
 	nms.SetContractParam(cp)
 
-	//, coinbase, contractAdd, "", nil
 	response := nms.UpdateNode(nodeName, role, publickey, enode, ip, id)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
@@ -168,6 +172,38 @@ func (nms *NetworkMapContractClient) ActiveNodesHandler(w http.ResponseWriter, r
 	contractResponse := nms.GetNodeDetailsList()
 	totalNodes := len(contractResponse)
 	response := ActiveNodes{activeNodes, totalNodes}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (nms *NetworkMapContractClient) OptionsHandler(w http.ResponseWriter, r *http.Request) {
+	response := "Options Handled"
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (nms *NetworkMapContractClient) UpdateNodeHandler(w http.ResponseWriter, r *http.Request) {
+	var request UpdateNode
+	_ = json.NewDecoder(r.Body).Decode(&request)
+	nodeName := request.NodeName
+	role := request.Role
+	coinbase := nms.EthClient.Coinbase()
+	enode := nms.EthClient.AdminNodeInfo().ID
+	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+	contractAdd := util.MustGetString("CONTRACT_ADD", p)
+	publickey := util.MustGetString("PUBKEY", p)
+	ip := util.MustGetString("CURRENT_IP", p)
+	id := util.MustGetString("RAFT_ID", p)
+	cp := contracthandler.ContractParam{coinbase, contractAdd, "", nil}
+	nms.SetContractParam(cp)
+	response := nms.UpdateNode(nodeName, role, publickey, enode, ip, id)
+	registered := fmt.Sprint("NODENAME=", nodeName, "\n")
+	util.AppendStringToFile("/home/setup.conf", registered)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
