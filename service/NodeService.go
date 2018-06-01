@@ -934,7 +934,7 @@ func (nsi *NodeServiceImpl) sendMail(host string, port string, username string, 
 
 func (nsi *NodeServiceImpl) logs() SuccessResponse {
 	var successResponse SuccessResponse
-	p := properties.MustLoadFile("./setup.conf", properties.UTF8)
+	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 	ipAddr := util.MustGetString("CURRENT_IP", p)
 	logPort := util.MustGetString("THIS_NODEMANAGER_PORT", p)
 	successResponse.Status = fmt.Sprint(ipAddr, ":", logPort)
