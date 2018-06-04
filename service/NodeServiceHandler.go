@@ -79,7 +79,7 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 				}
 			}()
 		}
-		var cUIresp= make(chan string, 1)
+		var cUIresp = make(chan string, 1)
 		channelMap[enode] = cUIresp
 		nameMap[enode] = nodename
 		if peerMap[enode] == "" {
