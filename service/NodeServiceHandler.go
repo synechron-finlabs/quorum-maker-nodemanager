@@ -51,77 +51,85 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	foreignIP := request.IPAddress
 	nodename := request.Nodename
 	//recipients := strings.Split(mailServerConfig.RecipientList, ",")
-	exists := util.PropertyExists("RECIPIENTLIST", "/home/setup.conf")
-	if exists != "" {
-		go func() {
-			b, err := ioutil.ReadFile("/root/quorum-maker/JoinRequestTemplate.txt")
+	if peerMap[enode] == "YES" {
+		response := nsi.getGenesis(nsi.Url)
+		json.NewEncoder(w).Encode(response)
+	} else if peerMap[enode] == "NO" {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Access denied"))
+	} else {
+		exists := util.PropertyExists("RECIPIENTLIST", "/home/setup.conf")
+		if exists != "" {
+			go func() {
+				b, err := ioutil.ReadFile("/root/quorum-maker/JoinRequestTemplate.txt")
 
-			if err != nil {
-				log.Fatal(err)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				mailCont := string(b)
+				mailCont = strings.Replace(mailCont, "\n", "", -1)
+
+				p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+				recipientList := util.MustGetString("RECIPIENTLIST", p)
+				recipients := strings.Split(recipientList, ",")
+				for i := 0; i < len(recipients); i++ {
+					message := fmt.Sprintf(mailCont, nodename, enode, foreignIP)
+					nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Incoming Join Request", message, recipients[i])
+				}
+			}()
+		}
+		var cUIresp= make(chan string, 1)
+		channelMap[enode] = cUIresp
+		nameMap[enode] = nodename
+		if peerMap[enode] == "" {
+			peerMap[enode] = "PENDING"
+		}
+
+		//go func() {
+		//	fmt.Println("Request for Joining this network from", nodename, "with Enode", enode, "from IP", foreignIP, "Do you approve ? y/N")
+		//
+		//	reader := bufio.NewReader(os.Stdin)
+		//	reply, _ := reader.ReadString('\n')
+		//	stop := timer.Stop()
+		//	if stop {
+		//		//fmt.Println("Timer stopped: Ticket ", ticket)
+		//	}
+		//	reader.Reset(os.Stdin)
+		//	reply = strings.TrimSuffix(reply, "\n")
+		//	if reply == "y" || reply == "Y" {
+		//		peerMap[enode] = "YES"
+		//		response := nsi.getGenesis(nsi.Url)
+		//		json.NewEncoder(w).Encode(response)
+		//	} else {
+		//		peerMap[enode] = "NO"
+		//		w.WriteHeader(http.StatusForbidden)
+		//		w.Write([]byte("Access denied"))
+		//	}
+		//	cCLI <- fmt.Sprintf("CLI resp: Ticket %d", ticket)
+		//}()
+
+		select {
+		//case <-cCLI:
+		//fmt.Println(resCLI)
+		case uiResp := <-cUIresp:
+			if uiResp == "YES" {
+				response := nsi.getGenesis(nsi.Url)
+				json.NewEncoder(w).Encode(response)
+			} else if uiResp == "NO" {
+				w.WriteHeader(http.StatusForbidden)
+				w.Write([]byte("Access denied"))
+			} else {
+				w.WriteHeader(http.StatusAccepted)
+				w.Write([]byte("Pending user response"))
 			}
-
-			mailCont := string(b)
-			mailCont = strings.Replace(mailCont, "\n", "", -1)
-
-			p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-			recipientList := util.MustGetString("RECIPIENTLIST", p)
-			recipients := strings.Split(recipientList, ",")
-			for i := 0; i < len(recipients); i++ {
-				message := fmt.Sprintf(mailCont, nodename, enode, foreignIP)
-				nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Incoming Join Request", message, recipients[i])
-			}
-		}()
-	}
-	var cUIresp = make(chan string, 1)
-	channelMap[enode] = cUIresp
-	nameMap[enode] = nodename
-	if peerMap[enode] == "" {
-		peerMap[enode] = "PENDING"
-	}
-
-	//go func() {
-	//	fmt.Println("Request for Joining this network from", nodename, "with Enode", enode, "from IP", foreignIP, "Do you approve ? y/N")
-	//
-	//	reader := bufio.NewReader(os.Stdin)
-	//	reply, _ := reader.ReadString('\n')
-	//	stop := timer.Stop()
-	//	if stop {
-	//		//fmt.Println("Timer stopped: Ticket ", ticket)
-	//	}
-	//	reader.Reset(os.Stdin)
-	//	reply = strings.TrimSuffix(reply, "\n")
-	//	if reply == "y" || reply == "Y" {
-	//		peerMap[enode] = "YES"
-	//		response := nsi.getGenesis(nsi.Url)
-	//		json.NewEncoder(w).Encode(response)
-	//	} else {
-	//		peerMap[enode] = "NO"
-	//		w.WriteHeader(http.StatusForbidden)
-	//		w.Write([]byte("Access denied"))
-	//	}
-	//	cCLI <- fmt.Sprintf("CLI resp: Ticket %d", ticket)
-	//}()
-
-	select {
-	//case <-cCLI:
-	//fmt.Println(resCLI)
-	case uiResp := <-cUIresp:
-		if uiResp == "YES" {
-			response := nsi.getGenesis(nsi.Url)
-			json.NewEncoder(w).Encode(response)
-		} else if uiResp == "NO" {
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Access denied"))
-		} else {
+			//fmt.Println(resUI)
+		case <-time.After(time.Second * 300):
+			//fmt.Println("Response Timed Out")
 			w.WriteHeader(http.StatusAccepted)
 			w.Write([]byte("Pending user response"))
+			//fmt.Println(resTimer)
 		}
-		//fmt.Println(resUI)
-	case <-time.After(time.Second * 300):
-		//fmt.Println("Response Timed Out")
-		w.WriteHeader(http.StatusAccepted)
-		w.Write([]byte("Pending user response"))
-		//fmt.Println(resTimer)
 	}
 }
 
