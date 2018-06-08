@@ -1012,8 +1012,8 @@ func (nsi *NodeServiceImpl) RegisterNodeDetails(url string) {
 		//fmt.Println(ipAddr, nodename, pubKey, role, enode, fromAddress, contractAdd)
 		registered := fmt.Sprint("REGISTERED=TRUE", "\n")
 		util.AppendStringToFile("/home/setup.conf", registered)
-		util.DeleteProperty("REGISTERED=","/home/setup.conf")
-		util.DeleteProperty("ROLE=Unassigned","/home/setup.conf")
+		util.DeleteProperty("REGISTERED=", "/home/setup.conf")
+		util.DeleteProperty("ROLE=Unassigned", "/home/setup.conf")
 		nms := contractclient.NetworkMapContractClient{client.EthClient{url}, contracthandler.ContractParam{fromAddress, contractAdd, "", nil}}
 		nms.RegisterNode(nodename, role, pubKey, enode, ipAddr, id)
 	}
@@ -1029,7 +1029,7 @@ func (nsi *NodeServiceImpl) NetworkManagerContractDeployer(url string) {
 		contAdd := deployedContract[0].ContractAddress
 		contAddAppend := fmt.Sprint("CONTRACT_ADD=", contAdd, "\n")
 		util.AppendStringToFile("/home/setup.conf", contAddAppend)
-		util.DeleteProperty("CONTRACT_ADD=","/home/setup.conf")
+		util.DeleteProperty("CONTRACT_ADD=", "/home/setup.conf")
 	}
 }
 
