@@ -216,10 +216,14 @@ var warning = 0
 var mailServerConfig MailServerConfig
 
 func (nsi *NodeServiceImpl) getGenesis(url string) (response GetGenesisResponse) {
-	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-	netId := util.MustGetString("NETWORK_ID", p)
-	constl := util.MustGetString("CONSTELLATION_PORT", p)
-
+	var netId, constl string
+	existsA := util.PropertyExists("NETWORK_ID", "/home/setup.conf")
+	existsB := util.PropertyExists("CONSTELLATION_PORT", "/home/setup.conf")
+	if existsA != "" &&  existsB != "" {
+		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+		netId = util.MustGetString("NETWORK_ID", p)
+		constl = util.MustGetString("CONSTELLATION_PORT", p)
+	}
 	b, err := ioutil.ReadFile("/home/node/genesis.json")
 	if err != nil {
 		log.Fatal(err)
@@ -235,8 +239,12 @@ func (nsi *NodeServiceImpl) joinNetwork(enode string, url string) string {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	raftId := ethClient.RaftAddPeer(enode)
-	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-	contractAdd := util.MustGetString("CONTRACT_ADD", p)
+	var contractAdd string
+	exists := util.PropertyExists("CONTRACT_ADD", "/home/setup.conf")
+	if exists != "" {
+		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+		contractAdd = util.MustGetString("CONTRACT_ADD", p)
+	}
 	collatedInfo := fmt.Sprint(raftId, ":", contractAdd)
 	return collatedInfo
 }
@@ -246,9 +254,13 @@ func (nsi *NodeServiceImpl) getCurrentNode(url string) NodeInfo {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	fromAddress := ethClient.Coinbase()
-
-	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-	contractAdd := util.MustGetString("CONTRACT_ADD", p)
+	var contractAdd string
+	var p *properties.Properties
+	exists := util.PropertyExists("CONTRACT_ADD", "/home/setup.conf")
+	if exists != "" {
+		p = properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+		contractAdd = util.MustGetString("CONTRACT_ADD", p)
+	}
 
 	nms := contractclient.NetworkMapContractClient{client.EthClient{url}, contracthandler.ContractParam{fromAddress, contractAdd, "", nil}}
 
@@ -284,10 +296,18 @@ func (nsi *NodeServiceImpl) getCurrentNode(url string) NodeInfo {
 	nodename = strings.TrimSuffix(nodename, ".sh")
 	nodename = strings.TrimPrefix(nodename, "start_")
 
-	ipAddr := util.MustGetString("CURRENT_IP", p)
-	raftId := util.MustGetString("RAFT_ID", p)
-	rpcPort := util.MustGetString("RPC_PORT", p)
-	nodeName := util.MustGetString("NODENAME", p)
+
+	var ipAddr, raftId, rpcPort, nodeName string
+	existsA := util.PropertyExists("CURRENT_IP", "/home/setup.conf")
+	existsB := util.PropertyExists("RAFT_ID", "/home/setup.conf")
+	existsC := util.PropertyExists("RPC_PORT", "/home/setup.conf")
+	existsD := util.PropertyExists("NODENAME", "/home/setup.conf")
+	if existsA != "" &&  existsB != "" &&  existsC != "" &&  existsD != "" {
+		ipAddr = util.MustGetString("CURRENT_IP", p)
+		raftId = util.MustGetString("RAFT_ID", p)
+		rpcPort = util.MustGetString("RPC_PORT", p)
+		nodeName = util.MustGetString("NODENAME", p)
+	}
 	raftIdInt, err := strconv.Atoi(raftId)
 	if err != nil {
 		log.Fatal(err)
@@ -574,8 +594,12 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 	fromAddress := ethClient.Coinbase()
 
 	//@TODO: Dont use absolute paths
-	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-	contractAdd := util.MustGetString("CONTRACT_ADD", p)
+	var contractAdd string
+	exists := util.PropertyExists("CONTRACT_ADD", "/home/setup.conf")
+	if exists != "" {
+		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+		contractAdd = util.MustGetString("CONTRACT_ADD", p)
+	}
 	nms := contractclient.NetworkMapContractClient{client.EthClient{url}, contracthandler.ContractParam{fromAddress, contractAdd, "", nil}}
 	if private == true && pubKeys[0] == "" {
 		enode := ethClient.AdminNodeInfo().ID
@@ -823,9 +847,12 @@ func (nsi *NodeServiceImpl) latency(url string) []LatencyResponse {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	fromAddress := ethClient.Coinbase()
-
-	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-	contractAdd := util.MustGetString("CONTRACT_ADD", p)
+	var contractAdd string
+	exists := util.PropertyExists("CONTRACT_ADD", "/home/setup.conf")
+	if exists != "" {
+		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+		contractAdd = util.MustGetString("CONTRACT_ADD", p)
+	}
 
 	nms := contractclient.NetworkMapContractClient{client.EthClient{url}, contracthandler.ContractParam{fromAddress, contractAdd, "", nil}}
 
@@ -994,25 +1021,37 @@ func (nsi *NodeServiceImpl) LogRotaterConst() {
 
 func (nsi *NodeServiceImpl) RegisterNodeDetails(url string) {
 	var nodeUrl = url
-	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-	registeredVal := util.MustGetString("REGISTERED", p)
+	var registeredVal string
+	exists := util.PropertyExists("REGISTERED", "/home/setup.conf")
+	if exists != "" {
+		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+		registeredVal = util.MustGetString("REGISTERED", p)
+	}
 	if registeredVal != "TRUE" {
 		ethClient := client.EthClient{nodeUrl}
 
 		enode := ethClient.AdminNodeInfo().ID
 		fromAddress := ethClient.Coinbase()
-
-		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-		ipAddr := util.MustGetString("CURRENT_IP", p)
-		nodename := util.MustGetString("NODENAME", p)
-		pubKey := util.MustGetString("PUBKEY", p)
-		role := util.MustGetString("ROLE", p)
-		id := util.MustGetString("RAFT_ID", p)
-		contractAdd := util.MustGetString("CONTRACT_ADD", p)
+		var ipAddr, nodename, pubKey, role, id, contractAdd string
+		existsA := util.PropertyExists("CURRENT_IP", "/home/setup.conf")
+		existsB := util.PropertyExists("NODENAME", "/home/setup.conf")
+		existsC := util.PropertyExists("PUBKEY", "/home/setup.conf")
+		existsD := util.PropertyExists("ROLE", "/home/setup.conf")
+		existsE := util.PropertyExists("RAFT_ID", "/home/setup.conf")
+		existsF := util.PropertyExists("CONTRACT_ADD", "/home/setup.conf")
+		if existsA != "" &&  existsB != "" && existsC != "" && existsD != "" && existsE != "" && existsF != "" {
+			p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+			ipAddr = util.MustGetString("CURRENT_IP", p)
+			nodename = util.MustGetString("NODENAME", p)
+			pubKey = util.MustGetString("PUBKEY", p)
+			role = util.MustGetString("ROLE", p)
+			id = util.MustGetString("RAFT_ID", p)
+			contractAdd = util.MustGetString("CONTRACT_ADD", p)
+		}
 		//fmt.Println(ipAddr, nodename, pubKey, role, enode, fromAddress, contractAdd)
 		registered := fmt.Sprint("REGISTERED=TRUE", "\n")
 		util.AppendStringToFile("/home/setup.conf", registered)
-		util.DeleteProperty("REGISTERED=", "/home/setup.conf")
+		util.DeleteProperty("REGISTERED=","/home/setup.conf")
 		util.DeleteProperty("ROLE=Unassigned", "/home/setup.conf")
 		nms := contractclient.NetworkMapContractClient{client.EthClient{url}, contracthandler.ContractParam{fromAddress, contractAdd, "", nil}}
 		nms.RegisterNode(nodename, role, pubKey, enode, ipAddr, id)
@@ -1020,8 +1059,12 @@ func (nsi *NodeServiceImpl) RegisterNodeDetails(url string) {
 }
 
 func (nsi *NodeServiceImpl) NetworkManagerContractDeployer(url string) {
-	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-	contractAdd := util.MustGetString("CONTRACT_ADD", p)
+	var contractAdd string
+	exists := util.PropertyExists("CONTRACT_ADD", "/home/setup.conf")
+	if exists != "" {
+		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+		contractAdd = util.MustGetString("CONTRACT_ADD", p)
+	}
 	if contractAdd == "" {
 		log.Info("Deploying Network Manager Contract")
 		filename := []string{"NetworkManagerContract.sol"}
@@ -1029,7 +1072,7 @@ func (nsi *NodeServiceImpl) NetworkManagerContractDeployer(url string) {
 		contAdd := deployedContract[0].ContractAddress
 		contAddAppend := fmt.Sprint("CONTRACT_ADD=", contAdd, "\n")
 		util.AppendStringToFile("/home/setup.conf", contAddAppend)
-		util.DeleteProperty("CONTRACT_ADD=", "/home/setup.conf")
+		util.DeleteProperty("CONTRACT_ADD=","/home/setup.conf")
 	}
 }
 
