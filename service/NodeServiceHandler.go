@@ -339,11 +339,11 @@ func (nsi *NodeServiceImpl) LatencyHandler(w http.ResponseWriter, r *http.Reques
 	json.NewEncoder(w).Encode(response)
 }
 
-func (nsi *NodeServiceImpl) LogsHandler(w http.ResponseWriter, r *http.Request) {
-	response := nsi.logs()
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	json.NewEncoder(w).Encode(response)
-}
+//func (nsi *NodeServiceImpl) LogsHandler(w http.ResponseWriter, r *http.Request) {
+//	response := nsi.logs()
+//	w.Header().Set("Access-Control-Allow-Origin", "*")
+//	json.NewEncoder(w).Encode(response)
+//}
 
 func (nsi *NodeServiceImpl) TransactionSearchHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
@@ -369,5 +369,11 @@ func (nsi *NodeServiceImpl) OptionsHandler(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (nsi *NodeServiceImpl) GetChartDataHandler(w http.ResponseWriter, r *http.Request) {
+	response := nsi.GetChartData(nsi.Url)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(w).Encode(response)
 }

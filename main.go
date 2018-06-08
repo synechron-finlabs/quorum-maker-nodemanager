@@ -74,7 +74,7 @@ func main() {
 	router.HandleFunc("/restart", nodeService.RestartHandler).Methods("GET")
 	router.HandleFunc("/latestBlock", nodeService.LatestBlockHandler).Methods("GET")
 	router.HandleFunc("/latency", nodeService.LatencyHandler).Methods("GET")
-	router.HandleFunc("/logs", nodeService.LogsHandler).Methods("GET")
+	//router.HandleFunc("/logs", nodeService.LogsHandler).Methods("GET")
 	router.HandleFunc("/txnsearch/{txn_hash}", nodeService.TransactionSearchHandler).Methods("GET")
 	router.HandleFunc("/mailserver", nodeService.MailServerConfigHandler).Methods("POST")
 	router.HandleFunc("/mailserver", nodeService.OptionsHandler).Methods("OPTIONS")
@@ -84,6 +84,7 @@ func main() {
 	router.HandleFunc("/getNodeDetails/{index}", networkMapService.GetNodeDetailsResponseHandler).Methods("GET")
 	router.HandleFunc("/getNodeList", networkMapService.GetNodeListSelfResponseHandler).Methods("GET")
 	router.HandleFunc("/activeNodes", networkMapService.ActiveNodesHandler).Methods("GET")
+	router.HandleFunc("/chartData", nodeService.GetChartDataHandler).Methods("GET")
 
 	router.PathPrefix("/contracts").Handler(http.StripPrefix("/contracts", http.FileServer(http.Dir("/root/quorum-maker/contracts"))))
 	router.PathPrefix("/geth").Handler(http.StripPrefix("/geth", http.FileServer(http.Dir("/home/node/qdata/gethLogs"))))

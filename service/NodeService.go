@@ -205,6 +205,13 @@ type NodeServiceImpl struct {
 	Url string
 }
 
+type ChartInfo struct {
+	TimeStamp        int `json:"timeStamp"`
+	BlockCount       int `json:"blockCount"`
+	TransactionCount int `json:"transactionCount"`
+}
+
+var chartSize = 10
 var warning = 0
 var mailServerConfig MailServerConfig
 
@@ -932,14 +939,14 @@ func (nsi *NodeServiceImpl) sendMail(host string, port string, username string, 
 	}
 }
 
-func (nsi *NodeServiceImpl) logs() SuccessResponse {
-	var successResponse SuccessResponse
-	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-	ipAddr := util.MustGetString("CURRENT_IP", p)
-	logPort := util.MustGetString("THIS_NODEMANAGER_PORT", p)
-	successResponse.Status = fmt.Sprint(ipAddr, ":", logPort)
-	return successResponse
-}
+//func (nsi *NodeServiceImpl) logs() SuccessResponse {
+//	var successResponse SuccessResponse
+//	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+//	ipAddr := util.MustGetString("CURRENT_IP", p)
+//	logPort := util.MustGetString("THIS_NODEMANAGER_PORT", p)
+//	successResponse.Status = fmt.Sprint(ipAddr, ":", logPort)
+//	return successResponse
+//}
 
 //@TODO: Implement logrotate command to do this.
 func (nsi *NodeServiceImpl) LogRotaterGeth() {
@@ -1005,7 +1012,8 @@ func (nsi *NodeServiceImpl) RegisterNodeDetails(url string) {
 		//fmt.Println(ipAddr, nodename, pubKey, role, enode, fromAddress, contractAdd)
 		registered := fmt.Sprint("REGISTERED=TRUE", "\n")
 		util.AppendStringToFile("/home/setup.conf", registered)
-
+		util.DeleteProperty("REGISTERED=","/home/setup.conf")
+		util.DeleteProperty("ROLE=Unassigned","/home/setup.conf")
 		nms := contractclient.NetworkMapContractClient{client.EthClient{url}, contracthandler.ContractParam{fromAddress, contractAdd, "", nil}}
 		nms.RegisterNode(nodename, role, pubKey, enode, ipAddr, id)
 	}
@@ -1021,6 +1029,7 @@ func (nsi *NodeServiceImpl) NetworkManagerContractDeployer(url string) {
 		contAdd := deployedContract[0].ContractAddress
 		contAddAppend := fmt.Sprint("CONTRACT_ADD=", contAdd, "\n")
 		util.AppendStringToFile("/home/setup.conf", contAddAppend)
+		util.DeleteProperty("CONTRACT_ADD=","/home/setup.conf")
 	}
 }
 
@@ -1065,4 +1074,59 @@ func (nsi *NodeServiceImpl) CheckGethStatus(url string) bool {
 		coinbase = ethClient.Coinbase()
 	}
 	return true
+}
+
+func (nsi *NodeServiceImpl) GetChartData(url string) []ChartInfo {
+	ethClient := client.EthClient{url}
+	chartResponse := make([]ChartInfo, chartSize)
+	currentTimeRaw := time.Now().Unix()
+	currentTime := currentTimeRaw - (currentTimeRaw % 60)
+	startTime := currentTime
+	currentBlockNumber := util.HexStringtoInt64(ethClient.BlockNumber())
+	bucketTime := currentTime - 60
+	stopTime := currentTime - int64(60*chartSize)
+	i := 0
+	lastBlockNoHex := strconv.FormatInt(currentBlockNumber, 16)
+	lastBNoHex := fmt.Sprint("0x", lastBlockNoHex)
+	blockResponseClient := ethClient.GetBlockByNumber(lastBNoHex)
+	lastCreationTimeRaw := util.HexStringtoInt64(blockResponseClient.Timestamp)
+	lastCreationTime := lastCreationTimeRaw / 1000000000
+	lastCreationTimeSec := lastCreationTime - (lastCreationTime % 60)
+	if lastCreationTimeSec > stopTime {
+		for currentTime > stopTime {
+			blockCount := 0
+			txnCount := 0
+			for currentTime > bucketTime {
+				blockNoHex := strconv.FormatInt(currentBlockNumber, 16)
+				bNoHex := fmt.Sprint("0x", blockNoHex)
+				blockResponseClient := ethClient.GetBlockByNumber(bNoHex)
+				creationTimeRaw := util.HexStringtoInt64(blockResponseClient.Timestamp)
+				creationTimeRaw = creationTimeRaw / 1000000000
+				currentTime = creationTimeRaw - (creationTimeRaw % 60)
+				if currentTime > bucketTime {
+					currentBlockNumber = currentBlockNumber - 1
+					txnCount = txnCount + len(blockResponseClient.Transactions)
+					blockCount++
+				}
+			}
+			chartResponse[i].BlockCount = blockCount
+			chartResponse[i].TransactionCount = txnCount
+			chartResponse[i].TimeStamp = (int(bucketTime) + 60) * 1000
+			bucketTime = bucketTime - 60
+			i++
+		}
+	}
+	for i := 0; i < chartSize; i++ {
+
+		if chartResponse[i].TimeStamp == 0 {
+			chartResponse[i].TimeStamp = int(startTime) * 1000
+		}
+		startTime = startTime - 60
+	}
+	for i := 0; i < len(chartResponse)/2; i++ {
+		j := len(chartResponse) - i - 1
+		chartResponse[i], chartResponse[j] = chartResponse[j], chartResponse[i]
+	}
+
+	return chartResponse
 }

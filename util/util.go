@@ -122,3 +122,12 @@ func PropertyExists (property string, filepath string) string{
 	}
 	 return string(out)
 }
+
+func DeleteProperty (property string, filepath string) {
+	command := fmt.Sprint("sed -i '0,/", property, "/ s///' ", filepath)
+	cmd := exec.Command("bash", "-c", command)
+	err := cmd.Run()
+	if err != nil {
+		fmt.Println(err)
+	}
+}
