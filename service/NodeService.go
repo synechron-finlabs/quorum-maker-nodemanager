@@ -219,7 +219,7 @@ func (nsi *NodeServiceImpl) getGenesis(url string) (response GetGenesisResponse)
 	var netId, constl string
 	existsA := util.PropertyExists("NETWORK_ID", "/home/setup.conf")
 	existsB := util.PropertyExists("CONSTELLATION_PORT", "/home/setup.conf")
-	if existsA != "" &&  existsB != "" {
+	if existsA != "" && existsB != "" {
 		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 		netId = util.MustGetString("NETWORK_ID", p)
 		constl = util.MustGetString("CONSTELLATION_PORT", p)
@@ -296,13 +296,12 @@ func (nsi *NodeServiceImpl) getCurrentNode(url string) NodeInfo {
 	nodename = strings.TrimSuffix(nodename, ".sh")
 	nodename = strings.TrimPrefix(nodename, "start_")
 
-
 	var ipAddr, raftId, rpcPort, nodeName string
 	existsA := util.PropertyExists("CURRENT_IP", "/home/setup.conf")
 	existsB := util.PropertyExists("RAFT_ID", "/home/setup.conf")
 	existsC := util.PropertyExists("RPC_PORT", "/home/setup.conf")
 	existsD := util.PropertyExists("NODENAME", "/home/setup.conf")
-	if existsA != "" &&  existsB != "" &&  existsC != "" &&  existsD != "" {
+	if existsA != "" && existsB != "" && existsC != "" && existsD != "" {
 		ipAddr = util.MustGetString("CURRENT_IP", p)
 		raftId = util.MustGetString("RAFT_ID", p)
 		rpcPort = util.MustGetString("RPC_PORT", p)
@@ -544,7 +543,8 @@ func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) Trans
 	txResponse.S = txGetClient.S
 	eventNo := len(txResponseClient.Logs)
 	if util.HexStringtoInt64(txGetClient.V) == 37 || util.HexStringtoInt64(txGetClient.V) == 38 {
-		if eventNo == 0 {
+		private := ethClient.GetQuorumPayload(txResponse.Input)
+		if private == false {
 			txResponse.TransactionType = "Hash Only"
 		} else {
 			txResponse.TransactionType = "Private"
@@ -1039,7 +1039,7 @@ func (nsi *NodeServiceImpl) RegisterNodeDetails(url string) {
 		existsD := util.PropertyExists("ROLE", "/home/setup.conf")
 		existsE := util.PropertyExists("RAFT_ID", "/home/setup.conf")
 		existsF := util.PropertyExists("CONTRACT_ADD", "/home/setup.conf")
-		if existsA != "" &&  existsB != "" && existsC != "" && existsD != "" && existsE != "" && existsF != "" {
+		if existsA != "" && existsB != "" && existsC != "" && existsD != "" && existsE != "" && existsF != "" {
 			p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 			ipAddr = util.MustGetString("CURRENT_IP", p)
 			nodename = util.MustGetString("NODENAME", p)
@@ -1051,7 +1051,7 @@ func (nsi *NodeServiceImpl) RegisterNodeDetails(url string) {
 		//fmt.Println(ipAddr, nodename, pubKey, role, enode, fromAddress, contractAdd)
 		registered := fmt.Sprint("REGISTERED=TRUE", "\n")
 		util.AppendStringToFile("/home/setup.conf", registered)
-		util.DeleteProperty("REGISTERED=","/home/setup.conf")
+		util.DeleteProperty("REGISTERED=", "/home/setup.conf")
 		util.DeleteProperty("ROLE=Unassigned", "/home/setup.conf")
 		nms := contractclient.NetworkMapContractClient{client.EthClient{url}, contracthandler.ContractParam{fromAddress, contractAdd, "", nil}}
 		nms.RegisterNode(nodename, role, pubKey, enode, ipAddr, id)
@@ -1072,7 +1072,7 @@ func (nsi *NodeServiceImpl) NetworkManagerContractDeployer(url string) {
 		contAdd := deployedContract[0].ContractAddress
 		contAddAppend := fmt.Sprint("CONTRACT_ADD=", contAdd, "\n")
 		util.AppendStringToFile("/home/setup.conf", contAddAppend)
-		util.DeleteProperty("CONTRACT_ADD=","/home/setup.conf")
+		util.DeleteProperty("CONTRACT_ADD=", "/home/setup.conf")
 	}
 }
 
