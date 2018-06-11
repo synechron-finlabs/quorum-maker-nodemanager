@@ -413,8 +413,9 @@ func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) BlockDetails
 	txResponse := make([]TransactionDetailsResponse, txnNo)
 	for i, clientTransactions := range blockResponseClient.Transactions {
 
-		txGetClient := ethClient.GetTransactionReceipt(clientTransactions.Hash)
-		txResponse[i] = ConvertToReadable(clientTransactions, false, len(txGetClient.Logs) == 0)
+		txGetClient := ethClient.GetTransactionByHash(clientTransactions.Hash)
+		private := ethClient.GetQuorumPayload(txGetClient.Input)
+		txResponse[i] = ConvertToReadable(clientTransactions, false, !private)
 
 	}
 	blockResponse.Transactions = txResponse
@@ -456,8 +457,9 @@ func (nsi *NodeServiceImpl) getLatestBlockInfo(count string, reference string, u
 
 		for i, clientTransactions := range blockResponseClient.Transactions {
 
-			txGetClient := ethClient.GetTransactionReceipt(clientTransactions.Hash)
-			txResponse[i] = ConvertToReadable(clientTransactions, false, len(txGetClient.Logs) == 0)
+			txGetClient := ethClient.GetTransactionByHash(clientTransactions.Hash)
+			private := ethClient.GetQuorumPayload(txGetClient.Input)
+			txResponse[i] = ConvertToReadable(clientTransactions, false, !private)
 
 		}
 
@@ -488,8 +490,9 @@ func (nsi *NodeServiceImpl) getLatestTransactionInfo(count string, url string) [
 
 		for i, clientTransactions := range blockResponseClient.Transactions {
 
-			txGetClient := ethClient.GetTransactionReceipt(clientTransactions.Hash)
-			txResponse[i] = ConvertToReadable(clientTransactions, false, len(txGetClient.Logs) == 0)
+			txGetClient := ethClient.GetTransactionByHash(clientTransactions.Hash)
+			private := ethClient.GetQuorumPayload(txGetClient.Input)
+			txResponse[i] = ConvertToReadable(clientTransactions, false, !private)
 
 		}
 
@@ -501,11 +504,11 @@ func (nsi *NodeServiceImpl) getLatestTransactionInfo(count string, url string) [
 func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) TransactionDetailsResponse {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
-	txGetClient := ethClient.GetTransactionReceipt(txno)
 	var txResponse TransactionDetailsResponse
 	txResponseClient := ethClient.GetTransactionByHash(txno)
 
-	txResponse = ConvertToReadable(txResponseClient, false, len(txGetClient.Logs) == 0)
+	private := ethClient.GetQuorumPayload(txResponseClient.Input)
+	txResponse = ConvertToReadable(txResponseClient, false, !private)
 
 	blockResponseClient := ethClient.GetBlockByNumber(txResponseClient.BlockNumber)
 	currentTime := time.Now().Unix()
