@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"context"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
