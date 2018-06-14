@@ -103,8 +103,6 @@ func (fp FunctionProcessor) GetData() string {
 
 func (fp FunctionProcessor) GetResults() []interface{} {
 
-	log.Debug("Ethereum Result " + fp.Result)
-
 	length := len(fp.Result) / 64
 
 	data := make([]string, length)
