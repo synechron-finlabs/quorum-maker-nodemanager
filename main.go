@@ -90,8 +90,8 @@ func main() {
 	router.PathPrefix("/geth").Handler(http.StripPrefix("/geth", http.FileServer(http.Dir("/home/node/qdata/gethLogs"))))
 	router.PathPrefix("/constellation").Handler(http.StripPrefix("/constellation", http.FileServer(http.Dir("/home/node/qdata/constellationLogs"))))
 	router.PathPrefix("/").Handler(http.StripPrefix("/", NewFileServer("NodeManagerUI")))
-
-	log.WithFields(log.Fields{"url": nodeUrl, "port": listenPort}).Info("Node Manager listening...")
+	
+	log.Info(fmt.Sprintf("Node Manager listening on %s...", listenPort))
 
 	srv := &http.Server{
 		Handler: router,
