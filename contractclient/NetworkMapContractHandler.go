@@ -140,7 +140,7 @@ func (nms *NetworkMapContractClient) GetNodeListSelfResponseHandler(w http.Respo
 	var contractAdd, nodename string
 	existsA := util.PropertyExists("CONTRACT_ADD", "/home/setup.conf")
 	existsB := util.PropertyExists("NODENAME", "/home/setup.conf")
-	if existsA != "" &&  existsB != "" {
+	if existsA != "" && existsB != "" {
 		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 		contractAdd = util.MustGetString("CONTRACT_ADD", p)
 		nodename = util.MustGetString("NODENAME", p)
@@ -225,7 +225,7 @@ func (nms *NetworkMapContractClient) UpdateNodeHandler(w http.ResponseWriter, r 
 	existsC := util.PropertyExists("CURRENT_IP", "/home/setup.conf")
 	existsD := util.PropertyExists("RAFT_ID", "/home/setup.conf")
 	existsE := util.PropertyExists("NODENAME", "/home/setup.conf")
-	if existsA != "" &&  existsB != "" &&  existsC != "" &&  existsD != "" &&  existsE != "" {
+	if existsA != "" && existsB != "" && existsC != "" && existsD != "" && existsE != "" {
 		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 		contractAdd = util.MustGetString("CONTRACT_ADD", p)
 		publickey = util.MustGetString("PUBKEY", p)
@@ -238,7 +238,7 @@ func (nms *NetworkMapContractClient) UpdateNodeHandler(w http.ResponseWriter, r 
 	response := nms.UpdateNode(nodeName, role, publickey, enode, ip, id)
 	registered := fmt.Sprint("NODENAME=", nodeName, "\n")
 	util.AppendStringToFile("/home/setup.conf", registered)
-	oldProperty := fmt.Sprint("NODENAME=",oldName)
+	oldProperty := fmt.Sprint("NODENAME=", oldName)
 	util.DeleteProperty(oldProperty, "/home/setup.conf")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")

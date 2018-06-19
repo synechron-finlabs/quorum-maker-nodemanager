@@ -347,22 +347,16 @@ func (ec *EthClient) NetListening() bool {
 	return listening
 }
 
-func (ec *EthClient) GetQuorumPayload(input string) bool {
+func (ec *EthClient) GetQuorumPayload(input string) string {
 	rpcClient := jsonrpc.NewClient(ec.Url)
 	response, err := rpcClient.Call("eth_getQuorumPayload", input)
 	if err != nil {
 		fmt.Println(err)
 	}
 	var payload string
-	var private bool
 	err = response.GetObject(&payload)
 	if err != nil {
 		fmt.Println(err)
 	}
-	if payload == "0x" {
-		private = false
-	} else {
-		private = true
-	}
-	return private
+	return payload
 }
