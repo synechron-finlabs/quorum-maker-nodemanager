@@ -13,7 +13,7 @@ type ParamTableRow struct {
 	Value string `json:"value"`
 }
 
-var SupportedDatatypes = map[string]bool{"uint256":true,"bool":true,"int256":true,"bytes":true,"uint32":true,"string":true}
+var SupportedDatatypes = map[string]bool{"uint256": true, "bool": true, "int256": true, "bytes": true, "uint32": true, "string": true}
 
 var abiMap = map[string]string{}
 var funcSigMap = map[string]string{}
@@ -53,9 +53,9 @@ func ABIParser(contractAdd string, abiContent string, payload string) []ParamTab
 				paramNames[i-1] = strings.TrimSuffix(params, ",")
 				functionSigs[i-1] = key + "(" + strings.TrimSuffix(funcSig, ",") + ")"
 				keccakHashes[i-1] = hex.EncodeToString(crypto.Keccak256([]byte(functionSigs[i-1]))[:4])
-				funcParamNameMap[contractAdd + ":" + keccakHashes[i-1]] = paramNames[i-1]
+				funcParamNameMap[contractAdd+":"+keccakHashes[i-1]] = paramNames[i-1]
 				functionSigs[i-1] = strings.TrimSuffix(funcSig, ",")
-				funcSigMap[contractAdd + ":" + keccakHashes[i-1]] = functionSigs[i-1]
+				funcSigMap[contractAdd+":"+keccakHashes[i-1]] = functionSigs[i-1]
 				i++
 			}
 		}
@@ -73,13 +73,13 @@ func ABIParser(contractAdd string, abiContent string, payload string) []ParamTab
 func Decode(r string, contractAdd string) []ParamTableRow {
 	keccakHash := r[2:10]
 	encodedParams := r[10:]
-	params := strings.Split(funcSigMap[contractAdd + ":" + keccakHash], ",")
+	params := strings.Split(funcSigMap[contractAdd+":"+keccakHash], ",")
 	paramTable := make([]ParamTableRow, len(params))
 	if r == "" || len(r) < 1 {
 		return paramTable
 	}
-	paramNamesArr := strings.Split(funcParamNameMap[contractAdd + ":" + keccakHash], ",")
-	resultArray := contracthandler.FunctionProcessor{funcSigMap[contractAdd + ":" + keccakHash], nil, encodedParams}.GetResults()
+	paramNamesArr := strings.Split(funcParamNameMap[contractAdd+":"+keccakHash], ",")
+	resultArray := contracthandler.FunctionProcessor{funcSigMap[contractAdd+":"+keccakHash], nil, encodedParams}.GetResults()
 	for i := 0; i < len(params); i++ {
 		paramTable[i].Key = paramNamesArr[i]
 		paramTable[i].Value = resultArray[i].(string)

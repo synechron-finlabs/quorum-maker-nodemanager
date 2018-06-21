@@ -212,10 +212,30 @@ type ChartInfo struct {
 	TransactionCount int `json:"transactionCount"`
 }
 
+type ContractTableRow struct {
+	ContractAdd  string `json:"contractAddress"`
+	ContractName string `json:"contractName"`
+	ABIContent   string `json:"abi"`
+	Sender       string `json:"sender"`
+	ContractType string `json:"contractType"`
+	Description  string `json:"description"`
+}
+
+type ContractCounter struct {
+	TotalContracts int `json:"totalContracts"`
+	ABIavailable   int `json:"abis"`
+}
+
 var txnMap = map[string]TransactionReceiptResponse{}
 var abiMap = map[string]string{}
+
+var contDescriptionMap = map[string]string{}
+var contTypeMap = map[string]string{}
+var contSenderMap = map[string]string{}
+var contNameMap = map[string]string{}
 var chartSize = 10
 var warning = 0
+var lastCrawledBlock = 0
 var mailServerConfig MailServerConfig
 
 func (nsi *NodeServiceImpl) getGenesis(url string) (response GetGenesisResponse) {
@@ -562,10 +582,10 @@ func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) Trans
 
 		}
 		if txResponseClient.ContractAddress == "" {
-			if txResponse.TransactionType == "Private" && abiMap[txResponseClient.To] != "" {
+			if txResponse.TransactionType == "Private" && abiMap[txResponseClient.To] != "" && abiMap[txResponseClient.To] != "missing" {
 				txResponse.Input = private
 				txResponse.DecodedInputs = contractclient.ABIParser(txResponseClient.To, abiMap[txResponseClient.To], private)
-			} else if txResponse.TransactionType == "Public" && abiMap[txResponseClient.To] != "" {
+			} else if txResponse.TransactionType == "Public" && abiMap[txResponseClient.To] != "" && abiMap[txResponseClient.To] != "missing" {
 				txResponse.DecodedInputs = contractclient.ABIParser(txResponseClient.To, abiMap[txResponseClient.To], txGetClient.Input)
 			} else if txResponse.TransactionType == "Hash Only" {
 				decodeFail := make([]contractclient.ParamTableRow, 1)
@@ -727,6 +747,7 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 		if err != nil {
 			panic(err)
 		}
+		contNameMap[contractAddress] = contractJsonArr[i].Filename
 		abiMap[contractAddress] = abiStr
 	}
 	return contractJsonArr
@@ -901,7 +922,6 @@ func (nsi *NodeServiceImpl) latency(url string) []LatencyResponse {
 		}
 		latencyString := strings.TrimSuffix(latOut.String(), "\n")
 		latency, err := strconv.ParseFloat(latencyString, 10)
-		latency = latency * 1000
 		latencyStr := strconv.FormatFloat(latency, 'f', 0, 64)
 		latencyResponse[i].Latency = latencyStr
 	}
@@ -1201,4 +1221,86 @@ func (nsi *NodeServiceImpl) GetChartData(url string) []ChartInfo {
 	}
 
 	return chartResponse
+}
+
+func (nsi *NodeServiceImpl) ContractCrawler(url string) {
+	ticker := time.NewTicker(15 * time.Second)
+	go func() {
+		for range ticker.C {
+			getContracts(url)
+		}
+	}()
+}
+
+func getContracts(url string) {
+	ethClient := client.EthClient{url}
+	blockNumber := int(util.HexStringtoInt64(ethClient.BlockNumber()))
+	for i := lastCrawledBlock + 1; i <= blockNumber; i++ {
+		blockNoHex := strconv.FormatInt(int64(i), 16)
+		bNoHex := fmt.Sprint("0x", blockNoHex)
+		blockResponseClient := ethClient.GetBlockByNumber(bNoHex)
+		for _, clientTransactions := range blockResponseClient.Transactions {
+			txGetClient := ethClient.GetTransactionReceipt(clientTransactions.Hash)
+			if txGetClient.ContractAddress != "" {
+				if abiMap[txGetClient.ContractAddress] == "" {
+					abiMap[txGetClient.ContractAddress] = "missing"
+				}
+
+				if util.HexStringtoInt64(clientTransactions.V) == 37 || util.HexStringtoInt64(clientTransactions.V) == 38 {
+					private := ethClient.GetQuorumPayload(clientTransactions.Input)
+					if private == "0x" {
+						contTypeMap[txGetClient.ContractAddress] = "Hash Only"
+					} else {
+						contTypeMap[txGetClient.ContractAddress] = "Private"
+					}
+				} else {
+					contTypeMap[txGetClient.ContractAddress] = "Public"
+
+				}
+				contSenderMap[txGetClient.ContractAddress] = clientTransactions.From
+			}
+		}
+	}
+
+	lastCrawledBlock = blockNumber
+}
+
+func (nsi *NodeServiceImpl) ContractList() []ContractTableRow {
+	contractList := make([]ContractTableRow, len(abiMap))
+	i := 0
+	for key := range abiMap {
+		contractList[i].ContractAdd = key
+		contractList[i].ABIContent = abiMap[key]
+		contractList[i].ContractName = contNameMap[key]
+		contractList[i].ContractType = contTypeMap[key]
+		contractList[i].Sender = contSenderMap[key]
+		contractList[i].Description = contDescriptionMap[key]
+		i++
+	}
+
+	return contractList
+}
+
+func (nsi *NodeServiceImpl) ContractCount() ContractCounter {
+	availableABIs := 0
+	totalContracts := 0
+	for key := range abiMap {
+		if abiMap[key] != "missing" {
+			availableABIs++
+		}
+		totalContracts++
+	}
+	var contractCount ContractCounter
+	contractCount.TotalContracts = totalContracts
+	contractCount.ABIavailable = availableABIs
+	return contractCount
+}
+
+func (nsi *NodeServiceImpl) updateContractDetails(contractAddress string, contractName string, abi string, description string) SuccessResponse {
+	var successResponse SuccessResponse
+	contNameMap[contractAddress] = contractName
+	abiMap[contractAddress] = abi
+	contDescriptionMap[contractAddress] = description
+	successResponse.Status = "Successfully updated contract details"
+	return successResponse
 }

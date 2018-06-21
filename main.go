@@ -46,11 +46,11 @@ func main() {
 	}()
 
 	go func() {
-		//time.Sleep(80 * time.Second)
 		nodeService.CheckGethStatus(nodeUrl)
 		//log.Info("Deploying Network Manager Contract")
 		nodeService.NetworkManagerContractDeployer(nodeUrl)
 		nodeService.RegisterNodeDetails(nodeUrl)
+		nodeService.ContractCrawler(nodeUrl)
 	}()
 
 	networkMapService := contractclient.NetworkMapContractClient{EthClient: client.EthClient{nodeUrl}}
@@ -86,6 +86,9 @@ func main() {
 	router.HandleFunc("/getNodeList", networkMapService.GetNodeListSelfResponseHandler).Methods("GET")
 	router.HandleFunc("/activeNodes", networkMapService.ActiveNodesHandler).Methods("GET")
 	router.HandleFunc("/chartData", nodeService.GetChartDataHandler).Methods("GET")
+	router.HandleFunc("/contractList", nodeService.GetContractListHandler).Methods("GET")
+	router.HandleFunc("/contractCount", nodeService.GetContractCountHandler).Methods("GET")
+	router.HandleFunc("/updateContractDetails", nodeService.ContractDetailsUpdateHandler).Methods("POST")
 
 	router.PathPrefix("/contracts").Handler(http.StripPrefix("/contracts", http.FileServer(http.Dir("/root/quorum-maker/contracts"))))
 	router.PathPrefix("/geth").Handler(http.StripPrefix("/geth", http.FileServer(http.Dir("/home/node/qdata/gethLogs"))))

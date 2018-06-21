@@ -36,13 +36,13 @@ type ABI struct {
 }
 
 type ABIfields struct {
-Type      string
-Name      string
-Constant  bool
-Indexed   bool
-Anonymous bool
-Inputs    []Argument
-Outputs   []Argument
+	Type      string
+	Name      string
+	Constant  bool
+	Indexed   bool
+	Anonymous bool
+	Inputs    []Argument
+	Outputs   []Argument
 }
 
 // JSON returns a parsed ABI interface and error if it failed.
@@ -203,7 +203,7 @@ func (abi *ABI) UnmarshalJSON(data []byte) map[string]Method {
 			abi.Constructor = Method{
 				Inputs: field.Inputs,
 			}
-		// empty defaults to function according to the abi spec
+			// empty defaults to function according to the abi spec
 		case "function", "":
 			abi.Methods[field.Name] = Method{
 				Name:    field.Name,
@@ -221,5 +221,4 @@ func (abi *ABI) UnmarshalJSON(data []byte) map[string]Method {
 	}
 
 	return abi.Methods
-	//return fields
 }

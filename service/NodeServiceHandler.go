@@ -377,3 +377,40 @@ func (nsi *NodeServiceImpl) GetChartDataHandler(w http.ResponseWriter, r *http.R
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(w).Encode(response)
 }
+
+func (nsi *NodeServiceImpl) GetContractListHandler(w http.ResponseWriter, r *http.Request) {
+	response := nsi.ContractList()
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (nsi *NodeServiceImpl) GetContractCountHandler(w http.ResponseWriter, r *http.Request) {
+	response := nsi.ContractCount()
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (nsi *NodeServiceImpl) ContractDetailsUpdateHandler(w http.ResponseWriter, r *http.Request) {
+	var Buf bytes.Buffer
+	contractAddress := r.FormValue("address")
+	contractName := r.FormValue("name")
+	description := r.FormValue("description")
+	file, header, err := r.FormFile("abi")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	name := strings.Split(header.Filename, ".")
+	io.Copy(&Buf, file)
+	contents := Buf.String()
+	fileContent := []byte(contents)
+	err = ioutil.WriteFile("./"+name[0]+".abi", fileContent, 0775)
+	if err != nil {
+		panic(err)
+	}
+
+	Buf.Reset()
+	response := nsi.updateContractDetails(contractAddress, contractName, contents, description)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(response)
+}
