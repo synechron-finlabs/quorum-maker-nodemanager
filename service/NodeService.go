@@ -543,6 +543,7 @@ func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) Transact
 }
 
 func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) TransactionReceiptResponse {
+	var decoded bool
 	if txnMap[txno].TransactionHash == "" {
 		var nodeUrl = url
 		ethClient := client.EthClient{nodeUrl}
@@ -585,13 +586,16 @@ func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) Trans
 			if txResponse.TransactionType == "Private" && abiMap[txResponseClient.To] != "" && abiMap[txResponseClient.To] != "missing" {
 				txResponse.Input = private
 				txResponse.DecodedInputs = contractclient.ABIParser(txResponseClient.To, abiMap[txResponseClient.To], private)
+				decoded = true
 			} else if txResponse.TransactionType == "Public" && abiMap[txResponseClient.To] != "" && abiMap[txResponseClient.To] != "missing" {
 				txResponse.DecodedInputs = contractclient.ABIParser(txResponseClient.To, abiMap[txResponseClient.To], txGetClient.Input)
+				decoded = true
 			} else if txResponse.TransactionType == "Hash Only" {
 				decodeFail := make([]contractclient.ParamTableRow, 1)
 				decodeFail[0].Key = "NA"
 				decodeFail[0].Value = "Hash Only Transaction"
 				txResponse.DecodedInputs = decodeFail
+				decoded = true
 			}
 		}
 
@@ -613,7 +617,9 @@ func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) Trans
 		creationTimeUnix := creationTime / 1000000000
 		elapsedTime := currentTime - creationTimeUnix
 		txResponse.TimeElapsed = elapsedTime
-		txnMap[txno] = txResponse
+		if decoded {
+			txnMap[txno] = txResponse
+		}
 		return txResponse
 	} else {
 		return txnMap[txno]
