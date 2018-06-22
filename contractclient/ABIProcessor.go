@@ -6,6 +6,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"encoding/hex"
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/contracthandler"
+	"fmt"
+	"regexp"
 )
 
 type ParamTableRow struct {
@@ -13,7 +15,7 @@ type ParamTableRow struct {
 	Value string `json:"value"`
 }
 
-var SupportedDatatypes = map[string]bool{"uint256": true, "bool": true, "int256": true, "bytes": true, "uint32": true, "string": true}
+var SupportedDatatypes = []*regexp.Regexp{regexp.MustCompile(`uint256`), regexp.MustCompile(`bool`), regexp.MustCompile(`int256\[.+\]`), regexp.MustCompile(`bytes`), regexp.MustCompile(`uint32\[\]`), regexp.MustCompile(`string`)}
 
 var abiMap = map[string]string{}
 var funcSigMap = map[string]string{}
@@ -40,7 +42,13 @@ func ABIParser(contractAdd string, abiContent string, payload string) []ParamTab
 				var funcSig string
 				var params string
 				for _, elem := range methodMap[key].Inputs {
-					if SupportedDatatypes[elem.Type.String()] != true {
+					i := 0
+					for _, v := range SupportedDatatypes {
+						if v.MatchString(elem.Type.String()) != true {
+							i++
+						}
+					}
+					if (i == len(SupportedDatatypes)) {
 						abiMap[contractAdd] = "Unsupported"
 						decodeUnsupported := make([]ParamTableRow, 1)
 						decodeUnsupported[0].Key = "Unsupported"
@@ -82,7 +90,7 @@ func Decode(r string, contractAdd string) []ParamTableRow {
 	resultArray := contracthandler.FunctionProcessor{funcSigMap[contractAdd+":"+keccakHash], nil, encodedParams}.GetResults()
 	for i := 0; i < len(params); i++ {
 		paramTable[i].Key = paramNamesArr[i]
-		paramTable[i].Value = resultArray[i].(string)
+		paramTable[i].Value = fmt.Sprint(resultArray[i])
 	}
 	return paramTable
 }
