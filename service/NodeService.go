@@ -1277,6 +1277,9 @@ func (nsi *NodeServiceImpl) ContractList() []ContractTableRow {
 	for key := range abiMap {
 		contractList[i].ContractAdd = key
 		contractList[i].ABIContent = abiMap[key]
+		if abiMap[key] == "missing"{
+			contractList[i].ABIContent = ""
+		}
 		contractList[i].ContractName = contNameMap[key]
 		contractList[i].ContractType = contTypeMap[key]
 		contractList[i].Sender = contSenderMap[key]
