@@ -2,12 +2,12 @@ package contractclient
 
 import (
 	"strings"
-	"github.com/synechron-finlabs/quorum-maker-nodemanager/abi"
 	"github.com/ethereum/go-ethereum/crypto"
 	"encoding/hex"
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/contracthandler"
 	"fmt"
 	"regexp"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
 type ParamTableRow struct {
@@ -22,10 +22,11 @@ var funcSigMap = map[string]string{}
 var funcParamNameMap = map[string]string{}
 
 func ABIParser(contractAdd string, abiContent string, payload string) []ParamTableRow {
-	var abiVal abi.ABI
+	var abi abi.ABI
 	if abiMap[contractAdd] == "" {
 		abiMap[contractAdd] = abiContent
-		methodMap := abiVal.UnmarshalJSON([]byte(abiMap[contractAdd]))
+		abi.UnmarshalJSON([]byte(abiMap[contractAdd]))
+		methodMap := abi.Methods
 		size := 0
 		for key := range methodMap {
 			if methodMap[key].Const == false {
@@ -80,6 +81,12 @@ func ABIParser(contractAdd string, abiContent string, payload string) []ParamTab
 
 func Decode(r string, contractAdd string) []ParamTableRow {
 	keccakHash := r[2:10]
+	if funcSigMap[contractAdd+":"+keccakHash] == "" {
+		abiMismatch := make([]ParamTableRow, 1)
+		abiMismatch[0].Key = "NA"
+		abiMismatch[0].Value = "ABI mismatch"
+		return abiMismatch
+	}
 	encodedParams := r[10:]
 	params := strings.Split(funcSigMap[contractAdd+":"+keccakHash], ",")
 	paramTable := make([]ParamTableRow, len(params))

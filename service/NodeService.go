@@ -228,6 +228,7 @@ type ContractCounter struct {
 
 var txnMap = map[string]TransactionReceiptResponse{}
 var abiMap = map[string]string{}
+var contractCrawlerMutex = 0
 
 var contDescriptionMap = map[string]string{}
 var contTypeMap = map[string]string{}
@@ -543,88 +544,131 @@ func (nsi *NodeServiceImpl) getTransactionInfo(txno string, url string) Transact
 }
 
 func (nsi *NodeServiceImpl) getTransactionReceipt(txno string, url string) TransactionReceiptResponse {
-	var decoded bool
 	if txnMap[txno].TransactionHash == "" {
-		var nodeUrl = url
-		ethClient := client.EthClient{nodeUrl}
-		txGetClient := ethClient.GetTransactionByHash(txno)
-		var txResponse TransactionReceiptResponse
-		txResponseClient := ethClient.GetTransactionReceipt(txno)
-		txResponse.BlockNumber = util.HexStringtoInt64(txResponseClient.BlockNumber)
-		txResponse.CumulativeGasUsed = util.HexStringtoInt64(txResponseClient.CumulativeGasUsed)
-		txResponse.GasUsed = util.HexStringtoInt64(txResponseClient.GasUsed)
-		txResponse.TransactionIndex = util.HexStringtoInt64(txResponseClient.TransactionIndex)
-		txResponse.BlockHash = txResponseClient.BlockHash
-		txResponse.From = txResponseClient.From
-		txResponse.ContractAddress = txResponseClient.ContractAddress
-		txResponse.LogsBloom = txResponseClient.LogsBloom
-		txResponse.Root = txResponseClient.Root
-		txResponse.To = txResponseClient.To
-		txResponse.TransactionHash = txResponseClient.TransactionHash
-		txResponse.Gas = util.HexStringtoInt64(txGetClient.Gas)
-		txResponse.GasPrice = util.HexStringtoInt64(txGetClient.GasPrice)
-		txResponse.Input = txGetClient.Input
-		txResponse.Nonce = util.HexStringtoInt64(txGetClient.Nonce)
-		txResponse.Value = util.HexStringtoInt64(txGetClient.Value)
-		txResponse.V = txGetClient.V
-		txResponse.R = txGetClient.R
-		txResponse.S = txGetClient.S
-		eventNo := len(txResponseClient.Logs)
-		var private string
-		if util.HexStringtoInt64(txGetClient.V) == 37 || util.HexStringtoInt64(txGetClient.V) == 38 {
-			private = ethClient.GetQuorumPayload(txResponse.Input)
-			if private == "0x" {
-				txResponse.TransactionType = "Hash Only"
-			} else {
-				txResponse.TransactionType = "Private"
-			}
-		} else {
-			txResponse.TransactionType = "Public"
-
-		}
-		if txResponseClient.ContractAddress == "" {
-			if txResponse.TransactionType == "Private" && abiMap[txResponseClient.To] != "" && abiMap[txResponseClient.To] != "missing" {
-				txResponse.Input = private
-				txResponse.DecodedInputs = contractclient.ABIParser(txResponseClient.To, abiMap[txResponseClient.To], private)
-				decoded = true
-			} else if txResponse.TransactionType == "Public" && abiMap[txResponseClient.To] != "" && abiMap[txResponseClient.To] != "missing" {
-				txResponse.DecodedInputs = contractclient.ABIParser(txResponseClient.To, abiMap[txResponseClient.To], txGetClient.Input)
-				decoded = true
-			} else if txResponse.TransactionType == "Hash Only" {
-				decodeFail := make([]contractclient.ParamTableRow, 1)
-				decodeFail[0].Key = "NA"
-				decodeFail[0].Value = "Hash Only Transaction"
-				txResponse.DecodedInputs = decodeFail
-				decoded = true
-			}
-		}
-
-		txResponseBuffer := make([]Logs, eventNo)
-		for i := 0; i < eventNo; i++ {
-			txResponseBuffer[i].BlockNumber = util.HexStringtoInt64(txResponseClient.Logs[i].BlockNumber)
-			txResponseBuffer[i].LogIndex = util.HexStringtoInt64(txResponseClient.Logs[i].LogIndex)
-			txResponseBuffer[i].TransactionIndex = util.HexStringtoInt64(txResponseClient.Logs[i].TransactionIndex)
-			txResponseBuffer[i].Address = txResponseClient.Logs[i].Address
-			txResponseBuffer[i].BlockHash = txResponseClient.Logs[i].BlockHash
-			txResponseBuffer[i].Data = txResponseClient.Logs[i].Data
-			txResponseBuffer[i].TransactionHash = txResponseClient.Logs[i].TransactionHash
-			txResponseBuffer[i].Topics = txResponseClient.Logs[i].Topics
-		}
-		txResponse.Logs = txResponseBuffer
-		blockResponseClient := ethClient.GetBlockByNumber(txResponseClient.BlockNumber)
-		currentTime := time.Now().Unix()
-		creationTime := util.HexStringtoInt64(blockResponseClient.Timestamp)
-		creationTimeUnix := creationTime / 1000000000
-		elapsedTime := currentTime - creationTimeUnix
-		txResponse.TimeElapsed = elapsedTime
-		if decoded {
-			txnMap[txno] = txResponse
-		}
+		txResponse := populateTransactionObject(txno, url)
+		decodeTransactionObject(&txResponse, url)
 		return txResponse
 	} else {
-		return txnMap[txno]
+		txnDetails := txnMap[txno]
+		calculateTimeElapsed(&txnDetails, url)
+		txnMap[txno] = txnDetails
+		return txnDetails
+	}
+}
+
+func populateTransactionObject(txno string, url string) TransactionReceiptResponse {
+	ethClient := client.EthClient{url}
+	getTransaction := ethClient.GetTransactionByHash(txno)
+	var txResponse TransactionReceiptResponse
+	getTransactionReceipt := ethClient.GetTransactionReceipt(txno)
+	txResponse.BlockNumber = util.HexStringtoInt64(getTransactionReceipt.BlockNumber)
+	txResponse.CumulativeGasUsed = util.HexStringtoInt64(getTransactionReceipt.CumulativeGasUsed)
+	txResponse.GasUsed = util.HexStringtoInt64(getTransactionReceipt.GasUsed)
+	txResponse.TransactionIndex = util.HexStringtoInt64(getTransactionReceipt.TransactionIndex)
+	txResponse.BlockHash = getTransactionReceipt.BlockHash
+	txResponse.From = getTransactionReceipt.From
+	txResponse.ContractAddress = getTransactionReceipt.ContractAddress
+	txResponse.LogsBloom = getTransactionReceipt.LogsBloom
+	txResponse.Root = getTransactionReceipt.Root
+	txResponse.To = getTransactionReceipt.To
+	txResponse.TransactionHash = getTransactionReceipt.TransactionHash
+	txResponse.Gas = util.HexStringtoInt64(getTransaction.Gas)
+	txResponse.GasPrice = util.HexStringtoInt64(getTransaction.GasPrice)
+	txResponse.Input = getTransaction.Input
+	txResponse.Nonce = util.HexStringtoInt64(getTransaction.Nonce)
+	txResponse.Value = util.HexStringtoInt64(getTransaction.Value)
+	txResponse.V = getTransaction.V
+	txResponse.R = getTransaction.R
+	txResponse.S = getTransaction.S
+	eventNo := len(getTransactionReceipt.Logs)
+	txResponseBuffer := make([]Logs, eventNo)
+	for i := 0; i < eventNo; i++ {
+		txResponseBuffer[i].BlockNumber = util.HexStringtoInt64(getTransactionReceipt.Logs[i].BlockNumber)
+		txResponseBuffer[i].LogIndex = util.HexStringtoInt64(getTransactionReceipt.Logs[i].LogIndex)
+		txResponseBuffer[i].TransactionIndex = util.HexStringtoInt64(getTransactionReceipt.Logs[i].TransactionIndex)
+		txResponseBuffer[i].Address = getTransactionReceipt.Logs[i].Address
+		txResponseBuffer[i].BlockHash = getTransactionReceipt.Logs[i].BlockHash
+		txResponseBuffer[i].Data = getTransactionReceipt.Logs[i].Data
+		txResponseBuffer[i].TransactionHash = getTransactionReceipt.Logs[i].TransactionHash
+		txResponseBuffer[i].Topics = getTransactionReceipt.Logs[i].Topics
+	}
+	txResponse.Logs = txResponseBuffer
+	blockResponseClient := ethClient.GetBlockByNumber(getTransactionReceipt.BlockNumber)
+	currentTime := time.Now().Unix()
+	creationTime := util.HexStringtoInt64(blockResponseClient.Timestamp)
+	creationTimeUnix := creationTime / 1000000000
+	elapsedTime := currentTime - creationTimeUnix
+	txResponse.TimeElapsed = elapsedTime
+	return txResponse
+}
+
+func decodeTransactionObject(txnDetails *TransactionReceiptResponse, url string) {
+	dataDirect, err := ioutil.ReadFile("./SimpleStorage.json")
+
+	if err != nil {
+		fmt.Println(err)
 	}
 
+	abiString := string(dataDirect)
+	abiString = strings.Replace(abiString, "\n", "", -1)
+	abiMap["0xdf73d861f5c41756d28fa6c57bea5d04903ea2e9"] = abiString
+	var quorumPayload string
+	var decoded bool
+
+	ethClient := client.EthClient{url}
+
+	if util.HexStringtoInt64(txnDetails.V) == 37 || util.HexStringtoInt64(txnDetails.V) == 38 {
+		quorumPayload = ethClient.GetQuorumPayload(txnDetails.Input)
+		if quorumPayload == "0x" {
+			txnDetails.TransactionType = "Hash Only"
+		} else {
+			txnDetails.TransactionType = "Private"
+		}
+	} else {
+		txnDetails.TransactionType = "Public"
+
+	}
+	if txnDetails.ContractAddress == "" {
+		if txnDetails.TransactionType == "Private" && abiMap[txnDetails.To] != "" && abiMap[txnDetails.To] != "missing" {
+			txnDetails.Input = quorumPayload
+			txnDetails.DecodedInputs = contractclient.ABIParser(txnDetails.To, abiMap[txnDetails.To], quorumPayload)
+			decoded = true
+		} else if txnDetails.TransactionType == "Public" && abiMap[txnDetails.To] != "" && abiMap[txnDetails.To] != "missing" {
+			txnDetails.DecodedInputs = contractclient.ABIParser(txnDetails.To, abiMap[txnDetails.To], txnDetails.Input)
+			decoded = true
+		} else if txnDetails.TransactionType == "Hash Only" {
+			decodeFail := make([]contractclient.ParamTableRow, 1)
+			decodeFail[0].Key = "NA"
+			decodeFail[0].Value = "Hash Only Transaction"
+			txnDetails.DecodedInputs = decodeFail
+			decoded = true
+		}
+	}
+	if abiMap[txnDetails.To] == "" {
+		decodeFail := make([]contractclient.ParamTableRow, 1)
+		decodeFail[0].Key = "NA"
+		decodeFail[0].Value = "Decode in Progress"
+		txnDetails.DecodedInputs = decodeFail
+	} else if abiMap[txnDetails.To] == "missing" {
+		decodeFail := make([]contractclient.ParamTableRow, 1)
+		decodeFail[0].Key = "NA"
+		decodeFail[0].Value = "ABI is Missing"
+		txnDetails.DecodedInputs = decodeFail
+	}
+	if decoded {
+		txnMap[txnDetails.TransactionHash] = *txnDetails
+	}
+}
+
+func calculateTimeElapsed(txnDetails *TransactionReceiptResponse, url string) {
+	ethClient := client.EthClient{url}
+	getTransactionReceipt := ethClient.GetTransactionReceipt(txnDetails.TransactionHash)
+	blockResponseClient := ethClient.GetBlockByNumber(getTransactionReceipt.BlockNumber)
+	currentTime := time.Now().Unix()
+	creationTime := util.HexStringtoInt64(blockResponseClient.Timestamp)
+	creationTimeUnix := creationTime / 1000000000
+	elapsedTime := currentTime - creationTimeUnix
+	txnDetails.TimeElapsed = elapsedTime
 }
 
 func (nsi *NodeServiceImpl) joinRequestResponse(enode string, status string) SuccessResponse {
@@ -928,6 +972,7 @@ func (nsi *NodeServiceImpl) latency(url string) []LatencyResponse {
 		}
 		latencyString := strings.TrimSuffix(latOut.String(), "\n")
 		latency, err := strconv.ParseFloat(latencyString, 10)
+		latency = latency * 1000
 		latencyStr := strconv.FormatFloat(latency, 'f', 0, 64)
 		latencyResponse[i].Latency = latencyStr
 	}
@@ -1233,12 +1278,15 @@ func (nsi *NodeServiceImpl) ContractCrawler(url string) {
 	ticker := time.NewTicker(15 * time.Second)
 	go func() {
 		for range ticker.C {
-			getContracts(url)
+			if contractCrawlerMutex == 0 {
+				getContracts(url)
+			}
 		}
 	}()
 }
 
 func getContracts(url string) {
+	contractCrawlerMutex = 1
 	ethClient := client.EthClient{url}
 	blockNumber := int(util.HexStringtoInt64(ethClient.BlockNumber()))
 	for i := lastCrawledBlock + 1; i <= blockNumber; i++ {
@@ -1269,6 +1317,7 @@ func getContracts(url string) {
 	}
 
 	lastCrawledBlock = blockNumber
+	contractCrawlerMutex = 0
 }
 
 func (nsi *NodeServiceImpl) ContractList() []ContractTableRow {
@@ -1277,7 +1326,7 @@ func (nsi *NodeServiceImpl) ContractList() []ContractTableRow {
 	for key := range abiMap {
 		contractList[i].ContractAdd = key
 		contractList[i].ABIContent = abiMap[key]
-		if abiMap[key] == "missing"{
+		if abiMap[key] == "missing" {
 			contractList[i].ABIContent = ""
 		}
 		contractList[i].ContractName = contNameMap[key]
