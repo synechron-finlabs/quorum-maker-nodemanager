@@ -605,15 +605,6 @@ func populateTransactionObject(txno string, url string) TransactionReceiptRespon
 }
 
 func decodeTransactionObject(txnDetails *TransactionReceiptResponse, url string) {
-	dataDirect, err := ioutil.ReadFile("./SimpleStorage.json")
-
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	abiString := string(dataDirect)
-	abiString = strings.Replace(abiString, "\n", "", -1)
-	abiMap["0xdf73d861f5c41756d28fa6c57bea5d04903ea2e9"] = abiString
 	var quorumPayload string
 	var decoded bool
 
