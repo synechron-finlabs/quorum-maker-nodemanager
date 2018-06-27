@@ -219,6 +219,7 @@ type ContractTableRow struct {
 	Sender       string `json:"sender"`
 	ContractType string `json:"contractType"`
 	Description  string `json:"description"`
+	Timestamp    string `json:"timestamp"`
 }
 
 type ContractCounter struct {
@@ -232,6 +233,7 @@ var contractCrawlerMutex = 0
 
 var contDescriptionMap = map[string]string{}
 var contTypeMap = map[string]string{}
+var contTimeMap = map[string]string{}
 var contSenderMap = map[string]string{}
 var contNameMap = map[string]string{}
 var chartSize = 10
@@ -644,12 +646,12 @@ func decodeTransactionObject(txnDetails *TransactionReceiptResponse, url string)
 			decoded = true
 		}
 	}
-	if abiMap[txnDetails.To] == "" {
+	if txnDetails.ContractAddress == "" && abiMap[txnDetails.To] == "" {
 		decodeFail := make([]contractclient.ParamTableRow, 1)
 		decodeFail[0].Key = "NA"
 		decodeFail[0].Value = "Decode in Progress"
 		txnDetails.DecodedInputs = decodeFail
-	} else if abiMap[txnDetails.To] == "missing" {
+	} else if txnDetails.ContractAddress == "" && abiMap[txnDetails.To] == "missing" {
 		decodeFail := make([]contractclient.ParamTableRow, 1)
 		decodeFail[0].Key = "NA"
 		decodeFail[0].Value = "ABI is Missing"
@@ -798,6 +800,7 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 			panic(err)
 		}
 		contNameMap[contractAddress] = contractJsonArr[i].Filename
+		contTimeMap[contractAddress] = strconv.Itoa(int(time.Now().Unix()))
 		abiMap[contractAddress] = abiStr
 	}
 	return contractJsonArr
@@ -1332,6 +1335,7 @@ func (nsi *NodeServiceImpl) ContractList() []ContractTableRow {
 		contractList[i].ContractName = contNameMap[key]
 		contractList[i].ContractType = contTypeMap[key]
 		contractList[i].Sender = contSenderMap[key]
+		contractList[i].Timestamp = contTimeMap[key]
 		contractList[i].Description = contDescriptionMap[key]
 		i++
 	}
