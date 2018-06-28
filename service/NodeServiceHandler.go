@@ -6,8 +6,6 @@ import (
 	"github.com/gorilla/mux"
 	"fmt"
 	"strconv"
-	//"bufio"
-	//"os"
 	"strings"
 	"io"
 	"io/ioutil"
@@ -390,6 +388,11 @@ func (nsi *NodeServiceImpl) GetContractCountHandler(w http.ResponseWriter, r *ht
 	json.NewEncoder(w).Encode(response)
 }
 
+type contractJSON struct {
+	Abi       []interface{} `json:"abi"`
+	Interface []interface{} `json:"interface"`
+}
+
 func (nsi *NodeServiceImpl) ContractDetailsUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	var Buf bytes.Buffer
 	contractAddress := r.FormValue("address")
@@ -402,15 +405,42 @@ func (nsi *NodeServiceImpl) ContractDetailsUpdateHandler(w http.ResponseWriter, 
 	defer file.Close()
 	name := strings.Split(header.Filename, ".")
 	io.Copy(&Buf, file)
-	contents := Buf.String()
-	fileContent := []byte(contents)
-	err = ioutil.WriteFile("./"+name[0]+".abi", fileContent, 0775)
+	content := Buf.String()
+
+	var jsonContent contractJSON
+
+	json.Unmarshal([]byte(content), &jsonContent)
+	abiContent, _ := json.Marshal(jsonContent.Abi)
+	abiString := make([]string, len(abiContent))
+	for i := 0; i < len(abiContent); i++ {
+		abiString[i] = string(abiContent[i])
+	}
+	abiData := fmt.Sprint(strings.Join(abiString, ""))
+
+	interfaceContent, _ := json.Marshal(jsonContent.Interface)
+	interfaceString := make([]string, len(interfaceContent))
+	for i := 0; i < len(interfaceContent); i++ {
+		interfaceString[i] = string(interfaceContent[i])
+	}
+	interfaceData := fmt.Sprint(strings.Join(interfaceString, ""))
+
+	var data string
+	if len(abiData) != 4 {
+		data = abiData
+	} else if len(interfaceData) != 4 {
+		data = interfaceData
+	} else {
+		data = content
+		data = strings.Replace(data, "\n", "", -1)
+	}
+
+	err = ioutil.WriteFile("./"+name[0]+".abi", []byte(data), 0775)
 	if err != nil {
 		panic(err)
 	}
 
 	Buf.Reset()
-	response := nsi.updateContractDetails(contractAddress, contractName, contents, description)
+	response := nsi.updateContractDetails(contractAddress, contractName, data, description)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(w).Encode(response)
 }

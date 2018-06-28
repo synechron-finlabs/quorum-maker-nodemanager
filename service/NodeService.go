@@ -123,8 +123,14 @@ type TransactionReceiptResponse struct {
 	S                 string                         `json:"s"`
 	TransactionType   string                         `json:"transactionType"`
 	TimeElapsed       int64                          `json:"TimeElapsed"`
-	DecodedInputs     []contractclient.ParamTableRow `json:"decodedInputs"`
+	DecodedInputs     []contractclient.ParamTableRow `json:"decodedInputs,omitempty"`
 	FunctionDetails   string                         `json:"functionDetails,omitempty"`
+	DecodeFailed      DecodeFailure                  `json:"decodeFailed,omitempty"`
+}
+
+type DecodeFailure struct {
+	Label string `json:"label"`
+	Type  string `json:"type"`
 }
 
 type Logs struct {
@@ -622,41 +628,55 @@ func decodeTransactionObject(txnDetails *TransactionReceiptResponse, url string)
 		txnDetails.TransactionType = "Public"
 
 	}
-	var functionDetails string
 	if txnDetails.ContractAddress == "" {
 		if txnDetails.TransactionType == "Private" && abiMap[txnDetails.To] != "" && abiMap[txnDetails.To] != "missing" {
 			txnDetails.Input = quorumPayload
-			txnDetails.DecodedInputs, functionDetails = contractclient.ABIParser(txnDetails.To, abiMap[txnDetails.To], quorumPayload)
+			decodedData, functionDetails := contractclient.ABIParser(txnDetails.To, abiMap[txnDetails.To], quorumPayload)
+			if decodedData[0].Key == "decodeFailed" {
+				var decodeFail DecodeFailure
+				decodeFail.Label = decodedData[0].Value
+				decodeFail.Type = "red"
+				txnDetails.DecodeFailed = decodeFail
+			} else {
+				txnDetails.DecodedInputs = decodedData
+			}
 			if functionDetails != "" {
 				txnDetails.FunctionDetails = functionDetails
 				decoded = true
 			}
 		} else if txnDetails.TransactionType == "Public" && abiMap[txnDetails.To] != "" && abiMap[txnDetails.To] != "missing" {
-			txnDetails.DecodedInputs, functionDetails = contractclient.ABIParser(txnDetails.To, abiMap[txnDetails.To], txnDetails.Input)
+			decodedData, functionDetails := contractclient.ABIParser(txnDetails.To, abiMap[txnDetails.To], txnDetails.Input)
+			if decodedData[0].Key == "decodeFailed" {
+				var decodeFail DecodeFailure
+				decodeFail.Label = decodedData[0].Value
+				decodeFail.Type = "red"
+				txnDetails.DecodeFailed = decodeFail
+			} else {
+				txnDetails.DecodedInputs = decodedData
+			}
 			if functionDetails != "" {
 				txnDetails.FunctionDetails = functionDetails
 				decoded = true
 			}
 		} else if txnDetails.TransactionType == "Hash Only" {
-			decodeFail := make([]contractclient.ParamTableRow, 1)
-			decodeFail[0].Key = "decodeFailed"
-			decodeFail[0].Value = "Hash Only Transaction"
-			txnDetails.DecodedInputs = decodeFail
+			var decodeFail DecodeFailure
+			decodeFail.Label = "Hash Only Transaction"
+			decodeFail.Type = "red"
+			txnDetails.DecodeFailed = decodeFail
 			decoded = true
+		} else if abiMap[txnDetails.To] == "" {
+			var decodeFail DecodeFailure
+			decodeFail.Label = "Decode in Progress"
+			decodeFail.Type = "yellow"
+			txnDetails.DecodeFailed = decodeFail
+		} else if abiMap[txnDetails.To] == "missing" {
+			var decodeFail DecodeFailure
+			decodeFail.Label = "ABI Missing"
+			decodeFail.Type = "red"
+			txnDetails.DecodeFailed = decodeFail
 		}
 	}
 
-	if txnDetails.ContractAddress == "" && abiMap[txnDetails.To] == "" {
-		decodeFail := make([]contractclient.ParamTableRow, 1)
-		decodeFail[0].Key = "decodeFailed"
-		decodeFail[0].Value = "Decode in Progress"
-		txnDetails.DecodedInputs = decodeFail
-	} else if txnDetails.ContractAddress == "" && abiMap[txnDetails.To] == "missing" {
-		decodeFail := make([]contractclient.ParamTableRow, 1)
-		decodeFail[0].Key = "decodeFailed"
-		decodeFail[0].Value = "ABI Missing"
-		txnDetails.DecodedInputs = decodeFail
-	}
 	if decoded {
 		txnMap[txnDetails.TransactionHash] = *txnDetails
 	}
@@ -1315,6 +1335,7 @@ func getContracts(url string) {
 
 				}
 				contSenderMap[txGetClient.ContractAddress] = clientTransactions.From
+				contTimeMap[txGetClient.ContractAddress] = strconv.Itoa(int(util.HexStringtoInt64(blockResponseClient.Timestamp)/1000000000))
 			}
 		}
 	}
