@@ -124,6 +124,7 @@ type TransactionReceiptResponse struct {
 	TransactionType   string                         `json:"transactionType"`
 	TimeElapsed       int64                          `json:"TimeElapsed"`
 	DecodedInputs     []contractclient.ParamTableRow `json:"decodedInputs"`
+	FunctionDetails   string                         `json:"functionDetails,omitempty"`
 }
 
 type Logs struct {
@@ -621,31 +622,39 @@ func decodeTransactionObject(txnDetails *TransactionReceiptResponse, url string)
 		txnDetails.TransactionType = "Public"
 
 	}
+	var functionDetails string
 	if txnDetails.ContractAddress == "" {
 		if txnDetails.TransactionType == "Private" && abiMap[txnDetails.To] != "" && abiMap[txnDetails.To] != "missing" {
 			txnDetails.Input = quorumPayload
-			txnDetails.DecodedInputs = contractclient.ABIParser(txnDetails.To, abiMap[txnDetails.To], quorumPayload)
-			decoded = true
+			txnDetails.DecodedInputs, functionDetails = contractclient.ABIParser(txnDetails.To, abiMap[txnDetails.To], quorumPayload)
+			if functionDetails != "" {
+				txnDetails.FunctionDetails = functionDetails
+				decoded = true
+			}
 		} else if txnDetails.TransactionType == "Public" && abiMap[txnDetails.To] != "" && abiMap[txnDetails.To] != "missing" {
-			txnDetails.DecodedInputs = contractclient.ABIParser(txnDetails.To, abiMap[txnDetails.To], txnDetails.Input)
-			decoded = true
+			txnDetails.DecodedInputs, functionDetails = contractclient.ABIParser(txnDetails.To, abiMap[txnDetails.To], txnDetails.Input)
+			if functionDetails != "" {
+				txnDetails.FunctionDetails = functionDetails
+				decoded = true
+			}
 		} else if txnDetails.TransactionType == "Hash Only" {
 			decodeFail := make([]contractclient.ParamTableRow, 1)
-			decodeFail[0].Key = "NA"
+			decodeFail[0].Key = "decodeFailed"
 			decodeFail[0].Value = "Hash Only Transaction"
 			txnDetails.DecodedInputs = decodeFail
 			decoded = true
 		}
 	}
+
 	if txnDetails.ContractAddress == "" && abiMap[txnDetails.To] == "" {
 		decodeFail := make([]contractclient.ParamTableRow, 1)
-		decodeFail[0].Key = "NA"
+		decodeFail[0].Key = "decodeFailed"
 		decodeFail[0].Value = "Decode in Progress"
 		txnDetails.DecodedInputs = decodeFail
 	} else if txnDetails.ContractAddress == "" && abiMap[txnDetails.To] == "missing" {
 		decodeFail := make([]contractclient.ParamTableRow, 1)
-		decodeFail[0].Key = "NA"
-		decodeFail[0].Value = "ABI is Missing"
+		decodeFail[0].Key = "decodeFailed"
+		decodeFail[0].Value = "ABI Missing"
 		txnDetails.DecodedInputs = decodeFail
 	}
 	if decoded {

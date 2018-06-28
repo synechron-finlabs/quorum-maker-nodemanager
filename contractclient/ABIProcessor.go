@@ -20,8 +20,9 @@ var SupportedDatatypes = []*regexp.Regexp{regexp.MustCompile(`uint256`), regexp.
 var abiMap = map[string]string{}
 var funcSigMap = map[string]string{}
 var funcParamNameMap = map[string]string{}
+var funcNameMap = map[string]string{}
 
-func ABIParser(contractAdd string, abiContent string, payload string) []ParamTableRow {
+func ABIParser(contractAdd string, abiContent string, payload string) ([]ParamTableRow, string) {
 	var abi abi.ABI
 	if abiMap[contractAdd] == "" {
 		abiMap[contractAdd] = abiContent
@@ -52,9 +53,9 @@ func ABIParser(contractAdd string, abiContent string, payload string) []ParamTab
 					if (i == len(SupportedDatatypes)) {
 						abiMap[contractAdd] = "Unsupported"
 						decodeUnsupported := make([]ParamTableRow, 1)
-						decodeUnsupported[0].Key = "Unsupported"
-						decodeUnsupported[0].Value = "Some input parameter datatypes are unsupported"
-						return decodeUnsupported
+						decodeUnsupported[0].Key = "decodeFailed"
+						decodeUnsupported[0].Value = "Unsupported Datatype"
+						return decodeUnsupported, ""
 					}
 					funcSig = funcSig + elem.Type.String() + ","
 					params = params + elem.Name + ","
@@ -65,33 +66,35 @@ func ABIParser(contractAdd string, abiContent string, payload string) []ParamTab
 				funcParamNameMap[contractAdd+":"+keccakHashes[i-1]] = paramNames[i-1]
 				functionSigs[i-1] = strings.TrimSuffix(funcSig, ",")
 				funcSigMap[contractAdd+":"+keccakHashes[i-1]] = functionSigs[i-1]
+				funcNameMap[contractAdd+":"+keccakHashes[i-1]] = key + "(" + strings.TrimSuffix(funcSig, ",") + ")"
 				i++
 			}
 		}
 
 	} else if abiMap[contractAdd] == "Unsupported" {
 		decodeUnsupported := make([]ParamTableRow, 1)
-		decodeUnsupported[0].Key = "Unsupported"
-		decodeUnsupported[0].Value = "Some input parameter datatypes are unsupported"
-		return decodeUnsupported
+		decodeUnsupported[0].Key = "decodeFailed"
+		decodeUnsupported[0].Value = "Unsupported Datatype"
+		return decodeUnsupported, ""
 	}
 
 	return Decode(payload, contractAdd)
 }
 
-func Decode(r string, contractAdd string) []ParamTableRow {
+func Decode(r string, contractAdd string) ([]ParamTableRow, string) {
 	keccakHash := r[2:10]
 	if funcSigMap[contractAdd+":"+keccakHash] == "" {
 		abiMismatch := make([]ParamTableRow, 1)
-		abiMismatch[0].Key = "NA"
-		abiMismatch[0].Value = "ABI mismatch"
-		return abiMismatch
+		abiMismatch[0].Key = "decodeFailed"
+		abiMismatch[0].Value = "ABI Mismatch"
+		abiMap[contractAdd] = ""
+		return abiMismatch, ""
 	}
 	encodedParams := r[10:]
 	params := strings.Split(funcSigMap[contractAdd+":"+keccakHash], ",")
 	paramTable := make([]ParamTableRow, len(params))
 	if r == "" || len(r) < 1 {
-		return paramTable
+		return paramTable, ""
 	}
 	paramNamesArr := strings.Split(funcParamNameMap[contractAdd+":"+keccakHash], ",")
 	resultArray := contracthandler.FunctionProcessor{funcSigMap[contractAdd+":"+keccakHash], nil, encodedParams}.GetResults()
@@ -99,5 +102,6 @@ func Decode(r string, contractAdd string) []ParamTableRow {
 		paramTable[i].Key = paramNamesArr[i]
 		paramTable[i].Value = fmt.Sprint(resultArray[i])
 	}
-	return paramTable
+
+	return paramTable, funcNameMap[contractAdd+":"+keccakHash]
 }
