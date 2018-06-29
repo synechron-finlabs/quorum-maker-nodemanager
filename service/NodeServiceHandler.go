@@ -16,6 +16,12 @@ import (
 	"log"
 )
 
+type contractJSON struct {
+	Abi       []interface{} `json:"abi"`
+	Interface []interface{} `json:"interface"`
+	Bytecode  string        `json:"bytecode"`
+}
+
 var pendCount = 0
 var nameMap = map[string]string{}
 var peerMap = map[string]string{}
@@ -388,11 +394,6 @@ func (nsi *NodeServiceImpl) GetContractCountHandler(w http.ResponseWriter, r *ht
 	json.NewEncoder(w).Encode(response)
 }
 
-type contractJSON struct {
-	Abi       []interface{} `json:"abi"`
-	Interface []interface{} `json:"interface"`
-}
-
 func (nsi *NodeServiceImpl) ContractDetailsUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	var Buf bytes.Buffer
 	contractAddress := r.FormValue("address")
@@ -400,7 +401,7 @@ func (nsi *NodeServiceImpl) ContractDetailsUpdateHandler(w http.ResponseWriter, 
 	description := r.FormValue("description")
 	file, header, err := r.FormFile("abi")
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 	defer file.Close()
 	name := strings.Split(header.Filename, ".")
@@ -423,7 +424,7 @@ func (nsi *NodeServiceImpl) ContractDetailsUpdateHandler(w http.ResponseWriter, 
 		interfaceString[i] = string(interfaceContent[i])
 	}
 	interfaceData := fmt.Sprint(strings.Join(interfaceString, ""))
-
+	bytecodeData := jsonContent.Bytecode
 	var data string
 	if len(abiData) != 4 {
 		data = abiData
@@ -434,9 +435,23 @@ func (nsi *NodeServiceImpl) ContractDetailsUpdateHandler(w http.ResponseWriter, 
 		data = strings.Replace(data, "\n", "", -1)
 	}
 
-	err = ioutil.WriteFile("./"+name[0]+".abi", []byte(data), 0775)
+	jsonString := util.ComposeJSON(data, bytecodeData, contractAddress)
+
+	path := "./contracts"
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Mkdir(path, 0775)
+	}
+	path = "./contracts/" + contractAddress + "_" + name[0]
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Mkdir(path, 0775)
+	}
+
+	filePath := path + "/" + name[0] + ".json"
+	jsByte := []byte(jsonString)
+	err = ioutil.WriteFile(filePath, jsByte, 0775)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 
 	Buf.Reset()
