@@ -259,7 +259,7 @@ func (nsi *NodeServiceImpl) getGenesis(url string) (response GetGenesisResponse)
 	}
 	b, err := ioutil.ReadFile("/home/node/genesis.json")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	genesis := string(b)
 	genesis = strings.Replace(genesis, "\n", "", -1)
@@ -315,7 +315,7 @@ func (nsi *NodeServiceImpl) getCurrentNode(url string) NodeInfo {
 	//@TODO: Use of absolute path (starting with "/") is highly error prone
 	files, err := ioutil.ReadDir("/home/node")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	var nodename string
 	for _, f := range files {
@@ -342,12 +342,12 @@ func (nsi *NodeServiceImpl) getCurrentNode(url string) NodeInfo {
 	}
 	raftIdInt, err := strconv.Atoi(raftId)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	rpcPortInt, err := strconv.Atoi(rpcPort)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	thisAdminInfo := ethClient.AdminNodeInfo()
@@ -366,7 +366,7 @@ func (nsi *NodeServiceImpl) getCurrentNode(url string) NodeInfo {
 	b, err := ioutil.ReadFile("/home/node/genesis.json")
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	genesis := string(b)
@@ -807,17 +807,17 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 		jsByte := []byte(js)
 		err = ioutil.WriteFile(filePath, jsByte, 0775)
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
 		}
 		abi := []byte(abiStr)
 		err = ioutil.WriteFile(path+"/ABI", abi, 0775)
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
 		}
 		bin := []byte(byteCode)
 		err = ioutil.WriteFile(path+"/BIN", bin, 0775)
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
 		}
 		contNameMap[contractAddress] = contractJsonArr[i].Filename
 		contTimeMap[contractAddress] = strconv.Itoa(int(time.Now().Unix()))
@@ -834,7 +834,7 @@ func (nsi *NodeServiceImpl) createNetworkScriptCall(nodename string, currentIP s
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	var setupConf string
@@ -842,7 +842,7 @@ func (nsi *NodeServiceImpl) createNetworkScriptCall(nodename string, currentIP s
 	setupConfByte := []byte(setupConf)
 	err = ioutil.WriteFile("./Setup/"+nodename+"/setup.conf", setupConfByte, 0775)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 	successResponse.Status = "success"
 	return successResponse
@@ -856,7 +856,7 @@ func (nsi *NodeServiceImpl) joinRequestResponseCall(nodename string, currentIP s
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	var setupConf string
@@ -864,7 +864,7 @@ func (nsi *NodeServiceImpl) joinRequestResponseCall(nodename string, currentIP s
 	setupConfByte := []byte(setupConf)
 	err = ioutil.WriteFile("./Setup/"+nodename+"/setup.conf", setupConfByte, 0775)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 	successResponse.Status = "success"
 	return successResponse
@@ -877,7 +877,7 @@ func (nsi *NodeServiceImpl) resetCurrentNode() SuccessResponse {
 	cmd.Stdout = &out
 	err := cmd.Run()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		successResponse.Status = "failure"
 		return successResponse
 	}
@@ -890,7 +890,7 @@ func (nsi *NodeServiceImpl) restartCurrentNode() SuccessResponse {
 	r, _ := regexp.Compile("[s][t][a][r][t][_][A-Za-z0-9]*[.][s][h]")
 	files, err := ioutil.ReadDir("/home/node")
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	var filename string
 	for _, f := range files {
@@ -906,7 +906,7 @@ func (nsi *NodeServiceImpl) restartCurrentNode() SuccessResponse {
 	cmd.Stdout = &out
 	err = cmd.Start()
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 		successResponse.Status = "failure"
 		return successResponse
 	}
@@ -1054,7 +1054,7 @@ func (nsi *NodeServiceImpl) healthCheck(url string) {
 				b, err := ioutil.ReadFile("/root/quorum-maker/NodeUnavailableTemplate.txt")
 
 				if err != nil {
-					log.Fatal(err)
+					log.Println(err)
 				}
 
 				mailCont := string(b)

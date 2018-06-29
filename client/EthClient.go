@@ -249,7 +249,7 @@ func (ec *EthClient) RaftAddPeer(request string) int {
 	var raftId int
 	err = response.GetObject(&raftId)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	return raftId
 }

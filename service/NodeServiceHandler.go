@@ -14,6 +14,7 @@ import (
 	"github.com/magiconair/properties"
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
 	"log"
+	"os"
 )
 
 type contractJSON struct {
@@ -68,7 +69,7 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 				b, err := ioutil.ReadFile("/root/quorum-maker/JoinRequestTemplate.txt")
 
 				if err != nil {
-					log.Fatal(err)
+					log.Println(err)
 				}
 
 				mailCont := string(b)
@@ -254,7 +255,7 @@ func (nsi *NodeServiceImpl) DeployContractHandler(w http.ResponseWriter, r *http
 	count := r.FormValue("count")
 	countInt, err := strconv.Atoi(count)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
 	}
 	fileNames := make([]string, countInt)
 	boolVal := r.FormValue("private")
@@ -272,7 +273,7 @@ func (nsi *NodeServiceImpl) DeployContractHandler(w http.ResponseWriter, r *http
 
 		file, header, err := r.FormFile(keyVal)
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
 		}
 		defer file.Close()
 		name := strings.Split(header.Filename, ".")
@@ -286,7 +287,7 @@ func (nsi *NodeServiceImpl) DeployContractHandler(w http.ResponseWriter, r *http
 		fileContent := []byte(contents)
 		err = ioutil.WriteFile("./"+name[0]+".sol", fileContent, 0775)
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
 		}
 
 		Buf.Reset()
