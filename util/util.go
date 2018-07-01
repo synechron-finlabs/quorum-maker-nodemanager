@@ -62,7 +62,7 @@ func StringToInt(s string) int {
 
 	s = strings.TrimLeft(s, "0")
 
-	n, err := strconv.ParseInt(s, 16, 32)
+	n, err := strconv.ParseInt(s, 16, 64)
 	if err != nil {
 		//panic(err)
 		return 0
@@ -130,4 +130,11 @@ func DeleteProperty(property string, filepath string) {
 	if err != nil {
 		fmt.Println(err)
 	}
+}
+
+type Uint256 struct {
+	part1 int64
+	part2 int64
+	part3 int64
+	part4 int64
 }

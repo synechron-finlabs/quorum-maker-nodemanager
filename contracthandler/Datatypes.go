@@ -20,6 +20,8 @@ func init() {
 	mdt[regexp.MustCompile(`^bytes$`)] = Bytes{}
 	mdt[regexp.MustCompile(`^(u?int[0-9]{0,3}|address)\[\]$`)] = Uint_DA{}
 	mdt[regexp.MustCompile(`^string$`)] = String{}
+	mdt[regexp.MustCompile(`^bytes32\[\]$`)] = Bytes32_DA{}
+	mdt[regexp.MustCompile(`^bytes32\[[0-9]+\]$`)] = Bytes32_FA{}
 }
 
 func ParseParameters(fp FunctionProcessor) []DataType {
@@ -204,6 +206,26 @@ type Bytes struct {
 	BaseDataType
 }
 
+
+func (t Bytes) New(i interface{}, sig string) DataType {
+
+	return Bytes{BaseDataType{i, sig}}
+}
+
+func (t Bytes) IsDynamic() bool {
+	return true
+}
+
+func (t Bytes) Length() int {
+	i := t.value.([]byte)
+
+	if len(i)%32 == 0 {
+		return len(i)/32 + 1
+	}
+	return len(i)/32 + 2
+
+}
+
 func (t Bytes) Decode(data []string, index int) (int, interface{}) {
 	offset := util.StringToInt(data[index])
 
@@ -222,25 +244,6 @@ func (t Bytes) Decode(data []string, index int) (int, interface{}) {
 	t.value, _ = hex.DecodeString(buffer.String()[:length*2])
 
 	return 1, t.value
-
-}
-
-func (t Bytes) New(i interface{}, sig string) DataType {
-
-	return Bytes{BaseDataType{i, sig}}
-}
-
-func (t Bytes) IsDynamic() bool {
-	return true
-}
-
-func (t Bytes) Length() int {
-	i := t.value.([]byte)
-
-	if len(i)%32 == 0 {
-		return len(i)/32 + 1
-	}
-	return len(i)/32 + 2
 
 }
 
@@ -299,4 +302,121 @@ func (t String) Decode(data []string, index int) (int, interface{}) {
 	_, t.value = t.Bytes.Decode(data, index)
 
 	return 1, string(t.value.([]byte))
+}
+
+type Bytes32_DA struct {
+	BaseDataType
+}
+
+func (t Bytes32_DA) New(i interface{}, sig string) DataType {
+
+	return Bytes32_DA{BaseDataType{i, sig}}
+}
+
+func (t Bytes32_DA) IsDynamic() bool {
+	return true
+}
+
+func (t Bytes32_DA) Length() int {
+	i := t.value.([]int)
+
+	return len(i) + 1
+}
+
+
+func (t Bytes32_DA) Decode(data []string, index int) (int, interface{}) {
+
+	offset := util.StringToInt(data[index])
+
+	length := util.StringToInt(data[offset/32])
+
+	var a = make([][]byte, length)
+
+	for i, j := offset/32+1, 0; j < length; i++ {
+
+		a[j], _ = hex.DecodeString(strings.Replace(data[i], "00", "",-1))
+
+		j++
+
+	}
+
+	t.value = a
+
+	return 1, a
+}
+
+func (t Bytes32_DA) Encode() []string {
+
+	i := t.value.([][]byte)
+
+	r := make([]string, len(i)+1)
+
+	r[0] = util.IntToString(len(i))
+
+	for j := 1; j <= len(i); j++ {
+		b := make([]byte, 32)
+
+		copy(b, i[j-1])
+		r[j] = hex.EncodeToString(b)
+
+	}
+
+	return r
+}
+
+
+type Bytes32_FA struct {
+	BaseDataType
+}
+
+func (t Bytes32_FA) New(i interface{}, sig string) DataType {
+
+	return Bytes32_FA{BaseDataType{i, sig}}
+}
+
+func (t Bytes32_FA) IsDynamic() bool {
+	return false
+}
+
+func (t Bytes32_FA) Length() int {
+	i := t.value.([][]byte)
+
+	return len(i)
+}
+
+func (t Bytes32_FA) Decode(data []string, index int) (int, interface{}) {
+
+	length := util.StringToInt(util.Between(t.GetSignature(), "[", "]"))
+
+	var a = make([][]byte, length)
+
+	for i, j := index, 0; j < length; i++ {
+
+		a[j], _ = hex.DecodeString(strings.Replace(data[i], "00", "",-1))
+
+		j++
+
+	}
+
+	t.value = a
+
+	return length, a
+}
+
+func (t Bytes32_FA) Encode() []string {
+
+	i := t.value.([][]byte)
+
+	r := make([]string, len(i))
+
+
+	for j := 0; j < len(i); j++ {
+		b := make([]byte, 32)
+
+		copy(b, i[j])
+		r[j] = hex.EncodeToString(b)
+
+	}
+
+	return r
 }
