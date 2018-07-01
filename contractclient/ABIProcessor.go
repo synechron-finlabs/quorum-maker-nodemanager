@@ -15,7 +15,15 @@ type ParamTableRow struct {
 	Value string `json:"value"`
 }
 
-var SupportedDatatypes = []*regexp.Regexp{regexp.MustCompile(`^(u?int[0-9]{0,3}|address)$`), regexp.MustCompile(`^bool$`), regexp.MustCompile(`^(u?int[0-9]{0,3}|address)\[[0-9]+\]$`), regexp.MustCompile(`^bytes$`), regexp.MustCompile(`^(u?int[0-9]{0,3}|address)\[\]$`), regexp.MustCompile(`^string$`)}
+var SupportedDatatypes = []*regexp.Regexp{
+	regexp.MustCompile(`^(u?int[0-9]{0,3}|address)$`),
+	regexp.MustCompile(`^bool$`),
+	regexp.MustCompile(`^(u?int[0-9]{0,3}|address)\[[0-9]+\]$`),
+	regexp.MustCompile(`^bytes$`),
+	regexp.MustCompile(`^(u?int[0-9]{0,3}|address)\[\]$`),
+	regexp.MustCompile(`^string$`),
+	regexp.MustCompile(`^bytes32\[\]$`),
+	regexp.MustCompile(`^bytes32\[[0-9]+\]$`)}
 
 var abiMap = map[string]string{}
 var funcSigMap = map[string]string{}
