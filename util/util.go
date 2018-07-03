@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 	"os/exec"
+	"math/big"
 )
 
 func TakeSliceArg(arg interface{}) (out []interface{}, ok bool) {
@@ -69,6 +70,21 @@ func StringToInt(s string) int {
 	}
 
 	return int(n)
+}
+
+func DecodeLargeInt(s string) string  {
+	i := new(big.Int)
+	i.SetString(s, 16)
+
+	return i.String()
+}
+
+func EncodeLargeInt(i string) string  {
+
+	j := new(big.Int)
+	j.SetString(i, 0)
+
+	return fmt.Sprintf("%064s", j.Text(16))
 }
 
 func ByteToString(a []byte) string {

@@ -14,14 +14,22 @@ func init() {
 
 	mdt = make(map[*regexp.Regexp]DataType)
 
-	mdt[regexp.MustCompile(`^(u?int[0-9]{0,3}|address)$`)] = Uint{}
+	mdt[regexp.MustCompile(`^u?int(([1-9]|[1-5][0-9])|(6[0-4]))$`)] = Uint{}
 	mdt[regexp.MustCompile(`^bool$`)] = Bool{}
-	mdt[regexp.MustCompile(`^(u?int[0-9]{0,3}|address)\[[0-9]+\]$`)] = Uint_FA{}
+	mdt[regexp.MustCompile(`^u?int(([1-9]|[1-5][0-9])|(6[0-4]))\[[0-9]+\]$`)] = UintFA{}
 	mdt[regexp.MustCompile(`^bytes$`)] = Bytes{}
-	mdt[regexp.MustCompile(`^(u?int[0-9]{0,3}|address)\[\]$`)] = Uint_DA{}
+	mdt[regexp.MustCompile(`^u?int(([1-9]|[1-5][0-9])|(6[0-4]))\[\]$`)] = UintDA{}
 	mdt[regexp.MustCompile(`^string$`)] = String{}
-	mdt[regexp.MustCompile(`^bytes32\[\]$`)] = Bytes32_DA{}
-	mdt[regexp.MustCompile(`^bytes32\[[0-9]+\]$`)] = Bytes32_FA{}
+	mdt[regexp.MustCompile(`^bytes32\[\]$`)] = Bytes32DA{}
+	mdt[regexp.MustCompile(`^bytes32\[[0-9]+\]$`)] = Bytes32FA{}
+	mdt[regexp.MustCompile(`^bytes([1-9]|1[0-9]|2[0-9]|3[0-2])$`)] = BytesFixed{}
+	mdt[regexp.MustCompile(`^u?int(6[5-9]|[7-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-6])$`)] = UintLarge{}
+	mdt[regexp.MustCompile(`^u?int(6[5-9]|[7-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-6])\[[0-9]+\]$`)] = UintLargeFA{}
+	mdt[regexp.MustCompile(`^u?int(6[5-9]|[7-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-6])\[\]$`)] = UintLargeDA{}
+	mdt[regexp.MustCompile(`^address$`)] = Address{}
+	mdt[regexp.MustCompile(`^address\[[0-9]+\]$`)] = AddressFA{}
+	mdt[regexp.MustCompile(`^address\[\]$`)] = AddressDA{}
+
 }
 
 func ParseParameters(fp FunctionProcessor) []DataType {
@@ -57,6 +65,7 @@ func ParseResults(fp FunctionProcessor) []DataType {
 	return dt
 }
 
+
 type Uint struct {
 	BaseDataType
 }
@@ -86,6 +95,8 @@ func (t Uint) Encode() []string {
 	return []string{util.IntToString(i)}
 }
 
+
+
 type Bool struct {
 	Uint
 }
@@ -105,11 +116,26 @@ func (t Bool) Decode(data []string, index int) (int, interface{}) {
 	return 1, t.value == 1
 }
 
-type Uint_DA struct {
+type UintDA struct {
 	BaseDataType
 }
 
-func (t Uint_DA) Decode(data []string, index int) (int, interface{}) {
+func (t UintDA) New(i interface{}, sig string) DataType {
+
+	return UintDA{BaseDataType{i, sig}}
+}
+
+func (t UintDA) IsDynamic() bool {
+	return true
+}
+
+func (t UintDA) Length() int {
+	i := t.value.([]int)
+
+	return len(i) + 1
+}
+
+func (t UintDA) Decode(data []string, index int) (int, interface{}) {
 
 	offset := util.StringToInt(data[index])
 
@@ -126,22 +152,7 @@ func (t Uint_DA) Decode(data []string, index int) (int, interface{}) {
 	return 1, a
 }
 
-func (t Uint_DA) New(i interface{}, sig string) DataType {
-
-	return Uint_DA{BaseDataType{i, sig}}
-}
-
-func (t Uint_DA) IsDynamic() bool {
-	return true
-}
-
-func (t Uint_DA) Length() int {
-	i := t.value.([]int)
-
-	return len(i) + 1
-}
-
-func (t Uint_DA) Encode() []string {
+func (t UintDA) Encode() []string {
 
 	i := t.value.([]int)
 
@@ -156,26 +167,26 @@ func (t Uint_DA) Encode() []string {
 	return r
 }
 
-type Uint_FA struct {
-	Uint_DA
+type UintFA struct {
+	UintDA
 }
 
-func (t Uint_FA) New(i interface{}, sig string) DataType {
+func (t UintFA) New(i interface{}, sig string) DataType {
 
-	return Uint_FA{Uint_DA{BaseDataType{i, sig}}}
+	return UintFA{UintDA{BaseDataType{i, sig}}}
 }
 
-func (t Uint_FA) IsDynamic() bool {
+func (t UintFA) IsDynamic() bool {
 	return false
 }
 
-func (t Uint_FA) Length() int {
+func (t UintFA) Length() int {
 	i := t.value.([]int)
 
 	return len(i)
 }
 
-func (t Uint_FA) Encode() []string {
+func (t UintFA) Encode() []string {
 
 	i := t.value.([]int)
 
@@ -187,7 +198,7 @@ func (t Uint_FA) Encode() []string {
 	return output
 }
 
-func (t Uint_FA) Decode(data []string, index int) (int, interface{}) {
+func (t UintFA) Decode(data []string, index int) (int, interface{}) {
 
 	length := util.StringToInt(util.Between(t.GetSignature(), "[", "]"))
 
@@ -195,6 +206,198 @@ func (t Uint_FA) Decode(data []string, index int) (int, interface{}) {
 
 	for i, j := index, 0; j < length; i++ {
 		a[j] = util.StringToInt(data[i])
+
+		j++
+	}
+
+	return length, a
+}
+
+type UintLarge struct {
+	BaseDataType
+}
+
+func (t UintLarge) New(i interface{}, sig string) DataType {
+
+	return UintLarge{BaseDataType{i, sig}}
+}
+
+func (t UintLarge) IsDynamic() bool {
+	return false
+}
+
+func (t UintLarge) Length() int {
+	return 1
+}
+
+func (t UintLarge) Decode(data []string, index int) (int, interface{}) {
+	return 1, util.DecodeLargeInt(data[index])
+}
+
+func (t UintLarge) Encode() []string {
+
+	i := t.value.(string)
+
+	return []string{util.EncodeLargeInt(i)}
+}
+
+type UintLargeDA struct {
+	BaseDataType
+}
+
+func (t UintLargeDA) New(i interface{}, sig string) DataType {
+
+	return UintLargeDA{BaseDataType{i, sig}}
+}
+
+func (t UintLargeDA) IsDynamic() bool {
+	return true
+}
+
+func (t UintLargeDA) Length() int {
+	i := t.value.([]string)
+
+	return len(i) + 1
+}
+
+func (t UintLargeDA) Decode(data []string, index int) (int, interface{}) {
+
+	offset := util.StringToInt(data[index])
+
+	length := util.StringToInt(data[offset/32])
+
+	var a = make([]string, length)
+
+	for i, j := offset/32+1, 0; i < offset/32+1+length; i++ {
+		a[j] = util.DecodeLargeInt(data[i])
+
+		j++
+	}
+
+	return 1, a
+}
+
+func (t UintLargeDA) Encode() []string {
+
+	i := t.value.([]string)
+
+	r := make([]string, len(i)+1)
+
+	r[0] = util.IntToString(len(i))
+
+	for j := 1; j <= len(i); j++ {
+		r[j] = util.EncodeLargeInt(i[j-1])
+	}
+
+	return r
+}
+
+type UintLargeFA struct {
+	UintLargeDA
+}
+
+func (t UintLargeFA) New(i interface{}, sig string) DataType {
+
+	return UintLargeFA{UintLargeDA{BaseDataType{i, sig}}}
+}
+
+func (t UintLargeFA) IsDynamic() bool {
+	return false
+}
+
+func (t UintLargeFA) Length() int {
+	i := t.value.([]string)
+
+	return len(i)
+}
+
+func (t UintLargeFA) Encode() []string {
+
+	i := t.value.([]string)
+
+	var output []string
+	for _, v := range i {
+		output = append(output, util.EncodeLargeInt(v))
+	}
+
+	return output
+}
+
+func (t UintLargeFA) Decode(data []string, index int) (int, interface{}) {
+
+	length := util.StringToInt(util.Between(t.GetSignature(), "[", "]"))
+
+	var a = make([]string, length)
+
+	for i, j := index, 0; j < length; i++ {
+		a[j] = util.DecodeLargeInt(data[i])
+
+		j++
+	}
+
+	return length, a
+}
+
+type Address struct {
+	UintLarge
+}
+
+func (t Address) New(i interface{}, sig string) DataType {
+
+	return Address{UintLarge{BaseDataType{i, sig}}}
+}
+
+
+func (t Address) Decode(data []string, index int) (int, interface{}) {
+
+	return 1, "0x" + strings.TrimLeft(data[index], "0")
+}
+
+type AddressDA struct {
+	UintLargeDA
+}
+
+func (t AddressDA) New(i interface{}, sig string) DataType {
+
+	return AddressDA{UintLargeDA{BaseDataType{i, sig}}}
+}
+
+func (t AddressDA) Decode(data []string, index int) (int, interface{}) {
+
+	offset := util.StringToInt(data[index])
+
+	length := util.StringToInt(data[offset/32])
+
+	var a = make([]string, length)
+
+	for i, j := offset/32+1, 0; i < offset/32+1+length; i++ {
+		a[j] = "0x" + strings.TrimLeft(data[i], "0")
+
+		j++
+	}
+
+	return 1, a
+}
+
+
+type AddressFA struct {
+	UintLargeFA
+}
+
+func (t AddressFA) New(i interface{}, sig string) DataType {
+
+	return AddressFA{UintLargeFA{UintLargeDA{BaseDataType{i, sig}}}}
+}
+
+
+func (t AddressFA) Decode(data []string, index int) (int, interface{}) {
+
+	length := util.StringToInt(util.Between(t.GetSignature(), "[", "]"))
+
+	var a = make([]string, length)
+
+	for i, j := index, 0; j < length; i++ {
+		a[j] = "0x" + strings.TrimLeft(data[i], "0")
 
 		j++
 	}
@@ -304,27 +507,27 @@ func (t String) Decode(data []string, index int) (int, interface{}) {
 	return 1, string(t.value.([]byte))
 }
 
-type Bytes32_DA struct {
+type Bytes32DA struct {
 	BaseDataType
 }
 
-func (t Bytes32_DA) New(i interface{}, sig string) DataType {
+func (t Bytes32DA) New(i interface{}, sig string) DataType {
 
-	return Bytes32_DA{BaseDataType{i, sig}}
+	return Bytes32DA{BaseDataType{i, sig}}
 }
 
-func (t Bytes32_DA) IsDynamic() bool {
+func (t Bytes32DA) IsDynamic() bool {
 	return true
 }
 
-func (t Bytes32_DA) Length() int {
+func (t Bytes32DA) Length() int {
 	i := t.value.([]int)
 
 	return len(i) + 1
 }
 
 
-func (t Bytes32_DA) Decode(data []string, index int) (int, interface{}) {
+func (t Bytes32DA) Decode(data []string, index int) (int, interface{}) {
 
 	offset := util.StringToInt(data[index])
 
@@ -345,7 +548,7 @@ func (t Bytes32_DA) Decode(data []string, index int) (int, interface{}) {
 	return 1, a
 }
 
-func (t Bytes32_DA) Encode() []string {
+func (t Bytes32DA) Encode() []string {
 
 	i := t.value.([][]byte)
 
@@ -365,26 +568,26 @@ func (t Bytes32_DA) Encode() []string {
 }
 
 
-type Bytes32_FA struct {
+type Bytes32FA struct {
 	BaseDataType
 }
 
-func (t Bytes32_FA) New(i interface{}, sig string) DataType {
+func (t Bytes32FA) New(i interface{}, sig string) DataType {
 
-	return Bytes32_FA{BaseDataType{i, sig}}
+	return Bytes32FA{BaseDataType{i, sig}}
 }
 
-func (t Bytes32_FA) IsDynamic() bool {
+func (t Bytes32FA) IsDynamic() bool {
 	return false
 }
 
-func (t Bytes32_FA) Length() int {
+func (t Bytes32FA) Length() int {
 	i := t.value.([][]byte)
 
 	return len(i)
 }
 
-func (t Bytes32_FA) Decode(data []string, index int) (int, interface{}) {
+func (t Bytes32FA) Decode(data []string, index int) (int, interface{}) {
 
 	length := util.StringToInt(util.Between(t.GetSignature(), "[", "]"))
 
@@ -403,7 +606,7 @@ func (t Bytes32_FA) Decode(data []string, index int) (int, interface{}) {
 	return length, a
 }
 
-func (t Bytes32_FA) Encode() []string {
+func (t Bytes32FA) Encode() []string {
 
 	i := t.value.([][]byte)
 
@@ -419,4 +622,31 @@ func (t Bytes32_FA) Encode() []string {
 	}
 
 	return r
+}
+
+type BytesFixed struct {
+	Uint
+}
+
+func (t BytesFixed) New(i interface{}, sig string) DataType {
+
+	return BytesFixed{Uint{BaseDataType{i, sig}}}
+}
+
+func (t BytesFixed) Decode(data []string, index int) (int, interface{}) {
+
+	t.value, _ = hex.DecodeString(strings.Replace(data[index], "00", "",-1))
+
+	return 1, t.value
+}
+
+func (t BytesFixed) Encode() []string {
+	i := t.value.([]byte)
+
+	b := make([]byte, 32)
+
+	copy(b, i)
+
+	return []string{hex.EncodeToString(b)}
+
 }
