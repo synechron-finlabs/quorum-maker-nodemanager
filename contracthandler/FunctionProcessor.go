@@ -111,6 +111,10 @@ func (fp FunctionProcessor) GetResults() []interface{} {
 
 	results := make([]interface{}, len(datatypes))
 
+	if len(datatypes) == 0 {
+		return results
+	}
+
 	nextIndex := 0
 
 	for i := range strings.Split(fp.Signature, ",") {

@@ -32,6 +32,46 @@ func init() {
 
 }
 
+/*
+* supports below formats
+* functionName(datatype1, datatype2,...)
+* datatype1, datatype2,...
+* datatype1, datatype2,.., (with an extra comma and the end
+*
+*/
+func IsSuported(sig string) bool {
+
+	rex := regexp.MustCompile(`.*\((.*)\)|(.*)`)
+	var datatypes string
+
+	if match := rex.FindStringSubmatch(sig); match[1] != "" {
+		datatypes = match[1]
+	}else{
+		datatypes = strings.TrimSuffix(match[2], "")
+	}
+
+	if datatypes == "" {
+		return true
+	}
+
+	for _, param := range strings.Split(datatypes, ",") {
+		var found bool
+		for k := range mdt {
+
+			if k.MatchString(param) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return false
+		}
+	}
+
+	return true
+}
+
 func ParseParameters(fp FunctionProcessor) []DataType {
 
 	var dt []DataType
