@@ -95,7 +95,7 @@ func (h RegisterUpdateNodeFuncHandler) Encode() string {
 
 	param := []interface{}{h.nd.Name, h.nd.Role, h.nd.PublicKey, h.nd.Enode, h.nd.IP, h.nd.ID}
 
-	data := h.funcSig + contracthandler.FunctionProcessor{sig, param, ""}.GetData()
+	data := h.funcSig + contracthandler.FunctionProcessor{sig}.Encode(param)
 
 	return data
 }
@@ -116,7 +116,7 @@ func (g *GetNodeDetailsFuncHandler) Decode(r string) {
 
 	sig := "string,string,string,string,string,string,uint256"
 
-	resultArray := contracthandler.FunctionProcessor{sig, nil, r}.GetResults()
+	resultArray := contracthandler.FunctionProcessor{sig}.Decode(r)
 
 	g.result = NodeDetails{resultArray[0].(string), resultArray[1].(string), resultArray[2].(string), resultArray[4].(string), resultArray[3].(string), resultArray[5].(string)}
 }
@@ -127,7 +127,7 @@ func (g GetNodeDetailsFuncHandler) Encode() string {
 
 	param := []interface{}{g.index}
 
-	return g.funcSig + contracthandler.FunctionProcessor{sig, param, ""}.GetData()
+	return g.funcSig + contracthandler.FunctionProcessor{sig}.Encode(param)
 }
 
 type DeployContractHandler struct {

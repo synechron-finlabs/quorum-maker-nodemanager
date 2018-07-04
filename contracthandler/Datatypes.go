@@ -47,7 +47,7 @@ func IsSuported(sig string) bool {
 	if match := rex.FindStringSubmatch(sig); match[1] != "" {
 		datatypes = match[1]
 	}else{
-		datatypes = strings.TrimSuffix(match[2], "")
+		datatypes = strings.TrimSuffix(match[2], ",")
 	}
 
 	if datatypes == "" {
@@ -72,48 +72,36 @@ func IsSuported(sig string) bool {
 	return true
 }
 
-func ParseParameters(fp FunctionProcessor) []DataType {
 
-	var dt []DataType
-	for i, param := range strings.Split(fp.Signature, ",") {
-		for k, v := range mdt {
-
-			if k.MatchString(param) {
-				dt = append(dt, v.New(fp.Param[i], ""))
-				break
-			}
-		}
-	}
-
-	return dt
+type DataType interface {
+	IsDynamic() bool
+	Length() int
+	Encode() []string
+	New(interface{}, string) DataType
+	Decode([]string, int) (int, interface{})
+	SetSignature(string)
+	GetSignature() string
 }
 
-func ParseResults(fp FunctionProcessor) []DataType {
-
-	var dt []DataType
-	for _, param := range strings.Split(fp.Signature, ",") {
-		for k, v := range mdt {
-
-			if k.MatchString(param) {
-				dt = append(dt, v.New(nil, param))
-			}
-
-		}
-
-	}
-
-	return dt
+type BaseDataType struct {
+	value    interface{}
+	Signatue string
 }
+
+func (bdt BaseDataType) SetSignature(s string) {
+	bdt.Signatue = s
+}
+
+func (bdt BaseDataType) GetSignature() string {
+	return bdt.Signatue
+}
+
 
 
 type Uint struct {
 	BaseDataType
 }
 
-func (t Uint) Decode(data []string, index int) (int, interface{}) {
-
-	return 1, util.StringToInt(data[index])
-}
 
 func (t Uint) New(i interface{}, sig string) DataType {
 
@@ -126,6 +114,12 @@ func (t Uint) IsDynamic() bool {
 
 func (t Uint) Length() int {
 	return 1
+}
+
+
+func (t Uint) Decode(data []string, index int) (int, interface{}) {
+
+	return 1, util.StringToInt(data[index])
 }
 
 func (t Uint) Encode() []string {

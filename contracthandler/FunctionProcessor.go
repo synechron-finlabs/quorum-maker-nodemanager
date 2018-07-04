@@ -7,38 +7,14 @@ import (
 )
 
 
-type DataType interface {
-	IsDynamic() bool
-	Length() int
-	Encode() []string
-	New(interface{}, string) DataType
-	Decode([]string, int) (int, interface{})
-	SetSignature(string)
-	GetSignature() string
-}
-
-type BaseDataType struct {
-	value    interface{}
-	Signatue string
-}
-
-func (bdt BaseDataType) SetSignature(s string) {
-	bdt.Signatue = s
-}
-
-func (bdt BaseDataType) GetSignature() string {
-	return bdt.Signatue
-}
 
 type FunctionProcessor struct {
 	Signature string
-	Param     []interface{}
-	Result    string
 }
 
-func (fp FunctionProcessor) GetData() string {
+func (fp FunctionProcessor) Encode(paramValues []interface{}) string {
 
-	datatypes := ParseParameters(fp)
+	datatypes := fp.getDataTypes(paramValues)
 
 	var output []string
 
@@ -94,20 +70,20 @@ func (fp FunctionProcessor) GetData() string {
 
 }
 
-func (fp FunctionProcessor) GetResults() []interface{} {
+func (fp FunctionProcessor) Decode(encodedString string) []interface{} {
 
-	length := len(fp.Result) / 64
+	length := len(encodedString) / 64
 
 	data := make([]string, length)
 
 	for i, j := 0, 0; i < length; i++ {
-		data[i] = fp.Result[j : j+64]
+		data[i] = encodedString[j : j+64]
 
 		j += 64
 
 	}
 
-	datatypes := ParseResults(fp)
+	datatypes := fp.getDataTypes(nil)
 
 	results := make([]interface{}, len(datatypes))
 
@@ -126,4 +102,27 @@ func (fp FunctionProcessor) GetResults() []interface{} {
 	}
 
 	return results
+}
+
+
+func (fp FunctionProcessor) getDataTypes(paramValues []interface{}) []DataType {
+
+	var dt []DataType
+	for i, paramType := range strings.Split(fp.Signature, ",") {
+		for k, v := range mdt {
+
+			if k.MatchString(paramType) {
+				if paramValues == nil {
+					dt = append(dt, v.New(nil, paramType))
+				} else {
+					dt = append(dt, v.New(paramValues[i], paramType))
+				}
+
+			}
+
+		}
+
+	}
+
+	return dt
 }

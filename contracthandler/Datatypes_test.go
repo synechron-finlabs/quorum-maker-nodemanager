@@ -18,6 +18,11 @@ func getDatatypesTestData() []string {
 
 	data := []string {
 		"Func(uint256)",
+		"uint256",
+		"uint256,address",
+		"uint256,address,",
+		"",
+		"uint256,address,bytes",
 		"createConfig(bytes32[],uint256,bytes32[3],uint256)",
 		"createTrade(uint256,string,bool,uint256,uint256)",
 		"getConfig()",

@@ -12,7 +12,7 @@ func TestGetData(t *testing.T) {
 	defer util.TotalTime(time.Now().Nanosecond())
 
 	for _, table := range getFunctionProcessorTestData() {
-		data := FunctionProcessor{table.x, table.y, table.z}.GetData()
+		data := FunctionProcessor{table.x}.Encode(table.y)
 
 		if data != table.z {
 			t.Errorf("Encoding was incorrect, got: %d, want: %d.", data, table.z)
@@ -23,7 +23,7 @@ func TestGetData(t *testing.T) {
 func TestGetResults(t *testing.T) {
 
 	for _, table := range getFunctionProcessorTestData() {
-		data := FunctionProcessor{table.x, table.y, table.z}.GetResults()
+		data := FunctionProcessor{table.x}.Decode(table.z)
 		if !checkEquality(table.y, data) {
 			t.Errorf("Decoding was incorrect")
 		}

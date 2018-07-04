@@ -112,7 +112,7 @@ func Decode(r string, contractAdd string) ([]ParamTableRow, string) {
 		return paramTable, ""
 	}
 	paramNamesArr := strings.Split(funcParamNameMap[contractAdd+":"+keccakHash], ",")
-	resultArray := contracthandler.FunctionProcessor{funcSigMap[contractAdd+":"+keccakHash], nil, encodedParams}.GetResults()
+	resultArray := contracthandler.FunctionProcessor{funcSigMap[contractAdd+":"+keccakHash]}.Decode(encodedParams)
 	for i := 0; i < len(params); i++ {
 		paramTable[i].Key = paramNamesArr[i]
 		paramTable[i].Value = fmt.Sprint(resultArray[i])
