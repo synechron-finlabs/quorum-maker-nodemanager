@@ -456,7 +456,8 @@ func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) BlockDetails
 }
 
 func (nsi *NodeServiceImpl) getLatestBlockInfo(count string, reference string, url string) []BlockDetailsResponse {
-	countVal := util.HexStringtoInt64(count)
+	countValInt , _ := strconv.Atoi(count)
+	countVal := int64(countValInt)
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	var blockNumber int64
@@ -502,7 +503,8 @@ func (nsi *NodeServiceImpl) getLatestBlockInfo(count string, reference string, u
 }
 
 func (nsi *NodeServiceImpl) getLatestTransactionInfo(count string, url string) []BlockDetailsResponse {
-	countVal := util.HexStringtoInt64(count)
+	countValInt , _ := strconv.Atoi(count)
+	countVal := int64(countValInt)
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	blockNumber := util.HexStringtoInt64(ethClient.BlockNumber())
