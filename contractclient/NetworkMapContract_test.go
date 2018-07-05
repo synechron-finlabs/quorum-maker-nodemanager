@@ -47,7 +47,7 @@ func TestRegisterNode(t *testing.T) {
 
 	cp := getContractParam()
 
-	ec := client.EthClient{"http://localhost:22000"}
+	ec := client.EthClient{"http://10.50.0.2:22000"}
 
 	nmc := NetworkMapContractClient{ec, cp}
 
@@ -69,7 +69,7 @@ func TestUpdateNode(t *testing.T) {
 
 	cp := getContractParam()
 
-	ec := client.EthClient{"http://localhost:22000"}
+	ec := client.EthClient{"http://10.50.0.2:22000"}
 
 	nmc := NetworkMapContractClient{ec, cp}
 
@@ -92,7 +92,7 @@ func TestGetNodeDetails(t *testing.T) {
 	defer util.TotalTime(time.Now().Nanosecond())
 	cp := getContractParam()
 
-	ec := client.EthClient{"http://localhost:22000"}
+	ec := client.EthClient{"http://10.50.0.2:22000"}
 
 	nmc := NetworkMapContractClient{ec, cp}
 
@@ -106,7 +106,7 @@ func TestGetNodeDetailsList(t *testing.T) {
 	defer util.TotalTime(time.Now().Nanosecond())
 	cp := getContractParam()
 
-	ec := client.EthClient{"http://localhost:22000"}
+	ec := client.EthClient{"http://10.50.0.2:22000"}
 
 	nmc := NetworkMapContractClient{ec, cp}
 
@@ -118,8 +118,8 @@ func TestGetNodeDetailsList(t *testing.T) {
 
 func getContractParam() contracthandler.ContractParam {
 	return contracthandler.ContractParam{
-		"0x75302f1f561b2896a11639a92da6c09adfb87541",
-		"0xd2dbb4c020bba5b0d8eef5d1e482d797bb15cc40",
+		"0xfaf947731d6256b9f1da3e3bede1750881e21092",
+		"0x56776f1d261e75253f110ac9091367956bce2f32",
 		"",
 		nil,
 	}
