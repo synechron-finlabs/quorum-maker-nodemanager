@@ -1,12 +1,15 @@
-package contracthandler
+package contracthandler_test
 
-import "testing"
+import (
+	"testing"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/contracthandler"
+)
 
 func TestIsSuported(t *testing.T) {
 
 	for _, sig := range getDatatypesTestData() {
 
-		if !IsSuported(sig) {
+		if !contracthandler.IsSuported(sig) {
 			t.Error(sig + " Not suported")
 		}
 	}

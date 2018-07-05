@@ -1,10 +1,11 @@
-package contracthandler
+package contracthandler_test
 
 import (
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
 	"reflect"
 	"testing"
 	"time"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/contracthandler"
 )
 
 func TestGetData(t *testing.T) {
@@ -12,7 +13,7 @@ func TestGetData(t *testing.T) {
 	defer util.TotalTime(time.Now().Nanosecond())
 
 	for _, table := range getFunctionProcessorTestData() {
-		data := FunctionProcessor{table.x}.Encode(table.y)
+		data := contracthandler.FunctionProcessor{table.x}.Encode(table.y)
 
 		if data != table.z {
 			t.Errorf("Encoding was incorrect, got: %d, want: %d.", data, table.z)
@@ -23,7 +24,7 @@ func TestGetData(t *testing.T) {
 func TestGetResults(t *testing.T) {
 
 	for _, table := range getFunctionProcessorTestData() {
-		data := FunctionProcessor{table.x}.Decode(table.z)
+		data := contracthandler.FunctionProcessor{table.x}.Decode(table.z)
 		if !checkEquality(table.y, data) {
 			t.Errorf("Decoding was incorrect")
 		}
