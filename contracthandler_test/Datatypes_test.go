@@ -27,6 +27,7 @@ func getDatatypesTestData() []string {
 		"",
 		"uint256,address,bytes",
 		"createConfig(bytes32[],uint256,bytes32[3],uint256)",
+		"createConfig(bytes32[],uint256,bytes32[3],uint256)",
 		"createTrade(uint256,string,bool,uint256,uint256)",
 		"getConfig()",
 		"updateConfig(address,bytes32[],uint256,bytes32,uint256)",

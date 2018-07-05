@@ -20,8 +20,8 @@ func init() {
 	mdt[regexp.MustCompile(`^bytes$`)] = Bytes{}
 	mdt[regexp.MustCompile(`^u?int(([1-9]|[1-5][0-9])|(6[0-4]))\[\]$`)] = UintDA{}
 	mdt[regexp.MustCompile(`^string$`)] = String{}
-	mdt[regexp.MustCompile(`^bytes32\[\]$`)] = Bytes32DA{}
-	mdt[regexp.MustCompile(`^bytes32\[[0-9]+\]$`)] = Bytes32FA{}
+	mdt[regexp.MustCompile(`^bytes([1-9]|1[0-9]|2[0-9]|3[0-2])\[\]$`)] = Bytes32DA{}
+	mdt[regexp.MustCompile(`^bytes([1-9]|1[0-9]|2[0-9]|3[0-2])\[[0-9]+\]$`)] = Bytes32FA{}
 	mdt[regexp.MustCompile(`^bytes([1-9]|1[0-9]|2[0-9]|3[0-2])$`)] = BytesFixed{}
 	mdt[regexp.MustCompile(`^u?int(6[5-9]|[7-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-6])$`)] = UintLarge{}
 	mdt[regexp.MustCompile(`^u?int(6[5-9]|[7-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-6])\[[0-9]+\]$`)] = UintLargeFA{}
