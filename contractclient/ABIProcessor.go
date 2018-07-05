@@ -1,13 +1,13 @@
 package contractclient
 
 import (
-	"strings"
-	"github.com/ethereum/go-ethereum/crypto"
 	"encoding/hex"
-	"github.com/synechron-finlabs/quorum-maker-nodemanager/contracthandler"
 	"fmt"
-	"regexp"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/contracthandler"
+	"regexp"
+	"strings"
 )
 
 type ParamTableRow struct {
@@ -64,6 +64,7 @@ func ABIParser(contractAdd string, abiContent string, payload string) ([]ParamTa
 				funcSigMap[contractAdd+":"+keccakHashes[i-1]] = functionSigs[i-1]
 
 				isSupported := contracthandler.IsSupported(functionSigs[i-1])
+
 				if !isSupported {
 					funcSigMap[contractAdd+":"+keccakHashes[i-1]] = "unsupported"
 				}
