@@ -79,23 +79,12 @@ type DataType interface {
 	Encode() []string
 	New(interface{}, string) DataType
 	Decode([]string, int) (int, interface{})
-	SetSignature(string)
-	GetSignature() string
 }
 
 type BaseDataType struct {
-	value    interface{}
-	Signatue string
+	value     interface{}
+	signature string
 }
-
-func (bdt BaseDataType) SetSignature(s string) {
-	bdt.Signatue = s
-}
-
-func (bdt BaseDataType) GetSignature() string {
-	return bdt.Signatue
-}
-
 
 
 type Uint struct {
@@ -234,7 +223,7 @@ func (t UintFA) Encode() []string {
 
 func (t UintFA) Decode(data []string, index int) (int, interface{}) {
 
-	length := util.StringToInt(util.Between(t.GetSignature(), "[", "]"))
+	length := util.StringToInt(util.Between(t.signature, "[", "]"))
 
 	var a = make([]int, length)
 
@@ -359,7 +348,7 @@ func (t UintLargeFA) Encode() []string {
 
 func (t UintLargeFA) Decode(data []string, index int) (int, interface{}) {
 
-	length := util.StringToInt(util.Between(t.GetSignature(), "[", "]"))
+	length := util.StringToInt(util.Between(t.signature, "[", "]"))
 
 	var a = make([]string, length)
 
@@ -426,7 +415,7 @@ func (t AddressFA) New(i interface{}, sig string) DataType {
 
 func (t AddressFA) Decode(data []string, index int) (int, interface{}) {
 
-	length := util.StringToInt(util.Between(t.GetSignature(), "[", "]"))
+	length := util.StringToInt(util.Between(t.signature, "[", "]"))
 
 	var a = make([]string, length)
 
@@ -623,7 +612,7 @@ func (t Bytes32FA) Length() int {
 
 func (t Bytes32FA) Decode(data []string, index int) (int, interface{}) {
 
-	length := util.StringToInt(util.Between(t.GetSignature(), "[", "]"))
+	length := util.StringToInt(util.Between(t.signature, "[", "]"))
 
 	var a = make([][]byte, length)
 
