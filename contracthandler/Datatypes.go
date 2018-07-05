@@ -39,7 +39,7 @@ func init() {
 * datatype1, datatype2,.., (with an extra comma and the end
 *
 */
-func IsSuported(sig string) bool {
+func IsSupported(sig string) bool {
 
 	rex := regexp.MustCompile(`.*\((.*)\)|(.*)`)
 	var datatypes string

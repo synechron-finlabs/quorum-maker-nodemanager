@@ -63,7 +63,7 @@ func ABIParser(contractAdd string, abiContent string, payload string) ([]ParamTa
 				functionSigs[i-1] = strings.TrimSuffix(funcSig, ",")
 				funcSigMap[contractAdd+":"+keccakHashes[i-1]] = functionSigs[i-1]
 
-				isSupported := contracthandler.IsSuported(functionSigs[i-1])
+				isSupported := contracthandler.IsSupported(functionSigs[i-1])
 				if !isSupported {
 					funcSigMap[contractAdd+":"+keccakHashes[i-1]] = "unsupported"
 				}

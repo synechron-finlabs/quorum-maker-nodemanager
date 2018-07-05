@@ -9,7 +9,7 @@ func TestIsSuported(t *testing.T) {
 
 	for _, sig := range getDatatypesTestData() {
 
-		if !contracthandler.IsSuported(sig) {
+		if !contracthandler.IsSupported(sig) {
 			t.Error(sig + " Not suported")
 		}
 	}
