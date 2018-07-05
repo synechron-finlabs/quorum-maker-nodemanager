@@ -7,7 +7,7 @@ import (
 
 const registerNodeFunSig = "0x3072b1b2"
 const updateNodeFunSig = "0xaeffe3b7"
-const getNodeDetailsFunSig = "0x0d0d583b"
+const getNodeDetailsFunSig = "0x7f11a8ed"
 
 type NodeDetails struct {
 	Name      string `json:"nodeName,omitempty"`
@@ -114,7 +114,7 @@ func (g *GetNodeDetailsFuncHandler) Decode(r string) {
 		return
 	}
 
-	sig := "string,string,string,string,string,string,uint256"
+	sig := "string,string,string,string,string,string,uint16"
 
 	resultArray := contracthandler.FunctionProcessor{sig}.Decode(r)
 
@@ -123,7 +123,7 @@ func (g *GetNodeDetailsFuncHandler) Decode(r string) {
 
 func (g GetNodeDetailsFuncHandler) Encode() string {
 
-	sig := "uint256"
+	sig := "uint16"
 
 	param := []interface{}{g.index}
 
