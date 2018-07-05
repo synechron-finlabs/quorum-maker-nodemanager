@@ -43,56 +43,36 @@ func ABIParser(contractAdd string, abiContent string, payload string) ([]ParamTa
 		abiMap[contractAdd] = abiContent
 		abi.UnmarshalJSON([]byte(abiMap[contractAdd]))
 		methodMap := abi.Methods
-		size := 0
-		for key := range methodMap {
-			if methodMap[key].Const == false {
-				size++
-			}
-		}
-		functionSigs := make([]string, size)
-		paramNames := make([]string, size)
-		keccakHashes := make([]string, size)
-		i := 1
 
+		var functionSigs []string
+		var paramNames []string
+		var keccakHashes []string
+		i := 1
 		for key := range methodMap {
 			if methodMap[key].Const == false {
 				var funcSig string
 				var params string
 				for _, elem := range methodMap[key].Inputs {
-					i := 0
-					for _, v := range SupportedDatatypes {
-						if v.MatchString(elem.Type.String()) != true {
-							i++
-						}
-					}
-					if (i == len(SupportedDatatypes)) {
-						abiMap[contractAdd] = "Unsupported"
-						decodeUnsupported := make([]ParamTableRow, 1)
-						decodeUnsupported[0].Key = "decodeFailed"
-						decodeUnsupported[0].Value = "Unsupported Datatype"
-						return decodeUnsupported, ""
-					}
 					funcSig = funcSig + elem.Type.String() + ","
 					params = params + elem.Name + ","
 				}
-				paramNames[i-1] = strings.TrimSuffix(params, ",")
-				functionSigs[i-1] = key + "(" + strings.TrimSuffix(funcSig, ",") + ")"
-				keccakHashes[i-1] = hex.EncodeToString(crypto.Keccak256([]byte(functionSigs[i-1]))[:4])
+				paramNames = append(paramNames, strings.TrimSuffix(params, ","))
+				functionSigs = append(functionSigs, key+"("+strings.TrimSuffix(funcSig, ",")+")")
+				keccakHashes = append(keccakHashes, hex.EncodeToString(crypto.Keccak256([]byte(functionSigs[i-1]))[:4]))
 				funcParamNameMap[contractAdd+":"+keccakHashes[i-1]] = paramNames[i-1]
 				functionSigs[i-1] = strings.TrimSuffix(funcSig, ",")
 				funcSigMap[contractAdd+":"+keccakHashes[i-1]] = functionSigs[i-1]
+
+				isSupported := contracthandler.IsSuported(functionSigs[i-1])
+				if !isSupported {
+					funcSigMap[contractAdd+":"+keccakHashes[i-1]] = "unsupported"
+				}
+
 				funcNameMap[contractAdd+":"+keccakHashes[i-1]] = key + "(" + strings.TrimSuffix(funcSig, ",") + ")"
 				i++
 			}
 		}
-
-	} else if abiMap[contractAdd] == "Unsupported" {
-		decodeUnsupported := make([]ParamTableRow, 1)
-		decodeUnsupported[0].Key = "decodeFailed"
-		decodeUnsupported[0].Value = "Unsupported Datatype"
-		return decodeUnsupported, ""
 	}
-
 	return Decode(payload, contractAdd)
 }
 
@@ -103,6 +83,12 @@ func Decode(r string, contractAdd string) ([]ParamTableRow, string) {
 		abiMismatch[0].Key = "decodeFailed"
 		abiMismatch[0].Value = "ABI Mismatch"
 		abiMap[contractAdd] = ""
+		return abiMismatch, ""
+	}
+	if funcSigMap[contractAdd+":"+keccakHash] == "unsupported" {
+		abiMismatch := make([]ParamTableRow, 1)
+		abiMismatch[0].Key = "decodeFailed"
+		abiMismatch[0].Value = "Unsupported Datatype"
 		return abiMismatch, ""
 	}
 	encodedParams := r[10:]

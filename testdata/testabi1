@@ -1,0 +1,114 @@
+[
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "config",
+				"type": "bytes32[]"
+			},
+			{
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"name": "pairing",
+				"type": "bytes32[3]"
+			},
+			{
+				"name": "max",
+				"type": "uint256"
+			}
+		],
+		"name": "createConfig",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"name": "symbol",
+				"type": "string"
+			},
+			{
+				"name": "buy",
+				"type": "bool"
+			},
+			{
+				"name": "price",
+				"type": "uint256"
+			},
+			{
+				"name": "quantity",
+				"type": "uint256"
+			}
+		],
+		"name": "createTrade",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "getConfig",
+		"outputs": [
+			{
+				"name": "config",
+				"type": "bytes32[]"
+			},
+			{
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"name": "pairing",
+				"type": "bytes32[3]"
+			},
+			{
+				"name": "max",
+				"type": "uint256"
+			}
+		],
+		"payable": false,
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{
+				"name": "add",
+				"type": "address"
+			},
+			{
+				"name": "config",
+				"type": "bytes32[]"
+			},
+			{
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"name": "pairing",
+				"type": "bytes32"
+			},
+			{
+				"name": "max",
+				"type": "uint256"
+			}
+		],
+		"name": "updateConfig",
+		"outputs": [],
+		"payable": false,
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+]
