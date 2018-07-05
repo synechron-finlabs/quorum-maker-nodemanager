@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/contracthandler"
 	"fmt"
-	"regexp"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 )
 
@@ -14,23 +13,6 @@ type ParamTableRow struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
-
-var SupportedDatatypes = []*regexp.Regexp{
-	regexp.MustCompile(`^u?int(([1-9]|[1-5][0-9])|(6[0-4]))$`),
-	regexp.MustCompile(`^bool$`),
-	regexp.MustCompile(`^u?int(([1-9]|[1-5][0-9])|(6[0-4]))\[[0-9]+\]$`),
-	regexp.MustCompile(`^bytes$`),
-	regexp.MustCompile(`^u?int(([1-9]|[1-5][0-9])|(6[0-4]))\[\]$`),
-	regexp.MustCompile(`^string$`),
-	regexp.MustCompile(`^bytes32\[\]$`),
-	regexp.MustCompile(`^bytes32\[[0-9]+\]$`),
-	regexp.MustCompile(`^bytes([1-9]|1[0-9]|2[0-9]|3[0-2])$`),
-	regexp.MustCompile(`^u?int(6[5-9]|[7-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-6])$`),
-	regexp.MustCompile(`^u?int(6[5-9]|[7-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-6])\[[0-9]+\]$`),
-	regexp.MustCompile(`^u?int(6[5-9]|[7-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-6])\[\]$`),
-	regexp.MustCompile(`^address$`),
-	regexp.MustCompile(`^address\[[0-9]+\]$`),
-	regexp.MustCompile(`^address\[\]$`)}
 
 var abiMap = map[string]string{}
 var funcSigMap = map[string]string{}
@@ -49,7 +31,7 @@ func ABIParser(contractAdd string, abiContent string, payload string) ([]ParamTa
 		var keccakHashes []string
 		i := 1
 		for key := range methodMap {
-			if methodMap[key].Const == false {
+			if !methodMap[key].Const {
 				var funcSig string
 				var params string
 				for _, elem := range methodMap[key].Inputs {
