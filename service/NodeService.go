@@ -456,7 +456,7 @@ func (nsi *NodeServiceImpl) getBlockInfo(blockno int64, url string) BlockDetails
 }
 
 func (nsi *NodeServiceImpl) getLatestBlockInfo(count string, reference string, url string) []BlockDetailsResponse {
-	countValInt , _ := strconv.Atoi(count)
+	countValInt, _ := strconv.Atoi(count)
 	countVal := int64(countValInt)
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
@@ -503,7 +503,7 @@ func (nsi *NodeServiceImpl) getLatestBlockInfo(count string, reference string, u
 }
 
 func (nsi *NodeServiceImpl) getLatestTransactionInfo(count string, url string) []BlockDetailsResponse {
-	countValInt , _ := strconv.Atoi(count)
+	countValInt, _ := strconv.Atoi(count)
 	countVal := int64(countValInt)
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
@@ -740,7 +740,7 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 		solc = "solc"
 	}
 	fileNo := len(fileName)
-	contractJsonArr := make([]ContractJson, fileNo)
+	var contractJsonArr []ContractJson
 	for i := 0; i < fileNo; i++ {
 		var binOut bytes.Buffer
 		var errorstring bytes.Buffer
@@ -749,11 +749,12 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 		cmd.Stdout = &binOut
 		cmd.Stderr = &errorstring
 		err := cmd.Run()
+		contractJsonError := make([]ContractJson, 1)
 		if err != nil {
 			fmt.Println(fmt.Sprint(err) + ": " + errorstring.String())
-			contractJsonArr[i].Filename = strings.Replace(fileName[i], ".sol", "", -1)
-			contractJsonArr[i].Json = "Compilation Failed: JSON could not be created"
-			contractJsonArr[i].Bytecode = "Compilation Failed: " + errorstring.String()
+			contractJsonError[0].Filename = strings.Replace(fileName[i], ".sol", "", -1)
+			contractJsonError[0].Json = "Compilation Failed: JSON could not be created"
+			contractJsonError[0].Bytecode = "Compilation Failed: " + errorstring.String()
 		}
 		var abiOut bytes.Buffer
 		cmd = exec.Command(solc, "-o", ".", "--overwrite", "--abi", fileName[i])
@@ -763,67 +764,131 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 		err = cmd.Run()
 		if err != nil {
 			fmt.Println(fmt.Sprint(err) + ": " + errorstring.String())
-			contractJsonArr[i].Interface = "Compilation Failed: " + errorstring.String()
-			contractJsonArr[i].ContractAddress = "0x"
+			contractJsonError[0].Interface = "Compilation Failed: " + errorstring.String()
+			contractJsonError[0].ContractAddress = "0x"
+			contractJsonArr = append(contractJsonArr, contractJsonError...)
 			continue
 		}
 
-		byteCode := binOut.String()
+		bytecode := binOut.String()
+		var contractNames []string
 
-		re := regexp.MustCompile("Binary?")
-		index := re.FindStringIndex(byteCode)
-		var start int
-		start = index[1] + 3
-		byteCode = byteCode[start:]
-		byteCode = "0x" + byteCode
+		reStart := regexp.MustCompile("Binary?")
+		reEnd := regexp.MustCompile("=======")
+		reContName := regexp.MustCompile(`.sol:(.+)?=======`)
 
-		abiStr := abiOut.String()
+		res := reContName.FindStringSubmatch(bytecode)
+		contractNames = append(contractNames, strings.Split(res[1], " ")[0])
+		delimiterFirst := reEnd.FindStringIndex(bytecode)
+		bytecode = bytecode[delimiterFirst[1]:]
+		delimiterSecond := reEnd.FindStringIndex(bytecode)
+		bytecode = bytecode[delimiterSecond[1]:]
+		contractBytecodesAll := reStart.FindAllStringIndex(bytecode, -1)
+		contractJsonArrInternal := make([]ContractJson, len(contractBytecodesAll))
 
-		re = regexp.MustCompile("ABI?")
-		index = re.FindStringIndex(abiStr)
-		start = index[1] + 2
-		abiStr = abiStr[start:]
+		for j := 0; j < len(contractBytecodesAll); j++ {
+			var thisContractBytecode string
+			contractBytecodes := reStart.FindStringIndex(bytecode)
+			start := contractBytecodes[1]
+			start = start + 2
+			if j != (len(contractBytecodesAll) - 1) {
+				delimiter := reEnd.FindStringIndex(bytecode)
+				thisContractBytecode = bytecode[start : delimiter[1]-1]
+			} else {
+				thisContractBytecode = bytecode[start:]
+			}
+			thisContractBytecode = "0x" + thisContractBytecode
+			thisContractBytecode = strings.Replace(thisContractBytecode, " ", "", -1)
+			thisContractBytecode = strings.Replace(thisContractBytecode, "=", "", -1)
+			thisContractBytecode = strings.Replace(thisContractBytecode, "\n", "", -1)
+			contractJsonArrInternal[j].Bytecode = thisContractBytecode
+			reg, _ := regexp.Compile("[^a-zA-Z0-9]+")
+			byteCodeSanitized := reg.ReplaceAllString(thisContractBytecode, "")
 
-		reg, err := regexp.Compile("[^a-zA-Z0-9]+")
-		byteCode = reg.ReplaceAllString(byteCode, "")
+			contractAddress := ethClient.DeployContracts(byteCodeSanitized, pubKeys, private)
+			contractJsonArrInternal[j].ContractAddress = contractAddress
 
-		contractAddress := ethClient.DeployContracts(byteCode, pubKeys, private)
+			path := "./contracts"
+			if _, err := os.Stat(path); os.IsNotExist(err) {
+				os.Mkdir(path, 0775)
+			}
+			bytecode = bytecode[start:]
 
-		path := "./contracts"
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			os.Mkdir(path, 0775)
+			if j != (len(contractBytecodesAll) - 1) {
+				delimiterFirst := reEnd.FindStringIndex(bytecode)
+				bytecode = bytecode[delimiterFirst[1]:]
+				res := reContName.FindStringSubmatch(bytecode)
+				contractNames = append(contractNames, strings.Split(res[1], " ")[0])
+				delimiterSecond := reEnd.FindStringIndex(bytecode)
+				bytecode = bytecode[delimiterSecond[1]:]
+			}
+
+			path = "./contracts/" + contractAddress + "_" + contractNames[j]
+			if _, err := os.Stat(path); os.IsNotExist(err) {
+				os.Mkdir(path, 0775)
+			}
+			contractJsonArrInternal[j].Filename = contractNames[j]
 		}
-		path = "./contracts/" + contractAddress + "_" + strings.Replace(fileName[i], ".sol", "", -1)
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			os.Mkdir(path, 0775)
-		}
-		contractJsonArr[i].Interface = strings.Replace(strings.Replace(abiStr, "\n", "", -1), "\\", "", -1)
-		contractJsonArr[i].Bytecode = byteCode
-		contractJsonArr[i].ContractAddress = contractAddress
 
-		js := util.ComposeJSON(abiStr, byteCode, contractAddress)
+		abiString := abiOut.String()
+		reStartABI := regexp.MustCompile("ABI?")
+		delimiterFirst = reEnd.FindStringIndex(abiString)
+		abiString = abiString[delimiterFirst[1]:]
+		delimiterSecond = reEnd.FindStringIndex(abiString)
+		abiString = abiString[delimiterSecond[1]:]
+		contractABIAll := reStartABI.FindAllStringIndex(abiString, -1)
+		for j := 0; j < len(contractABIAll); j++ {
+			var thisContractABI string
+			contractABIs := reStartABI.FindStringIndex(abiString)
+			start := contractABIs[1]
+			start = start + 2
+			if j != (len(contractABIAll) - 1) {
+				delimiter := reEnd.FindStringIndex(abiString)
+				thisContractABI = abiString[start : delimiter[1]-1]
+			} else {
+				thisContractABI = abiString[start:]
+			}
+			thisContractABI = strings.Replace(thisContractABI, " ", "", -1)
+			thisContractABI = strings.Replace(thisContractABI, "=", "", -1)
+			thisContractABI = strings.Replace(thisContractABI, "\n", "", -1)
+			contractJsonArrInternal[j].Interface = thisContractABI
+			if j != (len(contractABIAll) - 1) {
+				abiString = abiString[start:]
+				delimiterFirst := reEnd.FindStringIndex(abiString)
+				abiString = abiString[delimiterFirst[1]:]
+				delimiterSecond := reEnd.FindStringIndex(abiString)
+				abiString = abiString[delimiterSecond[1]:]
+			}
+		}
 
-		contractJsonArr[i].Filename = strings.Replace(fileName[i], ".sol", "", -1)
-		contractJsonArr[i].Json = strings.Replace(strings.Replace(js, "\n", "", -1), "\\", "", -1)
-		filePath := path + "/" + strings.Replace(fileName[i], ".sol", "", -1) + ".json"
-		jsByte := []byte(js)
-		err = ioutil.WriteFile(filePath, jsByte, 0775)
-		if err != nil {
-			fmt.Println(err)
+		for j := 0; j < len(contractJsonArrInternal); j++ {
+			js := util.ComposeJSON(contractJsonArrInternal[j].Interface, contractJsonArrInternal[j].Bytecode, contractJsonArrInternal[j].ContractAddress)
+			contractJsonArrInternal[j].Json = strings.Replace(strings.Replace(js, "\n", "", -1), "\\", "", -1)
+
+			path := "./contracts/" + contractJsonArrInternal[j].ContractAddress + "_" + contractJsonArrInternal[j].Filename
+
+			filePath := path + "/" + contractJsonArrInternal[j].Filename + ".json"
+			jsByte := []byte(js)
+			err = ioutil.WriteFile(filePath, jsByte, 0775)
+			if err != nil {
+				fmt.Println(err)
+			}
+			abi := []byte(contractJsonArrInternal[j].Interface)
+			err = ioutil.WriteFile(path+"/ABI", abi, 0775)
+			if err != nil {
+				fmt.Println(err)
+			}
+			bin := []byte(contractJsonArrInternal[j].Bytecode)
+			err = ioutil.WriteFile(path+"/BIN", bin, 0775)
+			if err != nil {
+				fmt.Println(err)
+			}
+			contNameMap[contractJsonArrInternal[j].ContractAddress] = contractJsonArrInternal[j].Filename
+			contTimeMap[contractJsonArrInternal[j].ContractAddress] = strconv.Itoa(int(time.Now().Unix()))
+			abiMap[contractJsonArrInternal[j].ContractAddress] = contractJsonArrInternal[j].Interface
 		}
-		abi := []byte(abiStr)
-		err = ioutil.WriteFile(path+"/ABI", abi, 0775)
-		if err != nil {
-			fmt.Println(err)
-		}
-		bin := []byte(byteCode)
-		err = ioutil.WriteFile(path+"/BIN", bin, 0775)
-		if err != nil {
-			fmt.Println(err)
-		}
-		contNameMap[contractAddress] = contractJsonArr[i].Filename
-		contTimeMap[contractAddress] = strconv.Itoa(int(time.Now().Unix()))
-		abiMap[contractAddress] = abiStr
+
+		contractJsonArr = append(contractJsonArr, contractJsonArrInternal...)
 	}
 	return contractJsonArr
 }
@@ -1337,7 +1402,7 @@ func getContracts(url string) {
 
 				}
 				contSenderMap[txGetClient.ContractAddress] = clientTransactions.From
-				contTimeMap[txGetClient.ContractAddress] = strconv.Itoa(int(util.HexStringtoInt64(blockResponseClient.Timestamp)/1000000000))
+				contTimeMap[txGetClient.ContractAddress] = strconv.Itoa(int(util.HexStringtoInt64(blockResponseClient.Timestamp) / 1000000000))
 			}
 		}
 	}

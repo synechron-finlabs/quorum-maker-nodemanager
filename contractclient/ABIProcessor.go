@@ -41,17 +41,17 @@ func ABIParser(contractAdd string, abiContent string, payload string) ([]ParamTa
 				paramNames = append(paramNames, strings.TrimSuffix(params, ","))
 				functionSigs = append(functionSigs, key+"("+strings.TrimSuffix(funcSig, ",")+")")
 				keccakHashes = append(keccakHashes, hex.EncodeToString(crypto.Keccak256([]byte(functionSigs[i-1]))[:4]))
-				funcParamNameMap[contractAdd+":"+keccakHashes[i-1]] = paramNames[i-1]
+				funcParamNameMap[contractAdd + ":" + keccakHashes[i-1]] = paramNames[i-1]
 				functionSigs[i-1] = strings.TrimSuffix(funcSig, ",")
-				funcSigMap[contractAdd+":"+keccakHashes[i-1]] = functionSigs[i-1]
+				funcSigMap[contractAdd + ":" + keccakHashes[i-1]] = functionSigs[i-1]
 
 				isSupported := contracthandler.IsSupported(functionSigs[i-1])
 
 				if !isSupported {
-					funcSigMap[contractAdd+":"+keccakHashes[i-1]] = "unsupported"
+					funcSigMap[contractAdd + ":" + keccakHashes[i-1]] = "unsupported"
 				}
 
-				funcNameMap[contractAdd+":"+keccakHashes[i-1]] = key + "(" + strings.TrimSuffix(funcSig, ",") + ")"
+				funcNameMap[contractAdd + ":" + keccakHashes[i-1]] = key + "(" + strings.TrimSuffix(funcSig, ",") + ")"
 				i++
 			}
 		}
@@ -61,31 +61,31 @@ func ABIParser(contractAdd string, abiContent string, payload string) ([]ParamTa
 
 func Decode(r string, contractAdd string) ([]ParamTableRow, string) {
 	keccakHash := r[2:10]
-	if funcSigMap[contractAdd+":"+keccakHash] == "" {
+	if funcSigMap[contractAdd + ":" + keccakHash] == "" {
 		abiMismatch := make([]ParamTableRow, 1)
 		abiMismatch[0].Key = "decodeFailed"
 		abiMismatch[0].Value = "ABI Mismatch"
 		abiMap[contractAdd] = ""
 		return abiMismatch, ""
 	}
-	if funcSigMap[contractAdd+":"+keccakHash] == "unsupported" {
+	if funcSigMap[contractAdd + ":" + keccakHash] == "unsupported" {
 		abiMismatch := make([]ParamTableRow, 1)
 		abiMismatch[0].Key = "decodeFailed"
 		abiMismatch[0].Value = "Unsupported Datatype"
 		return abiMismatch, ""
 	}
 	encodedParams := r[10:]
-	params := strings.Split(funcSigMap[contractAdd+":"+keccakHash], ",")
+	params := strings.Split(funcSigMap[contractAdd + ":" + keccakHash], ",")
 	paramTable := make([]ParamTableRow, len(params))
 	if r == "" || len(r) < 1 {
 		return paramTable, ""
 	}
-	paramNamesArr := strings.Split(funcParamNameMap[contractAdd+":"+keccakHash], ",")
-	resultArray := contracthandler.FunctionProcessor{funcSigMap[contractAdd+":"+keccakHash]}.Decode(encodedParams)
+	paramNamesArr := strings.Split(funcParamNameMap[contractAdd + ":" + keccakHash], ",")
+	resultArray := contracthandler.FunctionProcessor{funcSigMap[contractAdd + ":" + keccakHash]}.Decode(encodedParams)
 	for i := 0; i < len(params); i++ {
 		paramTable[i].Key = paramNamesArr[i]
 		paramTable[i].Value = fmt.Sprint(resultArray[i])
 	}
 
-	return paramTable, funcNameMap[contractAdd+":"+keccakHash]
+	return paramTable, funcNameMap[contractAdd + ":" + keccakHash]
 }
