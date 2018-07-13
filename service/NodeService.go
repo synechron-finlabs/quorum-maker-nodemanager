@@ -183,6 +183,10 @@ type SuccessResponse struct {
 	Status string `json:"statusMessage"`
 }
 
+type SuccessResponseBool struct {
+	Status bool `json:"statusMessage"`
+}
+
 type LatestBlockResponse struct {
 	LatestBlockNumber int64 `json:"latestBlockNumber"`
 	TimeElapsed       int64 `json:"TimeElapsed"`
@@ -1156,15 +1160,6 @@ func (nsi *NodeServiceImpl) sendMail(host string, port string, username string, 
 	}
 }
 
-//func (nsi *NodeServiceImpl) logs() SuccessResponse {
-//	var successResponse SuccessResponse
-//	p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-//	ipAddr := util.MustGetString("CURRENT_IP", p)
-//	logPort := util.MustGetString("THIS_NODEMANAGER_PORT", p)
-//	successResponse.Status = fmt.Sprint(ipAddr, ":", logPort)
-//	return successResponse
-//}
-
 //@TODO: Implement logrotate command to do this.
 func (nsi *NodeServiceImpl) LogRotaterGeth() {
 	command := "cat $(ls | grep log | grep -v _) > Geth_$(date| sed -e 's/ /_/g')"
@@ -1210,6 +1205,10 @@ func (nsi *NodeServiceImpl) LogRotaterConst() {
 }
 
 func (nsi *NodeServiceImpl) RegisterNodeDetails(url string) {
+	mode := currentMode()
+	if mode == "PASSIVE" || mode == "ACTIVENI" {
+		return
+	}
 	var nodeUrl = url
 	var registeredVal string
 	exists := util.PropertyExists("REGISTERED", "/home/setup.conf")
@@ -1238,7 +1237,6 @@ func (nsi *NodeServiceImpl) RegisterNodeDetails(url string) {
 			id = util.MustGetString("RAFT_ID", p)
 			contractAdd = util.MustGetString("CONTRACT_ADD", p)
 		}
-		//fmt.Println(ipAddr, nodename, pubKey, role, enode, fromAddress, contractAdd)
 		registered := fmt.Sprint("REGISTERED=TRUE", "\n")
 		util.AppendStringToFile("/home/setup.conf", registered)
 		util.DeleteProperty("REGISTERED=", "/home/setup.conf")
@@ -1249,6 +1247,10 @@ func (nsi *NodeServiceImpl) RegisterNodeDetails(url string) {
 }
 
 func (nsi *NodeServiceImpl) NetworkManagerContractDeployer(url string) {
+	mode := currentMode()
+	if mode == "PASSIVE" || mode == "ACTIVENI" {
+		return
+	}
 	var contractAdd string
 	exists := util.PropertyExists("CONTRACT_ADD", "/home/setup.conf")
 	if exists != "" {
@@ -1369,13 +1371,13 @@ func (nsi *NodeServiceImpl) ContractCrawler(url string) {
 	go func() {
 		for range ticker.C {
 			if contractCrawlerMutex == 0 {
-				getContracts(url)
+				nsi.getContracts(url)
 			}
 		}
 	}()
 }
 
-func getContracts(url string) {
+func (nsi *NodeServiceImpl) getContracts(url string) {
 	contractCrawlerMutex = 1
 	ethClient := client.EthClient{url}
 	blockNumber := int(util.HexStringtoInt64(ethClient.BlockNumber()))
@@ -1399,16 +1401,48 @@ func getContracts(url string) {
 					}
 				} else {
 					contTypeMap[txGetClient.ContractAddress] = "Public"
-
+					mode := currentMode()
+					if mode == "ACTIVENI" {
+						nsi.attachModeRegisterDetails(url, txGetClient.ContractAddress)
+					}
 				}
 				contSenderMap[txGetClient.ContractAddress] = clientTransactions.From
 				contTimeMap[txGetClient.ContractAddress] = strconv.Itoa(int(util.HexStringtoInt64(blockResponseClient.Timestamp) / 1000000000))
 			}
 		}
 	}
-
+	mode := currentMode()
+	if mode == "ACTIVENI" {
+		util.DeleteProperty("MODE=ACTIVENI", "/home/setup.conf")
+		modeActive := fmt.Sprint("MODE=ACTIVE\n")
+		util.AppendStringToFile("/home/setup.conf", modeActive)
+		nsi.NetworkManagerContractDeployer(url)
+		nsi.RegisterNodeDetails(url)
+	}
 	lastCrawledBlock = blockNumber
 	contractCrawlerMutex = 0
+}
+
+func (nsi *NodeServiceImpl) attachModeRegisterDetails(url string, contractAdd string) {
+	nmcBytecode, err := ioutil.ReadFile("/root/quorum-maker/nmcBytecode")
+	if err != nil {
+		log.Println(err)
+	}
+	nmcBytecodeString := string(nmcBytecode)
+	nmcBytecodeString = strings.Replace(nmcBytecodeString, "\n", "", -1)
+	ethClient := client.EthClient{url}
+	bytecode := ethClient.GetCode(contractAdd)
+	hashIndex := len(bytecode) - 68
+	bytecode = bytecode[:hashIndex]
+	if bytecode == nmcBytecodeString {
+		util.DeleteProperty("MODE=ACTIVENI", "/home/setup.conf")
+		modeActive := fmt.Sprint("MODE=ACTIVE\n")
+		util.AppendStringToFile("/home/setup.conf", modeActive)
+		contAddAppend := fmt.Sprint("CONTRACT_ADD=", contractAdd, "\n")
+		util.AppendStringToFile("/home/setup.conf", contAddAppend)
+		util.DeleteProperty("CONTRACT_ADD=", "/home/setup.conf")
+		nsi.RegisterNodeDetails(url)
+	}
 }
 
 func (nsi *NodeServiceImpl) ContractList() []ContractTableRow {
@@ -1453,4 +1487,33 @@ func (nsi *NodeServiceImpl) updateContractDetails(contractAddress string, contra
 	contDescriptionMap[contractAddress] = description
 	successResponse.Status = "Successfully updated contract details"
 	return successResponse
+}
+
+func (nsi *NodeServiceImpl) returnCurrentInitializationState() SuccessResponseBool {
+	var successResponse SuccessResponseBool
+	state := currentState()
+	if state == "I" {
+		successResponse.Status = true
+	}
+	return successResponse
+}
+
+func currentMode() string {
+	var mode string
+	exists := util.PropertyExists("MODE", "/home/setup.conf")
+	if exists != "" {
+		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+		mode = util.MustGetString("MODE", p)
+	}
+	return mode
+}
+
+func currentState() string {
+	var state string
+	exists := util.PropertyExists("STATE", "/home/setup.conf")
+	if exists != "" {
+		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+		state = util.MustGetString("STATE", p)
+	}
+	return state
 }

@@ -360,3 +360,17 @@ func (ec *EthClient) GetQuorumPayload(input string) string {
 	}
 	return payload
 }
+
+func (ec *EthClient) GetCode(address string) string {
+	rpcClient := jsonrpc.NewClient(ec.Url)
+	response, err := rpcClient.Call("eth_getCode", address, "latest")
+	if err != nil {
+		fmt.Println(err)
+	}
+	var bytecode string
+	err = response.GetObject(&bytecode)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return bytecode
+}

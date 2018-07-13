@@ -23,6 +23,14 @@ type contractJSON struct {
 	Bytecode  string        `json:"bytecode"`
 }
 
+type genesisJSON struct {
+	Config configField `json:"config"`
+}
+
+type configField struct {
+	ChainId int `json:"chainId"`
+}
+
 var pendCount = 0
 var nameMap = map[string]string{}
 var peerMap = map[string]string{}
@@ -457,6 +465,53 @@ func (nsi *NodeServiceImpl) ContractDetailsUpdateHandler(w http.ResponseWriter, 
 
 	Buf.Reset()
 	response := nsi.updateContractDetails(contractAddress, contractName, data, description)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (nsi *NodeServiceImpl) AttachedNodeDetailsHandler(w http.ResponseWriter, r *http.Request) {
+	var successResponse SuccessResponse
+	var Buf bytes.Buffer
+	gethLogsDirectory := r.FormValue("gethPath")
+	constellationLogsDirectory := r.FormValue("constellationPath")
+
+	file, _, err := r.FormFile("genesis")
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer file.Close()
+	io.Copy(&Buf, file)
+	content := Buf.String()
+
+	filePath := "/home/node/genesis.json"
+	jsByte := []byte(content)
+	err = ioutil.WriteFile(filePath, jsByte, 0775)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	var jsonContent genesisJSON
+	json.Unmarshal([]byte(content), &jsonContent)
+	chainIdAppend := fmt.Sprint("NETWORK_ID=", jsonContent.Config.ChainId, "\n")
+	util.AppendStringToFile("/home/setup.conf", chainIdAppend)
+	util.InsertStringToFile("/home/start.sh", "	   -v "+gethLogsDirectory+":/home/node/qdata/gethLogs \\\n", 13)
+	util.InsertStringToFile("/home/start.sh", "	   -v "+constellationLogsDirectory+":/home/node/qdata/constellationLogs \\\n", 13)
+
+	Buf.Reset()
+	fmt.Println("Updates have been saved. Please press Ctrl+C to exit from this container and run start.sh to apply changes")
+	state := currentState()
+	if state == "NI" {
+		util.DeleteProperty("STATE=NI", "/home/setup.conf")
+		stateInitialized := fmt.Sprint("STATE=I\n")
+		util.AppendStringToFile("/home/setup.conf", stateInitialized)
+	}
+	successResponse.Status = "Details updated successfully"
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(successResponse)
+}
+
+func (nsi *NodeServiceImpl) InitializationHandler(w http.ResponseWriter, r *http.Request) {
+	response := nsi.returnCurrentInitializationState()
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(w).Encode(response)
 }
