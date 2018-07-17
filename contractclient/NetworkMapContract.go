@@ -36,6 +36,12 @@ func (nmc *NetworkMapContractClient) RegisterNode(name string, role string, publ
 	}
 
 	nd := NodeDetails{name, role, publicKey, enode, ip, id}
+	nodeList := nmc.GetNodeDetailsList()
+	for _, nodeDetails := range nodeList {
+		if nodeDetails.Enode == enode {
+			return "Exists"
+		}
+	}
 	return nmc.SendTransaction(nmc.ContractParam, RegisterUpdateNodeFuncHandler{nd, registerNodeFunSig})
 
 }
