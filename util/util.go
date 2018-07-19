@@ -191,3 +191,46 @@ func InsertStringToFile(path, str string, index int) error {
 
 	return ioutil.WriteFile(path, []byte(fileContent), 0644)
 }
+
+func CreateFile(path string) {
+	var _, err = os.Stat(path)
+
+	if os.IsNotExist(err) {
+		var file, err = os.Create(path)
+		if isError(err) {
+			return
+		}
+		defer file.Close()
+	}
+}
+
+func WriteFile(path string, content string) {
+	var file, err = os.OpenFile(path, os.O_RDWR, 0644)
+	if isError(err) {
+		return
+	}
+	defer file.Close()
+	_, err = file.WriteString(content)
+	if isError(err) {
+		return
+	}
+	err = file.Sync()
+	if isError(err) {
+		return
+	}
+}
+
+func DeleteFile(path string) {
+	var err = os.Remove(path)
+	if isError(err) {
+		return
+	}
+}
+
+func isError(err error) bool {
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	return (err != nil)
+}

@@ -17,6 +17,8 @@ import (
 	"strings"
 	"time"
 	log "github.com/sirupsen/logrus"
+	"path/filepath"
+	"encoding/json"
 )
 
 type ConnectionInfo struct {
@@ -238,9 +240,24 @@ type ContractCounter struct {
 	ABIavailable   int `json:"abis"`
 }
 
+type CrawledABI struct {
+	Filename         string `json:"filename"`
+	ModificationTime int64  `json:"modificationTime"`
+	Processed        bool   `json:"processed"`
+}
+
+type contractJSONTruffle struct {
+	Abi          []interface{} `json:"abi"`
+	Interface    []interface{} `json:"interface"`
+	Bytecode     string        `json:"bytecode"`
+	ContractName string        `json:"contractName"`
+}
+
 var txnMap = map[string]TransactionReceiptResponse{}
 var abiMap = map[string]string{}
 var contractCrawlerMutex = 0
+var crawledABIs []CrawledABI
+var abiCrawlerMutex = 0
 
 var contDescriptionMap = map[string]string{}
 var contTypeMap = map[string]string{}
@@ -1516,4 +1533,147 @@ func currentState() string {
 		state = util.MustGetString("STATE", p)
 	}
 	return state
+}
+
+func (nsi *NodeServiceImpl) ABICrawler(url string) {
+	updateLastCheckedTime("0")
+	ticker := time.NewTicker(15 * time.Second)
+	go func() {
+		for range ticker.C {
+			if abiCrawlerMutex == 0 {
+				nsi.DirectoryCrawl()
+			}
+		}
+	}()
+}
+
+func (nsi *NodeServiceImpl) DirectoryCrawl() {
+	abiCrawlerMutex = 1
+	ABIList := getFilesFromDirectory("/root/quorum-maker/contracts")
+	nsi.populateABIMap(ABIList)
+	abiCrawlerMutex = 0
+	updateLastCheckedTime(strconv.Itoa(int(time.Now().Unix())))
+}
+
+func getFilesFromDirectory(searchDir string) []CrawledABI {
+	fileList := []string{}
+	err := filepath.Walk(searchDir, func(path string, f os.FileInfo, err error) error {
+		fileList = append(fileList, path)
+		return nil
+	})
+	if err != nil {
+		fmt.Println()
+	}
+	for _, file := range fileList {
+		crawledABIs = append(crawledABIs, getABIsFromDirectory(file)...)
+	}
+	return crawledABIs
+}
+
+func getABIsFromDirectory(searchDir string) []CrawledABI {
+	r := regexp.MustCompile(`.json$`)
+	var crawledABIs []CrawledABI
+	files, _ := ioutil.ReadDir(searchDir)
+	for _, file := range files {
+		var crawledABI CrawledABI
+		if r.MatchString(file.Name()) && !file.IsDir() {
+			crawledABI.Filename = searchDir + "/" + file.Name()
+			crawledABI.ModificationTime = file.ModTime().Unix()
+			if crawledABI.ModificationTime < getLastCheckedTime() {
+				continue
+			}
+			crawledABIs = append(crawledABIs, crawledABI)
+		}
+	}
+	return crawledABIs
+}
+
+func (nsi *NodeServiceImpl) populateABIMap(jsons []CrawledABI) {
+	for _, file := range jsons {
+		if !file.Processed {
+			nsi.parseABIJson(file)
+			file.Processed = true
+		}
+	}
+}
+
+func (nsi *NodeServiceImpl) parseABIJson(file CrawledABI) {
+	var contractJSONContent contractJSONTruffle
+	fileBytes, err := ioutil.ReadFile(file.Filename)
+	if err != nil {
+		log.Println(err)
+	}
+	jsonContent := string(fileBytes)
+	jsonContent = strings.Replace(jsonContent, "\n", "", -1)
+	json.Unmarshal([]byte(jsonContent), &contractJSONContent)
+	abiContent, _ := json.Marshal(contractJSONContent.Abi)
+	abiString := make([]string, len(abiContent))
+	for i := 0; i < len(abiContent); i++ {
+		abiString[i] = string(abiContent[i])
+	}
+	abiData := fmt.Sprint(strings.Join(abiString, ""))
+
+	interfaceContent, _ := json.Marshal(contractJSONContent.Interface)
+	interfaceString := make([]string, len(interfaceContent))
+	for i := 0; i < len(interfaceContent); i++ {
+		interfaceString[i] = string(interfaceContent[i])
+	}
+	interfaceData := fmt.Sprint(strings.Join(interfaceString, ""))
+	bytecodeData := contractJSONContent.Bytecode
+	contractName := contractJSONContent.ContractName
+	var data string
+	if len(abiData) != 4 {
+		data = abiData
+	} else if len(interfaceData) != 4 {
+		data = interfaceData
+	} else {
+		data = jsonContent
+		data = strings.Replace(data, "\n", "", -1)
+	}
+	filename := file.Filename
+	command := fmt.Sprint("grep  \"\\\"address\\\":\" ", filename, " | awk -F \\\" '{print $4}'")
+	out, _ := exec.Command("bash", "-c", command).Output()
+	contractAddress := string(out)
+	contractAddress = strings.Replace(contractAddress, "\n", "", -1)
+	if contractAddress != "" {
+		nsi.writeContractDetailsToDisk(data, bytecodeData, contractAddress, contractName)
+		nsi.updateContractDetails(contractAddress, contractName, data, "default")
+	}
+}
+
+func (nsi *NodeServiceImpl) writeContractDetailsToDisk(data string, bytecodeData string, contractAddress string, contractName string) {
+	jsonString := util.ComposeJSON(data, bytecodeData, contractAddress)
+	path := "./contracts"
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Mkdir(path, 0775)
+	}
+	path = "./contracts/" + contractAddress + "_" + contractName
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Mkdir(path, 0775)
+	}
+
+	filePath := path + "/" + contractName + ".json"
+	jsByte := []byte(jsonString)
+	err := ioutil.WriteFile(filePath, jsByte, 0775)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func getLastCheckedTime() int64 {
+	fileBytes, err := ioutil.ReadFile("/root/quorum-maker/contracts/.lastCheckedTime")
+	if err != nil {
+		log.Println(err)
+	}
+	jsonContent := string(fileBytes)
+	jsonContent = strings.Replace(jsonContent, "\n", "", -1)
+	lastChecked, err := strconv.Atoi(jsonContent)
+	return int64(lastChecked)
+}
+
+func updateLastCheckedTime(timeVal string) {
+	util.DeleteFile("/root/quorum-maker/contracts/.lastCheckedTime")
+	util.CreateFile("/root/quorum-maker/contracts/.lastCheckedTime")
+	util.WriteFile("/root/quorum-maker/contracts/.lastCheckedTime", timeVal)
 }

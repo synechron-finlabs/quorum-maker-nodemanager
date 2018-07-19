@@ -51,6 +51,7 @@ func main() {
 		nodeService.NetworkManagerContractDeployer(nodeUrl)
 		nodeService.RegisterNodeDetails(nodeUrl)
 		nodeService.ContractCrawler(nodeUrl)
+		nodeService.ABICrawler(nodeUrl)
 	}()
 
 	networkMapService := contractclient.NetworkMapContractClient{EthClient: client.EthClient{nodeUrl}}
