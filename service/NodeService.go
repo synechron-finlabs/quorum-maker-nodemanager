@@ -697,6 +697,12 @@ func decodeTransactionObject(txnDetails *TransactionReceiptResponse, url string)
 			decodeFail.Label = "ABI Missing"
 			decodeFail.Type = "red"
 			txnDetails.DecodeFailed = decodeFail
+		} else if txnDetails.Input == "0x" && txnDetails.Value != 0 {
+			var decodeFail DecodeFailure
+			decodeFail.Label = "Ether Transfer"
+			decodeFail.Type = "yellow"
+			txnDetails.DecodeFailed = decodeFail
+			decoded = true
 		}
 	}
 
