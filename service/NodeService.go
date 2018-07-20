@@ -280,7 +280,7 @@ func (nsi *NodeServiceImpl) getGenesis(url string) (response GetGenesisResponse)
 	}
 	b, err := ioutil.ReadFile("/home/node/genesis.json")
 	if err != nil {
-		log.Println(err)
+		//log.Println(err)
 	}
 	genesis := string(b)
 	genesis = strings.Replace(genesis, "\n", "", -1)
@@ -688,21 +688,23 @@ func decodeTransactionObject(txnDetails *TransactionReceiptResponse, url string)
 			txnDetails.DecodeFailed = decodeFail
 			decoded = true
 		} else if abiMap[txnDetails.To] == "" {
-			var decodeFail DecodeFailure
-			decodeFail.Label = "Decode in Progress"
-			decodeFail.Type = "yellow"
-			txnDetails.DecodeFailed = decodeFail
+			if txnDetails.Input == "0x" && txnDetails.Value != 0 {
+				var decodeFail DecodeFailure
+				decodeFail.Label = "Ether Transfer"
+				decodeFail.Type = "yellow"
+				txnDetails.DecodeFailed = decodeFail
+				decoded = true
+			} else {
+				var decodeFail DecodeFailure
+				decodeFail.Label = "Decode in Progress"
+				decodeFail.Type = "yellow"
+				txnDetails.DecodeFailed = decodeFail
+			}
 		} else if abiMap[txnDetails.To] == "missing" {
 			var decodeFail DecodeFailure
 			decodeFail.Label = "ABI Missing"
 			decodeFail.Type = "red"
 			txnDetails.DecodeFailed = decodeFail
-		} else if txnDetails.Input == "0x" && txnDetails.Value != 0 {
-			var decodeFail DecodeFailure
-			decodeFail.Label = "Ether Transfer"
-			decodeFail.Type = "yellow"
-			txnDetails.DecodeFailed = decodeFail
-			decoded = true
 		}
 	}
 
