@@ -387,7 +387,7 @@ func (nsi *NodeServiceImpl) getCurrentNode(url string) NodeInfo {
 	b, err := ioutil.ReadFile("/home/node/genesis.json")
 
 	if err != nil {
-		log.Println(err)
+		//log.Println(err)
 	}
 
 	genesis := string(b)
