@@ -244,6 +244,7 @@ type CrawledABI struct {
 	Filename         string `json:"filename"`
 	ModificationTime int64  `json:"modificationTime"`
 	Processed        bool   `json:"processed"`
+	Contractname     string `json:"contractname"`
 }
 
 type contractJSONTruffle struct {
@@ -822,7 +823,7 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 			start = start + 2
 			if j != (len(contractBytecodesAll) - 1) {
 				delimiter := reEnd.FindStringIndex(bytecode)
-				thisContractBytecode = bytecode[start : delimiter[1]-1]
+				thisContractBytecode = bytecode[start: delimiter[1]-1]
 			} else {
 				thisContractBytecode = bytecode[start:]
 			}
@@ -873,7 +874,7 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 			start = start + 2
 			if j != (len(contractABIAll) - 1) {
 				delimiter := reEnd.FindStringIndex(abiString)
-				thisContractABI = abiString[start : delimiter[1]-1]
+				thisContractABI = abiString[start: delimiter[1]-1]
 			} else {
 				thisContractABI = abiString[start:]
 			}
@@ -1586,6 +1587,7 @@ func getABIsFromDirectory(searchDir string) []CrawledABI {
 		var crawledABI CrawledABI
 		if r.MatchString(file.Name()) && !file.IsDir() {
 			crawledABI.Filename = searchDir + "/" + file.Name()
+			crawledABI.Contractname = file.Name()
 			crawledABI.ModificationTime = file.ModTime().Unix()
 			if crawledABI.ModificationTime < getLastCheckedTime() {
 				continue
@@ -1643,9 +1645,13 @@ func (nsi *NodeServiceImpl) parseABIJson(file CrawledABI) {
 	out, _ := exec.Command("bash", "-c", command).Output()
 	contractAddress := string(out)
 	contractAddress = strings.Replace(contractAddress, "\n", "", -1)
-	if contractAddress != "" {
+	if contractAddress != "" && contractName != "" {
 		nsi.writeContractDetailsToDisk(data, bytecodeData, contractAddress, contractName)
 		nsi.updateContractDetails(contractAddress, contractName, data, "default")
+	} else if contractAddress != "" && contractName == "" {
+		contNameMap[contractAddress] = file.Contractname
+		abiMap[contractAddress] = data
+		contDescriptionMap[contractAddress] = "default"
 	}
 }
 
