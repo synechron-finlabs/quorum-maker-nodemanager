@@ -31,6 +31,10 @@ type configField struct {
 	ChainId int `json:"chainId"`
 }
 
+type accountPassword struct {
+	Password string `json:"password"`
+}
+
 var pendCount = 0
 var nameMap = map[string]string{}
 var peerMap = map[string]string{}
@@ -512,6 +516,15 @@ func (nsi *NodeServiceImpl) AttachedNodeDetailsHandler(w http.ResponseWriter, r 
 
 func (nsi *NodeServiceImpl) InitializationHandler(w http.ResponseWriter, r *http.Request) {
 	response := nsi.returnCurrentInitializationState()
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (nsi *NodeServiceImpl) CreateAccountHandler(w http.ResponseWriter, r *http.Request) {
+	var request accountPassword
+	_ = json.NewDecoder(r.Body).Decode(&request)
+	password := request.Password
+	response := nsi.createAccount(password, nsi.Url)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(w).Encode(response)
 }

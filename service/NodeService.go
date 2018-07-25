@@ -1712,3 +1712,10 @@ func updateLastCheckedTime(timeVal string) {
 	util.CreateFile("/root/quorum-maker/contracts/.lastCheckedTime")
 	util.WriteFile("/root/quorum-maker/contracts/.lastCheckedTime", timeVal)
 }
+
+func (nsi *NodeServiceImpl) createAccount(password string, url string) string {
+	var nodeUrl = url
+	ethClient := client.EthClient{nodeUrl}
+	accountAddress := ethClient.CreateAccount(password)
+	return accountAddress
+}
