@@ -1,0 +1,11 @@
+Welcome %s,
+
+You are successfully registered to the Quorum Maker email notification service. 
+
+You will receive notifications for the following events:
+
+a) Name, IP and enode of requester node whenever join requests are sent to your node
+b) An alert when your node's geth goes down. This is monitored by a health check job running every 30 seconds
+
+Thank you for using Quorum Maker!
+
