@@ -505,7 +505,7 @@ func (nsi *NodeServiceImpl) AttachedNodeDetailsHandler(w http.ResponseWriter, r 
 		stateInitialized := fmt.Sprint("STATE=I\n")
 		util.AppendStringToFile("/home/setup.conf", stateInitialized)
 	}
-	successResponse.Status = "Details updated successfully"
+	successResponse.Status = "Updates have been saved. Please press Ctrl+C from CLI to exit from this container and run start.sh to apply changes"
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(w).Encode(successResponse)
 }
