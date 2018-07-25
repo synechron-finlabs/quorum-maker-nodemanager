@@ -1132,7 +1132,9 @@ func (nsi *NodeServiceImpl) emailServerConfig(host string, port string, username
 
 		}
 	}()
-
+	go func() {
+		nsi.sendTestMail()
+	}()
 	successResponse.Status = "success"
 	return successResponse
 }
@@ -1165,8 +1167,29 @@ func (nsi *NodeServiceImpl) healthCheck(url string) {
 	}
 }
 
+func (nsi *NodeServiceImpl) sendTestMail() {
+	existsA := util.PropertyExists("RECIPIENTLIST", "/home/setup.conf")
+	existsB := util.PropertyExists("NODENAME", "/home/setup.conf")
+
+	if existsA != "" && existsB != "" {
+		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+		nodename := util.MustGetString("NODENAME", p)
+		recipientList := util.MustGetString("RECIPIENTLIST", p)
+		recipients := strings.Split(recipientList, ",")
+		b, err := ioutil.ReadFile("/root/quorum-maker/TestMailTemplate.txt")
+		if err != nil {
+			log.Println(err)
+		}
+
+		mailCont := string(b)
+		message := fmt.Sprintf(mailCont, nodename)
+		for i := 0; i < len(recipients); i++ {
+			nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Quorum Maker Notification Service configured", message, recipients[i])
+		}
+	}
+}
+
 func (nsi *NodeServiceImpl) sendMail(host string, port string, username string, password string, subject string, mailContent string, to string) {
-	//fmt.Println("Called with warning =", warning)
 	portNo, err := strconv.ParseInt(port, 10, 64)
 	if err != nil {
 		fmt.Println(err)
@@ -1174,10 +1197,8 @@ func (nsi *NodeServiceImpl) sendMail(host string, port string, username string, 
 	m := gomail.NewMessage()
 	m.SetHeader("From", username)
 	m.SetHeader("To", to)
-	//m.SetAddressHeader("Cc", host, host)
 	m.SetHeader("Subject", subject)
 	m.SetBody("text", mailContent)
-	//m.Attach("")
 
 	d := gomail.NewDialer(host, int(portNo), username, password)
 
