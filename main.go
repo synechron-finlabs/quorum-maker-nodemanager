@@ -92,6 +92,8 @@ func main() {
 	router.HandleFunc("/updateContractDetails", nodeService.ContractDetailsUpdateHandler).Methods("POST")
 	router.HandleFunc("/attachedNodeDetails", nodeService.AttachedNodeDetailsHandler).Methods("POST")
 	router.HandleFunc("/initialized", nodeService.InitializationHandler).Methods("GET")
+	router.HandleFunc("/createAccount", nodeService.CreateAccountHandler).Methods("POST")
+	router.HandleFunc("/createAccount", nodeService.OptionsHandler).Methods("OPTIONS")
 
 	router.PathPrefix("/contracts").Handler(http.StripPrefix("/contracts", http.FileServer(http.Dir("/root/quorum-maker/contracts"))))
 	router.PathPrefix("/geth").Handler(http.StripPrefix("/geth", http.FileServer(http.Dir("/home/node/qdata/gethLogs"))))
