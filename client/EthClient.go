@@ -374,3 +374,17 @@ func (ec *EthClient) GetCode(address string) string {
 	}
 	return bytecode
 }
+
+func (ec *EthClient) CreateAccount(password string) string {
+	rpcClient := jsonrpc.NewClient(ec.Url)
+	response, err := rpcClient.Call("personal_newAccount", password)
+	if err != nil {
+		fmt.Println(err)
+	}
+	var accountAddress string
+	err = response.GetObject(&accountAddress)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return accountAddress
+}
