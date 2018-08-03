@@ -137,13 +137,17 @@ func (nms *NetworkMapContractClient) GetNodeListResponseHandler(w http.ResponseW
 
 func (nms *NetworkMapContractClient) GetNodeListSelfResponseHandler(w http.ResponseWriter, r *http.Request) {
 	coinbase := nms.EthClient.Coinbase()
-	var contractAdd, nodename string
-	existsA := util.PropertyExists("CONTRACT_ADD", "/home/setup.conf")
-	existsB := util.PropertyExists("NODENAME", "/home/setup.conf")
-	if existsA != "" && existsB != "" {
+	enode := nms.EthClient.AdminNodeInfo().ID
+	//var contractAdd, nodename string
+	var contractAdd string
+	//existsA := util.PropertyExists("CONTRACT_ADD", "/home/setup.conf")
+	exists := util.PropertyExists("CONTRACT_ADD", "/home/setup.conf")
+	//existsB := util.PropertyExists("NODENAME", "/home/setup.conf")
+	//if existsA != "" && existsB != "" {
+	if exists != "" {
 		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 		contractAdd = util.MustGetString("CONTRACT_ADD", p)
-		nodename = util.MustGetString("NODENAME", p)
+		//nodename = util.MustGetString("NODENAME", p)
 	}
 
 	cp := contracthandler.ContractParam{coinbase, contractAdd, "", nil}
@@ -163,7 +167,8 @@ func (nms *NetworkMapContractClient) GetNodeListSelfResponseHandler(w http.Respo
 		response[i].Enode = nodeList[i].Enode
 		response[i].Role = nodeList[i].Role
 		response[i].Name = nodeList[i].Name
-		if nodeList[i].Name == nodename {
+		//if nodeList[i].Name == nodename {
+		if nodeList[i].Enode == enode {
 			response[i].Self = "true"
 			response[i].Active = "true"
 		} else {
@@ -219,27 +224,29 @@ func (nms *NetworkMapContractClient) UpdateNodeHandler(w http.ResponseWriter, r 
 	role := request.Role
 	coinbase := nms.EthClient.Coinbase()
 	enode := nms.EthClient.AdminNodeInfo().ID
-	var contractAdd, publickey, ip, id, oldName string
+	//var contractAdd, publickey, ip, id, oldName string
+	var contractAdd, publickey, ip, id string
 	existsA := util.PropertyExists("CONTRACT_ADD", "/home/setup.conf")
 	existsB := util.PropertyExists("PUBKEY", "/home/setup.conf")
 	existsC := util.PropertyExists("CURRENT_IP", "/home/setup.conf")
 	existsD := util.PropertyExists("RAFT_ID", "/home/setup.conf")
-	existsE := util.PropertyExists("NODENAME", "/home/setup.conf")
-	if existsA != "" && existsB != "" && existsC != "" && existsD != "" && existsE != "" {
+	//existsE := util.PropertyExists("NODENAME", "/home/setup.conf")
+	//if existsA != "" && existsB != "" && existsC != "" && existsD != "" && existsE != "" {
+	if existsA != "" && existsB != "" && existsC != "" && existsD != "" {
 		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
 		contractAdd = util.MustGetString("CONTRACT_ADD", p)
 		publickey = util.MustGetString("PUBKEY", p)
 		ip = util.MustGetString("CURRENT_IP", p)
 		id = util.MustGetString("RAFT_ID", p)
-		oldName = util.MustGetString("NODENAME", p)
+		//oldName = util.MustGetString("NODENAME", p)
 	}
 	cp := contracthandler.ContractParam{coinbase, contractAdd, "", nil}
 	nms.SetContractParam(cp)
 	response := nms.UpdateNode(nodeName, role, publickey, enode, ip, id)
-	registered := fmt.Sprint("NODENAME=", nodeName, "\n")
-	util.AppendStringToFile("/home/setup.conf", registered)
-	oldProperty := fmt.Sprint("NODENAME=", oldName)
-	util.DeleteProperty(oldProperty, "/home/setup.conf")
+	//registered := fmt.Sprint("NODENAME=", nodeName, "\n")
+	//util.AppendStringToFile("/home/setup.conf", registered)
+	//oldProperty := fmt.Sprint("NODENAME=", oldName)
+	//util.DeleteProperty(oldProperty, "/home/setup.conf")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
