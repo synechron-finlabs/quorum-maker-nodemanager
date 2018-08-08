@@ -254,6 +254,12 @@ type contractJSONTruffle struct {
 	ContractName string        `json:"contractName"`
 }
 
+type ethAccount struct {
+	AccountAddress string `json:"accountAddress"`
+	Coinbase       bool   `json:"coinbase"`
+	Balance        string `json:"balance"`
+}
+
 var txnMap = map[string]TransactionReceiptResponse{}
 var abiMap = map[string]string{}
 var contractCrawlerMutex = 0
@@ -1713,9 +1719,70 @@ func updateLastCheckedTime(timeVal string) {
 	util.WriteFile("/root/quorum-maker/contracts/.lastCheckedTime", timeVal)
 }
 
-func (nsi *NodeServiceImpl) createAccount(password string, url string) string {
+func (nsi *NodeServiceImpl) createAccount(password string, url string) SuccessResponse {
+	var accountDetail SuccessResponse
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	accountAddress := ethClient.CreateAccount(password)
-	return accountAddress
+	accountDetail.Status = fmt.Sprint("Account ", accountAddress, " has been created successfully")
+	return accountDetail
+}
+
+func (nsi *NodeServiceImpl) getAccounts(url string) []ethAccount {
+	var accountList []ethAccount
+	var nodeUrl = url
+	ethClient := client.EthClient{nodeUrl}
+	coinbase := ethClient.Coinbase()
+	accounts := ethClient.GetAccounts()
+	for _, accountID := range accounts {
+		var account ethAccount
+		account.AccountAddress = accountID
+		if accountID == coinbase {
+			account.Coinbase = true
+		}
+		account.Balance = util.HexStringtoLargeInt64(ethClient.GetBalance(accountID))
+		accountList = append(accountList, account)
+	}
+	return accountList
+}
+
+func (nsi *NodeServiceImpl) getNodeIPs(url string) []connectedIP {
+	var nodeUrl = url
+	var ipList []connectedIP
+	var connectedIPs = map[string]int{}
+	ethClient := client.EthClient{nodeUrl}
+	fromAddress := ethClient.Coinbase()
+	enode := ethClient.AdminNodeInfo().ID
+	var contractAdd string
+	exists := util.PropertyExists("CONTRACT_ADD", "/home/setup.conf")
+	if exists != "" {
+		p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+		contractAdd = util.MustGetString("CONTRACT_ADD", p)
+	}
+	nms := contractclient.NetworkMapContractClient{client.EthClient{url}, contracthandler.ContractParam{fromAddress, contractAdd, "", nil}}
+	nodeList := nms.GetNodeDetailsList()
+	for _, node := range nodeList {
+		if node.Enode != enode {
+			count := connectedIPs[node.IP]
+			connectedIPs[node.IP] = count + 1
+		}
+	}
+	for k := range connectedIPs {
+		var connected connectedIP
+		connected.IP = k
+		connected.Count = connectedIPs[k]
+		ipList = append(ipList, connected)
+	}
+	return ipList
+}
+
+func (nsi *NodeServiceImpl) updateWhitelist(ipList []string) SuccessResponse {
+	var update SuccessResponse
+	util.DeleteFile("/root/quorum-maker/contracts/.whiteList")
+	util.CreateFile("/root/quorum-maker/contracts/.whiteList")
+	for _, ip := range ipList {
+		util.AppendStringToFile("/root/quorum-maker/contracts/.whiteList", fmt.Sprint(ip, "\n"))
+	}
+	update.Status = "IP Whitelist has been updated successfully"
+	return update
 }

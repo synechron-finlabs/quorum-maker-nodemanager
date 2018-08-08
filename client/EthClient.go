@@ -388,3 +388,31 @@ func (ec *EthClient) CreateAccount(password string) string {
 	}
 	return accountAddress
 }
+
+func (ec *EthClient) GetAccounts() []string {
+	rpcClient := jsonrpc.NewClient(ec.Url)
+	response, err := rpcClient.Call("eth_accounts")
+	if err != nil {
+		fmt.Println(err)
+	}
+	var accounts []string
+	err = response.GetObject(&accounts)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return accounts
+}
+
+func (ec *EthClient) GetBalance(account string) string {
+	rpcClient := jsonrpc.NewClient(ec.Url)
+	response, err := rpcClient.Call("eth_getBalance", account, "latest")
+	if err != nil {
+		fmt.Println(err)
+	}
+	var balance string
+	err = response.GetObject(&balance)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return balance
+}

@@ -13,7 +13,7 @@ import (
 	"time"
 	"github.com/magiconair/properties"
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 )
 
@@ -35,10 +35,79 @@ type accountPassword struct {
 	Password string `json:"password"`
 }
 
+type connectedIP struct {
+	IP          string `json:"ip"`
+	Whitelisted bool   `json:"whitelisted"`
+	Count       int    `json:"count"`
+}
+
+type IPList struct {
+	WhiteList     []string      `json:"whiteList"`
+	ConnectedList []connectedIP `json:"connectedList"`
+}
+
 var pendCount = 0
+var whiteList []string
+var allowedIPs = map[string]bool{}
 var nameMap = map[string]string{}
 var peerMap = map[string]string{}
 var channelMap = make(map[string](chan string))
+
+func (nsi *NodeServiceImpl) IPWhitelister() {
+	go func() {
+		if _, err := os.Stat("/root/quorum-maker/contracts/.whiteList"); os.IsNotExist(err) {
+			util.CreateFile("/root/quorum-maker/contracts/.whiteList")
+		}
+		whitelistedIPs, _ := util.File2lines("/root/quorum-maker/contracts/.whiteList")
+		whiteList = append(whiteList, whitelistedIPs...)
+		for _, ip := range whitelistedIPs {
+			allowedIPs[ip] = true
+		}
+		log.Info("Adding whitelisted IPs")
+	}()
+}
+
+func (nsi *NodeServiceImpl) UpdateWhitelistHandler(w http.ResponseWriter, r *http.Request) {
+	var ipList []string
+	_ = json.NewDecoder(r.Body).Decode(&ipList)
+	whiteList = whiteList[:0]
+	for k := range allowedIPs {
+		delete(allowedIPs, k)
+	}
+	for _, ip := range ipList {
+		allowedIPs[ip] = true
+	}
+	whiteList = append(whiteList, ipList ...)
+	response := nsi.updateWhitelist(ipList)
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (nsi *NodeServiceImpl) GetWhitelistedIPsHandler(w http.ResponseWriter, r *http.Request) {
+	var ipList IPList
+	var connectedIPList []connectedIP
+	var whiteListedIPs []string
+	activeIPs := nsi.getNodeIPs(nsi.Url)
+	for _, ip := range activeIPs {
+		var connected connectedIP
+		connected.IP = ip.IP
+		if allowedIPs[ip.IP] {
+			connected.Whitelisted = true
+		}
+		connected.Count = ip.Count
+		connectedIPList = append(connectedIPList, connected)
+	}
+	for _, ip := range whiteList {
+		whiteListedIPs = append(whiteListedIPs, ip)
+	}
+	ipList.ConnectedList = connectedIPList
+	ipList.WhiteList = whiteListedIPs
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	json.NewEncoder(w).Encode(ipList)
+}
 
 func (nsi *NodeServiceImpl) JoinNetworkHandler(w http.ResponseWriter, r *http.Request) {
 	var request JoinNetworkRequest
@@ -68,6 +137,31 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	foreignIP := request.IPAddress
 	nodename := request.Nodename
 	//recipients := strings.Split(mailServerConfig.RecipientList, ",")
+	if allowedIPs[foreignIP] {
+		peerMap[enode] = "YES"
+		exists := util.PropertyExists("RECIPIENTLIST", "/home/setup.conf")
+		if exists != "" {
+			go func() {
+				b, err := ioutil.ReadFile("/root/quorum-maker/JoinRequestTemplate.txt")
+
+				if err != nil {
+					log.Println(err)
+				}
+
+				mailCont := string(b)
+				mailCont = strings.Replace(mailCont, "\n", "", -1)
+
+				p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+				recipientList := util.MustGetString("RECIPIENTLIST", p)
+				recipients := strings.Split(recipientList, ",")
+				for i := 0; i < len(recipients); i++ {
+					message := fmt.Sprintf(mailCont, nodename, enode, foreignIP)
+					nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Incoming Join Request", message, recipients[i])
+				}
+			}()
+		}
+	}
+	log.Info(fmt.Sprint("Join request received from node: ", nodename, " with IP: ", foreignIP, " and enode: ", enode))
 	if peerMap[enode] == "YES" {
 		response := nsi.getGenesis(nsi.Url)
 		json.NewEncoder(w).Encode(response)
@@ -525,6 +619,15 @@ func (nsi *NodeServiceImpl) CreateAccountHandler(w http.ResponseWriter, r *http.
 	_ = json.NewDecoder(r.Body).Decode(&request)
 	password := request.Password
 	response := nsi.createAccount(password, nsi.Url)
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (nsi *NodeServiceImpl) GetAccountsHandler(w http.ResponseWriter, r *http.Request) {
+	response := nsi.getAccounts(nsi.Url)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(w).Encode(response)
 }

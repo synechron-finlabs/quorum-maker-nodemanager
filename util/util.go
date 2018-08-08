@@ -47,6 +47,14 @@ func HexStringtoInt64(hexVal string) (intVal int64) {
 	return intVal
 }
 
+func HexStringtoLargeInt64(hexVal string) string {
+	hexVal = strings.TrimSuffix(hexVal, "\n")
+	hexVal = strings.TrimPrefix(hexVal, "0x")
+	intVal := new(big.Int)
+	intVal.SetString(hexVal, 16)
+	return intVal.String()
+}
+
 func MustGetString(key string, filename *properties.Properties) (val string) {
 	val = filename.MustGetString(key)
 	val = strings.TrimSuffix(val, "\n")
