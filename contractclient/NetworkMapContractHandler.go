@@ -150,6 +150,8 @@ func (nms *NetworkMapContractClient) GetNodeListSelfResponseHandler(w http.Respo
 		//nodename = util.MustGetString("NODENAME", p)
 	}
 
+	fmt.Println("Contract Address = ", contractAdd)
+
 	cp := contracthandler.ContractParam{coinbase, contractAdd, "", nil}
 	nms.SetContractParam(cp)
 	adminPeers := nms.EthClient.AdminPeers()

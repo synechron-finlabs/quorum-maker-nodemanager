@@ -301,6 +301,9 @@ func (ec *EthClient) EthCall(param contracthandler.ContractParam, encoder contra
 	rpcClient := jsonrpc.NewClient(ec.Url)
 
 	p := CallPayload{param.To, encoder.Encode()}
+
+	fmt.Println("Payload = ", p)
+	
 	response, err := rpcClient.Call("eth_call", p, "latest")
 	if err != nil {
 

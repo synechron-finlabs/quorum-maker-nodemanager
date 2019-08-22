@@ -12,18 +12,21 @@ contract NetworkManagerContract {
         string id;
     }
 
-    mapping (string => NodeDetails)nodes;
+    mapping (string => NodeDetails) nodes;
+    
     string[] enodeList;
     
     event print(string nodeName, string role,string publickey, string enode, string ip, string id);
 
     function registerNode(string memory n, string memory r, string memory p, string memory e, string memory ip, string memory id) public {
 
-        nodes[e].publickey = p;
-        nodes[e].nodeName = n;
-        nodes[e].role = r;
-        nodes[e].ip = ip;
-        nodes[e].id = id;
+        NodeDetails storage nd = nodes[e];
+        
+        nd.publickey = p;
+        nd.nodeName = n;
+        nd.role = r;
+        nd.ip = ip;
+        nd.id = id;
         enodeList.push(e);
         emit print(n, r, p, e, ip, id);
     
@@ -48,11 +51,13 @@ contract NetworkManagerContract {
 
     function updateNode(string memory n, string memory r, string memory p, string memory e, string memory ip, string memory id) public {
 
-        nodes[e].publickey = p;
-        nodes[e].nodeName = n;
-        nodes[e].role = r;
-        nodes[e].ip = ip;
-        nodes[e].id = id;
+        NodeDetails storage nd = nodes[e];
+        
+        nd.publickey = p;
+        nd.nodeName = n;
+        nd.role = r;
+        nd.ip = ip;
+        nd.id = id;
         emit print(n, r, p, e, ip, id);
     }
 
