@@ -82,7 +82,7 @@ func (nsi *NodeServiceImpl) UpdateWhitelistHandler(w http.ResponseWriter, r *htt
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -253,7 +253,7 @@ func (nsi *NodeServiceImpl) JoinRequestResponseHandler(w http.ResponseWriter, r 
 	channelMap[enode] <- status
 	delete(channelMap, enode);
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(w).Encode(response)
 }
@@ -411,7 +411,7 @@ func (nsi *NodeServiceImpl) CreateNetworkScriptCallHandler(w http.ResponseWriter
 	response := nsi.createNetworkScriptCall(request.Nodename, request.CurrentIP, request.RPCPort, request.WhisperPort, request.ConstellationPort, request.RaftPort, request.NodeManagerPort)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -422,7 +422,7 @@ func (nsi *NodeServiceImpl) JoinNetworkScriptCallHandler(w http.ResponseWriter, 
 	response := nsi.joinRequestResponseCall(request.Nodename, request.CurrentIP, request.RPCPort, request.WhisperPort, request.ConstellationPort, request.RaftPort, request.NodeManagerPort, request.MasterNodeManagerPort, request.MasterIP)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -470,7 +470,7 @@ func (nsi *NodeServiceImpl) MailServerConfigHandler(w http.ResponseWriter, r *ht
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -479,7 +479,7 @@ func (nsi *NodeServiceImpl) OptionsHandler(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -622,7 +622,7 @@ func (nsi *NodeServiceImpl) CreateAccountHandler(w http.ResponseWriter, r *http.
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 

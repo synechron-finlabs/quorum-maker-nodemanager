@@ -56,7 +56,7 @@ func (nms *NetworkMapContractClient) UpdateNodeRequestsHandler(w http.ResponseWr
 	response := nms.UpdateNode(nodeName, role, publickey, enode, ip, id)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -85,7 +85,7 @@ func (nms *NetworkMapContractClient) RegisterNodeRequestHandler(w http.ResponseW
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -111,7 +111,7 @@ func (nms *NetworkMapContractClient) GetNodeDetailsResponseHandler(w http.Respon
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -131,7 +131,7 @@ func (nms *NetworkMapContractClient) GetNodeListResponseHandler(w http.ResponseW
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -184,7 +184,7 @@ func (nms *NetworkMapContractClient) GetNodeListSelfResponseHandler(w http.Respo
 	}
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -205,8 +205,8 @@ func (nms *NetworkMapContractClient) ActiveNodesHandler(w http.ResponseWriter, r
 	totalNodes := len(contractResponse)
 	response := ActiveNodes{activeNodes, totalNodes}
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	// w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -215,7 +215,7 @@ func (nms *NetworkMapContractClient) OptionsHandler(w http.ResponseWriter, r *ht
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -251,6 +251,6 @@ func (nms *NetworkMapContractClient) UpdateNodeHandler(w http.ResponseWriter, r 
 	//util.DeleteProperty(oldProperty, "/home/setup.conf")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
