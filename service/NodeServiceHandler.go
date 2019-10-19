@@ -1,20 +1,20 @@
 package service
 
 import (
-	"net/http"
+	"bytes"
 	"encoding/json"
-	"github.com/gorilla/mux"
 	"fmt"
-	"strconv"
-	"strings"
+	"github.com/gorilla/mux"
+	"github.com/magiconair/properties"
+	log "github.com/sirupsen/logrus"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
 	"io"
 	"io/ioutil"
-	"bytes"
-	"time"
-	"github.com/magiconair/properties"
-	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
-	log "github.com/sirupsen/logrus"
+	"net/http"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type contractJSON struct {
@@ -53,14 +53,141 @@ var nameMap = map[string]string{}
 var peerMap = map[string]string{}
 var channelMap = make(map[string](chan string))
 
+var whitelist = map[string]bool{}
+
+var Marshal = func(v interface{}) (io.Reader, error) {
+	b, err := json.MarshalIndent(v, "", "\t")
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewReader(b), nil
+}
+
+var Unmarshal = func(r io.Reader, v interface{}) error {
+	return json.NewDecoder(r).Decode(v)
+}
+
+func Save(path string, v interface{}) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	r, err := Marshal(v)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(f, r)
+	return err
+}
+
+func Load(path string, v interface{}) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return Unmarshal(f, v)
+}
+
+func (nsi *NodeServiceImpl) Add(w http.ResponseWriter, r *http.Request) {
+	var IPs []string
+	_ = json.NewDecoder(r.Body).Decode(&IPs)
+	if err := Load("./whitelist", &whitelist); err != nil {
+		log.Print(err)
+	}
+	for _, ip := range IPs {
+		whitelist[ip] = true
+	}
+	if err := Save("./whitelist", whitelist); err != nil {
+		log.Fatalln(err)
+	}
+	response := "Added successfully"
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (nsi *NodeServiceImpl) Update(w http.ResponseWriter, r *http.Request) {
+	var IPs []string
+	_ = json.NewDecoder(r.Body).Decode(&IPs)
+	for k := range whitelist {
+		delete(whitelist, k)
+	}
+	for _, ip := range IPs {
+		whitelist[ip] = true
+	}
+	if err := Save("./whitelist", whitelist); err != nil {
+		log.Fatalln(err)
+	}
+	response := "Updated successfully"
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (nsi *NodeServiceImpl) Delete(w http.ResponseWriter, r *http.Request) {
+	var IPs []string
+	_ = json.NewDecoder(r.Body).Decode(&IPs)
+	if err := Load("./whitelist", &whitelist); err != nil {
+		log.Print(err)
+	}
+	for _, ip := range IPs {
+		delete(whitelist, ip)
+	}
+	if err := Save("./whitelist", whitelist); err != nil {
+		log.Fatalln(err)
+	}
+	response := "Deleted successfully"
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
+	json.NewEncoder(w).Encode(response)
+}
+
+func (nsi *NodeServiceImpl) Read(w http.ResponseWriter, r *http.Request) {
+	if err := Load("./whitelist", &whitelist); err != nil {
+		log.Print(err)
+	}
+	var IPlist []string
+	for k, _ := range whitelist {
+		IPlist = append(IPlist, k)
+	}
+	response := IPlist
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
+	json.NewEncoder(w).Encode(response)
+}
+
+//func (nsi *NodeServiceImpl) IPWhitelister() {
+//	go func() {
+//		if _, err := os.Stat("/root/quorum-maker/contracts/.whiteList"); os.IsNotExist(err) {
+//			util.CreateFile("/root/quorum-maker/contracts/.whiteList")
+//		}
+//		whitelistedIPs, _ := util.File2lines("/root/quorum-maker/contracts/.whiteList")
+//		whiteList = append(whiteList, whitelistedIPs...)
+//		for _, ip := range whitelistedIPs {
+//			allowedIPs[ip] = true
+//		}
+//		log.Info("Adding whitelisted IPs")
+//	}()
+//}
+
 func (nsi *NodeServiceImpl) IPWhitelister() {
 	go func() {
-		if _, err := os.Stat("/root/quorum-maker/contracts/.whiteList"); os.IsNotExist(err) {
-			util.CreateFile("/root/quorum-maker/contracts/.whiteList")
+
+		if err := Load("./whitelist", &whitelist); err != nil {
+			log.Print(err)
 		}
-		whitelistedIPs, _ := util.File2lines("/root/quorum-maker/contracts/.whiteList")
-		whiteList = append(whiteList, whitelistedIPs...)
-		for _, ip := range whitelistedIPs {
+		var IPlist []string
+		for k,_:= range whitelist {
+			IPlist = append(IPlist, k)
+		}
+		whiteList = append(whiteList, IPlist...)
+		for _, ip := range IPlist {
 			allowedIPs[ip] = true
 		}
 		log.Info("Adding whitelisted IPs")
@@ -82,7 +209,7 @@ func (nsi *NodeServiceImpl) UpdateWhitelistHandler(w http.ResponseWriter, r *htt
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -137,7 +264,7 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	foreignIP := request.IPAddress
 	nodename := request.Nodename
 	//recipients := strings.Split(mailServerConfig.RecipientList, ",")
-	if allowedIPs[foreignIP] {
+	if whitelist[foreignIP] {
 		peerMap[enode] = "YES"
 		exists := util.PropertyExists("RECIPIENTLIST", "/home/setup.conf")
 		if exists != "" {
@@ -253,7 +380,7 @@ func (nsi *NodeServiceImpl) JoinRequestResponseHandler(w http.ResponseWriter, r 
 	channelMap[enode] <- status
 	delete(channelMap, enode);
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(w).Encode(response)
 }
@@ -411,7 +538,7 @@ func (nsi *NodeServiceImpl) CreateNetworkScriptCallHandler(w http.ResponseWriter
 	response := nsi.createNetworkScriptCall(request.Nodename, request.CurrentIP, request.RPCPort, request.WhisperPort, request.ConstellationPort, request.RaftPort, request.NodeManagerPort)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -422,7 +549,7 @@ func (nsi *NodeServiceImpl) JoinNetworkScriptCallHandler(w http.ResponseWriter, 
 	response := nsi.joinRequestResponseCall(request.Nodename, request.CurrentIP, request.RPCPort, request.WhisperPort, request.ConstellationPort, request.RaftPort, request.NodeManagerPort, request.MasterNodeManagerPort, request.MasterIP)
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -470,7 +597,7 @@ func (nsi *NodeServiceImpl) MailServerConfigHandler(w http.ResponseWriter, r *ht
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -479,7 +606,7 @@ func (nsi *NodeServiceImpl) OptionsHandler(w http.ResponseWriter, r *http.Reques
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -622,7 +749,7 @@ func (nsi *NodeServiceImpl) CreateAccountHandler(w http.ResponseWriter, r *http.
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -631,3 +758,4 @@ func (nsi *NodeServiceImpl) GetAccountsHandler(w http.ResponseWriter, r *http.Re
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	json.NewEncoder(w).Encode(response)
 }
+
