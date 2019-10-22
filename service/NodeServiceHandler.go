@@ -53,141 +53,14 @@ var nameMap = map[string]string{}
 var peerMap = map[string]string{}
 var channelMap = make(map[string](chan string))
 
-var whitelist = map[string]bool{}
-
-var Marshal = func(v interface{}) (io.Reader, error) {
-	b, err := json.MarshalIndent(v, "", "\t")
-	if err != nil {
-		return nil, err
-	}
-	return bytes.NewReader(b), nil
-}
-
-var Unmarshal = func(r io.Reader, v interface{}) error {
-	return json.NewDecoder(r).Decode(v)
-}
-
-func Save(path string, v interface{}) error {
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	r, err := Marshal(v)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(f, r)
-	return err
-}
-
-func Load(path string, v interface{}) error {
-	f, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	return Unmarshal(f, v)
-}
-
-func (nsi *NodeServiceImpl) Add(w http.ResponseWriter, r *http.Request) {
-	var IPs []string
-	_ = json.NewDecoder(r.Body).Decode(&IPs)
-	if err := Load("./whitelist", &whitelist); err != nil {
-		log.Print(err)
-	}
-	for _, ip := range IPs {
-		whitelist[ip] = true
-	}
-	if err := Save("./whitelist", whitelist); err != nil {
-		log.Fatalln(err)
-	}
-	response := "Added successfully"
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	json.NewEncoder(w).Encode(response)
-}
-
-func (nsi *NodeServiceImpl) Update(w http.ResponseWriter, r *http.Request) {
-	var IPs []string
-	_ = json.NewDecoder(r.Body).Decode(&IPs)
-	for k := range whitelist {
-		delete(whitelist, k)
-	}
-	for _, ip := range IPs {
-		whitelist[ip] = true
-	}
-	if err := Save("./whitelist", whitelist); err != nil {
-		log.Fatalln(err)
-	}
-	response := "Updated successfully"
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	json.NewEncoder(w).Encode(response)
-}
-
-func (nsi *NodeServiceImpl) Delete(w http.ResponseWriter, r *http.Request) {
-	var IPs []string
-	_ = json.NewDecoder(r.Body).Decode(&IPs)
-	if err := Load("./whitelist", &whitelist); err != nil {
-		log.Print(err)
-	}
-	for _, ip := range IPs {
-		delete(whitelist, ip)
-	}
-	if err := Save("./whitelist", whitelist); err != nil {
-		log.Fatalln(err)
-	}
-	response := "Deleted successfully"
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	json.NewEncoder(w).Encode(response)
-}
-
-func (nsi *NodeServiceImpl) Read(w http.ResponseWriter, r *http.Request) {
-	if err := Load("./whitelist", &whitelist); err != nil {
-		log.Print(err)
-	}
-	var IPlist []string
-	for k, _ := range whitelist {
-		IPlist = append(IPlist, k)
-	}
-	response := IPlist
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
-	json.NewEncoder(w).Encode(response)
-}
-
-//func (nsi *NodeServiceImpl) IPWhitelister() {
-//	go func() {
-//		if _, err := os.Stat("/root/quorum-maker/contracts/.whiteList"); os.IsNotExist(err) {
-//			util.CreateFile("/root/quorum-maker/contracts/.whiteList")
-//		}
-//		whitelistedIPs, _ := util.File2lines("/root/quorum-maker/contracts/.whiteList")
-//		whiteList = append(whiteList, whitelistedIPs...)
-//		for _, ip := range whitelistedIPs {
-//			allowedIPs[ip] = true
-//		}
-//		log.Info("Adding whitelisted IPs")
-//	}()
-//}
-
 func (nsi *NodeServiceImpl) IPWhitelister() {
 	go func() {
-
-		if err := Load("./whitelist", &whitelist); err != nil {
-			log.Print(err)
+		if _, err := os.Stat("/root/quorum-maker/contracts/.whiteList"); os.IsNotExist(err) {
+			util.CreateFile("/root/quorum-maker/contracts/.whiteList")
 		}
-		var IPlist []string
-		for k,_:= range whitelist {
-			IPlist = append(IPlist, k)
-		}
-		whiteList = append(whiteList, IPlist...)
-		for _, ip := range IPlist {
+		whitelistedIPs, _ := util.File2lines("/root/quorum-maker/contracts/.whiteList")
+		whiteList = append(whiteList, whitelistedIPs...)
+		for _, ip := range whitelistedIPs {
 			allowedIPs[ip] = true
 		}
 		log.Info("Adding whitelisted IPs")
@@ -264,29 +137,27 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	foreignIP := request.IPAddress
 	nodename := request.Nodename
 	//recipients := strings.Split(mailServerConfig.RecipientList, ",")
-	if whitelist[foreignIP] {
-		peerMap[enode] = "YES"
-		exists := util.PropertyExists("RECIPIENTLIST", "/home/setup.conf")
-		if exists != "" {
-			go func() {
-				b, err := ioutil.ReadFile("/root/quorum-maker/JoinRequestTemplate.txt")
+	peerMap[enode] = "YES"
+	exists := util.PropertyExists("RECIPIENTLIST", "/home/setup.conf")
+	if exists != "" {
+		go func() {
+			b, err := ioutil.ReadFile("/root/quorum-maker/JoinRequestTemplate.txt")
 
-				if err != nil {
-					log.Println(err)
-				}
+			if err != nil {
+				log.Println(err)
+			}
 
-				mailCont := string(b)
-				mailCont = strings.Replace(mailCont, "\n", "", -1)
+			mailCont := string(b)
+			mailCont = strings.Replace(mailCont, "\n", "", -1)
 
-				p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-				recipientList := util.MustGetString("RECIPIENTLIST", p)
-				recipients := strings.Split(recipientList, ",")
-				for i := 0; i < len(recipients); i++ {
-					message := fmt.Sprintf(mailCont, nodename, enode, foreignIP)
-					nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Incoming Join Request", message, recipients[i])
-				}
-			}()
-		}
+			p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
+			recipientList := util.MustGetString("RECIPIENTLIST", p)
+			recipients := strings.Split(recipientList, ",")
+			for i := 0; i < len(recipients); i++ {
+				message := fmt.Sprintf(mailCont, nodename, enode, foreignIP)
+				nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Incoming Join Request", message, recipients[i])
+			}
+		}()
 	}
 	log.Info(fmt.Sprint("Join request received from node: ", nodename, " with IP: ", foreignIP, " and enode: ", enode))
 	if peerMap[enode] == "YES" {

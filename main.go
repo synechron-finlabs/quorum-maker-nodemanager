@@ -99,13 +99,6 @@ func main() {
 	router.HandleFunc("/qm/getWhitelist", nodeService.GetWhitelistedIPsHandler).Methods("GET")
 	router.HandleFunc("/qm/updateWhitelist", nodeService.UpdateWhitelistHandler).Methods("POST")
 	router.HandleFunc("/qm/updateWhitelist", nodeService.OptionsHandler).Methods("OPTIONS")
-	router.HandleFunc("/readWhitelist", nodeService.Read).Methods("GET")
-	router.HandleFunc("/addToWhitelist", nodeService.Add).Methods("POST")
-	router.HandleFunc("/addToWhitelist", nodeService.OptionsHandler).Methods("OPTIONS")
-	router.HandleFunc("/updateWL", nodeService.Update).Methods("POST")
-	router.HandleFunc("/updateWL", nodeService.OptionsHandler).Methods("OPTIONS")
-	router.HandleFunc("/deleteFromWhitelist", nodeService.Delete).Methods("POST")
-	router.HandleFunc("/deleteFromWhitelist", nodeService.OptionsHandler).Methods("OPTIONS")
 
 	router.PathPrefix("/qm/contracts").Handler(http.StripPrefix("/contracts", http.FileServer(http.Dir("/root/quorum-maker/contracts"))))
 	router.PathPrefix("/qm/geth").Handler(http.StripPrefix("/geth", http.FileServer(http.Dir("/home/node/qdata/gethLogs"))))
