@@ -137,7 +137,11 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	foreignIP := request.IPAddress
 	nodename := request.Nodename
 	//recipients := strings.Split(mailServerConfig.RecipientList, ",")
-	if allowedIPs[foreignIP] {
+
+	//@TODO: Auto accepting for k8s. Fix in a better way
+	// if allowedIPs[foreignIP] {
+
+	if true {
 		peerMap[enode] = "YES"
 		exists := util.PropertyExists("RECIPIENTLIST", "/home/setup.conf")
 		if exists != "" {
