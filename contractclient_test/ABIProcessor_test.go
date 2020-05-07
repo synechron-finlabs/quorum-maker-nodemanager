@@ -1,11 +1,11 @@
 package contractclient
 
 import (
-	"testing"
-	"io/ioutil"
 	"fmt"
-	"strings"
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/contractclient"
+	"io/ioutil"
+	"strings"
+	"testing"
 )
 
 type test_data struct {

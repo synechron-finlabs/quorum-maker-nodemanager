@@ -1,20 +1,20 @@
 package service
 
 import (
-	"net/http"
+	"bytes"
 	"encoding/json"
-	"github.com/gorilla/mux"
 	"fmt"
-	"strconv"
-	"strings"
+	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/env"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
 	"io"
 	"io/ioutil"
-	"bytes"
-	"time"
-	"github.com/magiconair/properties"
-	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
-	log "github.com/sirupsen/logrus"
+	"net/http"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type contractJSON struct {
@@ -55,10 +55,10 @@ var channelMap = make(map[string](chan string))
 
 func (nsi *NodeServiceImpl) IPWhitelister() {
 	go func() {
-		if _, err := os.Stat("/root/quorum-maker/contracts/.whiteList"); os.IsNotExist(err) {
-			util.CreateFile("/root/quorum-maker/contracts/.whiteList")
+		if _, err := os.Stat(env.GetAppConfig().ContractsDir + "/.whiteList"); os.IsNotExist(err) {
+			util.CreateFile(env.GetAppConfig().ContractsDir + "/.whiteList")
 		}
-		whitelistedIPs, _ := util.File2lines("/root/quorum-maker/contracts/.whiteList")
+		whitelistedIPs, _ := util.File2lines(env.GetAppConfig().ContractsDir + "/.whiteList")
 		whiteList = append(whiteList, whitelistedIPs...)
 		for _, ip := range whitelistedIPs {
 			allowedIPs[ip] = true
@@ -77,7 +77,7 @@ func (nsi *NodeServiceImpl) UpdateWhitelistHandler(w http.ResponseWriter, r *htt
 	for _, ip := range ipList {
 		allowedIPs[ip] = true
 	}
-	whiteList = append(whiteList, ipList ...)
+	whiteList = append(whiteList, ipList...)
 	response := nsi.updateWhitelist(ipList)
 	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -143,10 +143,10 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 
 	if true {
 		peerMap[enode] = "YES"
-		exists := util.PropertyExists("RECIPIENTLIST", "/home/setup.conf")
-		if exists != "" {
+
+		if env.GetSetupConf().RecipientList != "" {
 			go func() {
-				b, err := ioutil.ReadFile("/root/quorum-maker/JoinRequestTemplate.txt")
+				b, err := ioutil.ReadFile(env.GetAppConfig().RootDir + "JoinRequestTemplate.txt")
 
 				if err != nil {
 					log.Println(err)
@@ -155,9 +155,7 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 				mailCont := string(b)
 				mailCont = strings.Replace(mailCont, "\n", "", -1)
 
-				p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-				recipientList := util.MustGetString("RECIPIENTLIST", p)
-				recipients := strings.Split(recipientList, ",")
+				recipients := strings.Split(env.GetSetupConf().RecipientList, ",")
 				for i := 0; i < len(recipients); i++ {
 					message := fmt.Sprintf(mailCont, nodename, enode, foreignIP)
 					nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Incoming Join Request", message, recipients[i])
@@ -173,10 +171,10 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Access denied"))
 	} else {
-		exists := util.PropertyExists("RECIPIENTLIST", "/home/setup.conf")
-		if exists != "" {
+
+		if env.GetSetupConf().RecipientList != "" {
 			go func() {
-				b, err := ioutil.ReadFile("/root/quorum-maker/JoinRequestTemplate.txt")
+				b, err := ioutil.ReadFile(env.GetAppConfig().RootDir + "JoinRequestTemplate.txt")
 
 				if err != nil {
 					log.Println(err)
@@ -185,9 +183,7 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 				mailCont := string(b)
 				mailCont = strings.Replace(mailCont, "\n", "", -1)
 
-				p := properties.MustLoadFile("/home/setup.conf", properties.UTF8)
-				recipientList := util.MustGetString("RECIPIENTLIST", p)
-				recipients := strings.Split(recipientList, ",")
+				recipients := strings.Split(env.GetSetupConf().RecipientList, ",")
 				for i := 0; i < len(recipients); i++ {
 					message := fmt.Sprintf(mailCont, nodename, enode, foreignIP)
 					nsi.sendMail(mailServerConfig.Host, mailServerConfig.Port, mailServerConfig.Username, mailServerConfig.Password, "Incoming Join Request", message, recipients[i])
@@ -255,7 +251,7 @@ func (nsi *NodeServiceImpl) JoinRequestResponseHandler(w http.ResponseWriter, r 
 	status := request.Status
 	response := nsi.joinRequestResponse(enode, status)
 	channelMap[enode] <- status
-	delete(channelMap, enode);
+	delete(channelMap, enode)
 	w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, GET, POST")
 	// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Depth, User-Agent, X-File-Size, X-Requested-With, If-Modified-Since, X-File-Name, Cache-Control")
 	w.Header().Set("Access-Control-Allow-Origin", "*")

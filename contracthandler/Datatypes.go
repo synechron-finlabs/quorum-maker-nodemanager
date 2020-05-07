@@ -38,7 +38,7 @@ func init() {
 * datatype1, datatype2,...
 * datatype1, datatype2,.., (with an extra comma and the end
 *
-*/
+ */
 func IsSupported(sig string) bool {
 
 	rex := regexp.MustCompile(`.*\((.*)\)|(.*)`)
@@ -46,7 +46,7 @@ func IsSupported(sig string) bool {
 
 	if match := rex.FindStringSubmatch(sig); match[1] != "" {
 		datatypes = match[1]
-	}else{
+	} else {
 		datatypes = strings.TrimSuffix(match[2], ",")
 	}
 
@@ -72,7 +72,6 @@ func IsSupported(sig string) bool {
 	return true
 }
 
-
 type DataType interface {
 	IsDynamic() bool
 	Length() int
@@ -86,11 +85,9 @@ type BaseDataType struct {
 	signature string
 }
 
-
 type Uint struct {
 	BaseDataType
 }
-
 
 func (t Uint) New(i interface{}, sig string) DataType {
 
@@ -105,7 +102,6 @@ func (t Uint) Length() int {
 	return 1
 }
 
-
 func (t Uint) Decode(data []string, index int) (int, interface{}) {
 
 	return 1, util.StringToInt(data[index])
@@ -117,8 +113,6 @@ func (t Uint) Encode() []string {
 
 	return []string{util.IntToString(i)}
 }
-
-
 
 type Bool struct {
 	Uint
@@ -370,7 +364,6 @@ func (t Address) New(i interface{}, sig string) DataType {
 	return Address{UintLarge{BaseDataType{i, sig}}}
 }
 
-
 func (t Address) Decode(data []string, index int) (int, interface{}) {
 
 	return 1, "0x" + strings.TrimLeft(data[index], "0")
@@ -402,7 +395,6 @@ func (t AddressDA) Decode(data []string, index int) (int, interface{}) {
 	return 1, a
 }
 
-
 type AddressFA struct {
 	UintLargeFA
 }
@@ -411,7 +403,6 @@ func (t AddressFA) New(i interface{}, sig string) DataType {
 
 	return AddressFA{UintLargeFA{UintLargeDA{BaseDataType{i, sig}}}}
 }
-
 
 func (t AddressFA) Decode(data []string, index int) (int, interface{}) {
 
@@ -431,7 +422,6 @@ func (t AddressFA) Decode(data []string, index int) (int, interface{}) {
 type Bytes struct {
 	BaseDataType
 }
-
 
 func (t Bytes) New(i interface{}, sig string) DataType {
 
@@ -549,7 +539,6 @@ func (t Bytes32DA) Length() int {
 	return len(i) + 1
 }
 
-
 func (t Bytes32DA) Decode(data []string, index int) (int, interface{}) {
 
 	offset := util.StringToInt(data[index])
@@ -560,7 +549,7 @@ func (t Bytes32DA) Decode(data []string, index int) (int, interface{}) {
 
 	for i, j := offset/32+1, 0; j < length; i++ {
 
-		a[j], _ = hex.DecodeString(strings.Replace(data[i], "00", "",-1))
+		a[j], _ = hex.DecodeString(strings.Replace(data[i], "00", "", -1))
 
 		j++
 
@@ -590,7 +579,6 @@ func (t Bytes32DA) Encode() []string {
 	return r
 }
 
-
 type Bytes32FA struct {
 	BaseDataType
 }
@@ -618,7 +606,7 @@ func (t Bytes32FA) Decode(data []string, index int) (int, interface{}) {
 
 	for i, j := index, 0; j < length; i++ {
 
-		a[j], _ = hex.DecodeString(strings.Replace(data[i], "00", "",-1))
+		a[j], _ = hex.DecodeString(strings.Replace(data[i], "00", "", -1))
 
 		j++
 
@@ -634,7 +622,6 @@ func (t Bytes32FA) Encode() []string {
 	i := t.value.([][]byte)
 
 	r := make([]string, len(i))
-
 
 	for j := 0; j < len(i); j++ {
 		b := make([]byte, 32)
@@ -658,7 +645,7 @@ func (t BytesFixed) New(i interface{}, sig string) DataType {
 
 func (t BytesFixed) Decode(data []string, index int) (int, interface{}) {
 
-	t.value, _ = hex.DecodeString(strings.Replace(data[index], "00", "",-1))
+	t.value, _ = hex.DecodeString(strings.Replace(data[index], "00", "", -1))
 
 	return 1, t.value
 }

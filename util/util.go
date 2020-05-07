@@ -1,19 +1,19 @@
 package util
 
 import (
+	"bufio"
 	"encoding/hex"
 	"fmt"
 	"github.com/magiconair/properties"
+	"io"
+	"io/ioutil"
+	"math/big"
 	"os"
+	"os/exec"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
-	"os/exec"
-	"math/big"
-	"bufio"
-	"io"
-	"io/ioutil"
 )
 
 func TakeSliceArg(arg interface{}) (out []interface{}, ok bool) {

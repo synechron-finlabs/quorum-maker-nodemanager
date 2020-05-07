@@ -1,17 +1,19 @@
 package main
 
 import (
-	"fmt"
 	"context"
-	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
-	"github.com/synechron-finlabs/quorum-maker-nodemanager/client"
-	"github.com/synechron-finlabs/quorum-maker-nodemanager/contractclient"
-	"github.com/synechron-finlabs/quorum-maker-nodemanager/service"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/client"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/contractclient"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/env"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/service"
 )
 
 var nodeUrl = "http://localhost:22000"
@@ -21,6 +23,9 @@ func init() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.DebugLevel)
+
+	env.GetAppConfig(true)
+	env.GetSetupConf(true)
 }
 
 func main() {
@@ -56,53 +61,53 @@ func main() {
 	}()
 
 	networkMapService := contractclient.NetworkMapContractClient{EthClient: client.EthClient{nodeUrl}}
-	router.HandleFunc("/qm/txn/{txn_hash}", nodeService.GetTransactionInfoHandler).Methods("GET")
-	router.HandleFunc("/qm/txn", nodeService.GetLatestTransactionInfoHandler).Methods("GET")
-	router.HandleFunc("/qm/block/{block_no}", nodeService.GetBlockInfoHandler).Methods("GET")
-	router.HandleFunc("/qm/block", nodeService.GetLatestBlockInfoHandler).Methods("GET")
-	router.HandleFunc("/qm/genesis", nodeService.GetGenesisHandler).Methods("POST", "OPTIONS")
-	router.HandleFunc("/qm/peer/{peer_id}", nodeService.GetOtherPeerHandler).Methods("GET")
-	router.HandleFunc("/qm/peer", nodeService.JoinNetworkHandler).Methods("POST", "OPTIONS")
-	router.HandleFunc("/qm/peer", nodeService.GetCurrentNodeHandler).Methods("GET")
-	router.HandleFunc("/qm/txnrcpt/{txn_hash}", nodeService.GetTransactionReceiptHandler).Methods("GET")
-	router.HandleFunc("/qm/pendingJoinRequests", nodeService.PendingJoinRequestsHandler).Methods("GET")
-	router.HandleFunc("/qm/joinRequestResponse", nodeService.JoinRequestResponseHandler).Methods("POST")
-	router.HandleFunc("/qm/joinRequestResponse", nodeService.OptionsHandler).Methods("OPTIONS")
-	router.HandleFunc("/qm/createNetwork", nodeService.CreateNetworkScriptCallHandler).Methods("POST")
-	router.HandleFunc("/qm/createNetwork", nodeService.OptionsHandler).Methods("OPTIONS")
-	router.HandleFunc("/qm/joinNetwork", nodeService.JoinNetworkScriptCallHandler).Methods("POST")
-	router.HandleFunc("/qm/joinNetwork", nodeService.OptionsHandler).Methods("OPTIONS")
-	router.HandleFunc("/qm/deployContract", nodeService.DeployContractHandler).Methods("POST")
-	router.HandleFunc("/qm/reset", nodeService.ResetHandler).Methods("GET")
-	router.HandleFunc("/qm/restart", nodeService.RestartHandler).Methods("GET")
-	router.HandleFunc("/qm/latestBlock", nodeService.LatestBlockHandler).Methods("GET")
-	router.HandleFunc("/qm/latency", nodeService.LatencyHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/txn/{txn_hash}", nodeService.GetTransactionInfoHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/txn", nodeService.GetLatestTransactionInfoHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/block/{block_no}", nodeService.GetBlockInfoHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/block", nodeService.GetLatestBlockInfoHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/genesis", nodeService.GetGenesisHandler).Methods("POST", "OPTIONS")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/peer/{peer_id}", nodeService.GetOtherPeerHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/peer", nodeService.JoinNetworkHandler).Methods("POST", "OPTIONS")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/peer", nodeService.GetCurrentNodeHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/txnrcpt/{txn_hash}", nodeService.GetTransactionReceiptHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/pendingJoinRequests", nodeService.PendingJoinRequestsHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/joinRequestResponse", nodeService.JoinRequestResponseHandler).Methods("POST")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/joinRequestResponse", nodeService.OptionsHandler).Methods("OPTIONS")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/createNetwork", nodeService.CreateNetworkScriptCallHandler).Methods("POST")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/createNetwork", nodeService.OptionsHandler).Methods("OPTIONS")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/joinNetwork", nodeService.JoinNetworkScriptCallHandler).Methods("POST")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/joinNetwork", nodeService.OptionsHandler).Methods("OPTIONS")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/deployContract", nodeService.DeployContractHandler).Methods("POST")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/reset", nodeService.ResetHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/restart", nodeService.RestartHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/latestBlock", nodeService.LatestBlockHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/latency", nodeService.LatencyHandler).Methods("GET")
 	//router.HandleFunc("/logs", nodeService.LogsHandler).Methods("GET")
-	router.HandleFunc("/qm/txnsearch/{txn_hash}", nodeService.TransactionSearchHandler).Methods("GET")
-	router.HandleFunc("/qm/mailserver", nodeService.MailServerConfigHandler).Methods("POST")
-	router.HandleFunc("/qm/mailserver", nodeService.OptionsHandler).Methods("OPTIONS")
-	router.HandleFunc("/qm/registerNode", networkMapService.RegisterNodeRequestHandler).Methods("POST")
-	router.HandleFunc("/qm/updateNode", networkMapService.UpdateNodeHandler).Methods("POST")
-	router.HandleFunc("/qm/updateNode", networkMapService.OptionsHandler).Methods("OPTIONS")
-	router.HandleFunc("/qm/getNodeDetails/{index}", networkMapService.GetNodeDetailsResponseHandler).Methods("GET")
-	router.HandleFunc("/qm/getNodeList", networkMapService.GetNodeListSelfResponseHandler).Methods("GET")
-	router.HandleFunc("/qm/activeNodes", networkMapService.ActiveNodesHandler).Methods("GET")
-	router.HandleFunc("/qm/chartData", nodeService.GetChartDataHandler).Methods("GET")
-	router.HandleFunc("/qm/contractList", nodeService.GetContractListHandler).Methods("GET")
-	router.HandleFunc("/qm/contractCount", nodeService.GetContractCountHandler).Methods("GET")
-	router.HandleFunc("/qm/updateContractDetails", nodeService.ContractDetailsUpdateHandler).Methods("POST")
-	router.HandleFunc("/qm/attachedNodeDetails", nodeService.AttachedNodeDetailsHandler).Methods("POST")
-	router.HandleFunc("/qm/initialized", nodeService.InitializationHandler).Methods("GET")
-	router.HandleFunc("/qm/createAccount", nodeService.CreateAccountHandler).Methods("POST")
-	router.HandleFunc("/qm/createAccount", nodeService.OptionsHandler).Methods("OPTIONS")
-	router.HandleFunc("/qm/getAccounts", nodeService.GetAccountsHandler).Methods("GET")
-	router.HandleFunc("/qm/getWhitelist", nodeService.GetWhitelistedIPsHandler).Methods("GET")
-	router.HandleFunc("/qm/updateWhitelist", nodeService.UpdateWhitelistHandler).Methods("POST")
-	router.HandleFunc("/qm/updateWhitelist", nodeService.OptionsHandler).Methods("OPTIONS")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/txnsearch/{txn_hash}", nodeService.TransactionSearchHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/mailserver", nodeService.MailServerConfigHandler).Methods("POST")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/mailserver", nodeService.OptionsHandler).Methods("OPTIONS")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/registerNode", networkMapService.RegisterNodeRequestHandler).Methods("POST")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/updateNode", networkMapService.UpdateNodeHandler).Methods("POST")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/updateNode", networkMapService.OptionsHandler).Methods("OPTIONS")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/getNodeDetails/{index}", networkMapService.GetNodeDetailsResponseHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/getNodeList", networkMapService.GetNodeListSelfResponseHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/activeNodes", networkMapService.ActiveNodesHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/chartData", nodeService.GetChartDataHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/contractList", nodeService.GetContractListHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/contractCount", nodeService.GetContractCountHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/updateContractDetails", nodeService.ContractDetailsUpdateHandler).Methods("POST")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/attachedNodeDetails", nodeService.AttachedNodeDetailsHandler).Methods("POST")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/initialized", nodeService.InitializationHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/createAccount", nodeService.CreateAccountHandler).Methods("POST")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/createAccount", nodeService.OptionsHandler).Methods("OPTIONS")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/getAccounts", nodeService.GetAccountsHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/getWhitelist", nodeService.GetWhitelistedIPsHandler).Methods("GET")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/updateWhitelist", nodeService.UpdateWhitelistHandler).Methods("POST")
+	router.HandleFunc(env.GetSetupConf().ContextPath+"/updateWhitelist", nodeService.OptionsHandler).Methods("OPTIONS")
 
-	router.PathPrefix("/qm/contracts").Handler(http.StripPrefix("/contracts", http.FileServer(http.Dir("/root/quorum-maker/contracts"))))
-	router.PathPrefix("/qm/geth").Handler(http.StripPrefix("/geth", http.FileServer(http.Dir("/home/node/qdata/gethLogs"))))
-	router.PathPrefix("/qm/constellation").Handler(http.StripPrefix("/constellation", http.FileServer(http.Dir("/home/node/qdata/constellationLogs"))))
+	router.PathPrefix(env.GetSetupConf().ContextPath + "/contracts").Handler(http.StripPrefix(env.GetSetupConf().ContextPath+"/contracts", http.FileServer(http.Dir(env.GetAppConfig().ContractsDir))))
+	router.PathPrefix(env.GetSetupConf().ContextPath + "/geth").Handler(http.StripPrefix(env.GetSetupConf().ContextPath+"/geth", http.FileServer(http.Dir(env.GetAppConfig().GethLogs))))
+	router.PathPrefix(env.GetSetupConf().ContextPath + "/constellation").Handler(http.StripPrefix(env.GetSetupConf().ContextPath+"/constellation", http.FileServer(http.Dir(env.GetAppConfig().PrivacyLogs))))
 	router.PathPrefix("/").Handler(http.StripPrefix("/", NewFileServer("NodeManagerUI")))
 
 	log.Info(fmt.Sprintf("Node Manager listening on %s...", listenPort))
@@ -155,9 +160,13 @@ func NewFileServer(file string) *MyFileServer {
 }
 func (mf *MyFileServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
+	if r.URL.Path == "" && env.GetSetupConf().ContextPath != "" || "/"+r.URL.Path == env.GetSetupConf().ContextPath+"/dashboard" {
+		http.Redirect(w, r, env.GetSetupConf().ContextPath, 301)
+		return
+	}
 	_, err := os.Open(mf.name + "/" + r.URL.Path)
 	if err != nil {
-		r.URL.Path = "/"
+		http.Error(w, "File Not Found", 404)
 	}
 
 	mf.handler.ServeHTTP(w, r)

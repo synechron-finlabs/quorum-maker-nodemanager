@@ -3,10 +3,8 @@ package contracthandler
 import (
 	"bytes"
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/util"
-	"strings"		
+	"strings"
 )
-
-
 
 type FunctionProcessor struct {
 	Signature string
@@ -103,7 +101,6 @@ func (fp FunctionProcessor) Decode(encodedString string) []interface{} {
 
 	return results
 }
-
 
 func (fp FunctionProcessor) getDataTypes(paramValues []interface{}) []DataType {
 

@@ -1,7 +1,6 @@
 package contractclient
 
 import (
-	"fmt"
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/client"
 	"github.com/synechron-finlabs/quorum-maker-nodemanager/contracthandler"
 )
@@ -60,10 +59,6 @@ func (nmc *NetworkMapContractClient) GetNodeDetails(i int) NodeDetails {
 }
 
 func (nmc *NetworkMapContractClient) GetNodeDetailsList() []NodeDetails {
-
-	fmt.Println("nmc.ContractParam.To = ", nmc.ContractParam.To)
-
-	fmt.Println("nmc.ContractParam.From = ", nmc.ContractParam.From)
 
 	if nmc.ContractParam.To == "" || nmc.ContractParam.From == "" {
 		return []NodeDetails{}
