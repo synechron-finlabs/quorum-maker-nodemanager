@@ -3,7 +3,6 @@ package env
 import "github.com/magiconair/properties"
 
 type AppConfig struct {
-
 	HomeDir      string `properties:"homeDir,default=/home"`
 	RootDir      string `properties:"rootDir,default="`
 	NodeDir      string `properties:"nodeDir,default=/home/node"`
@@ -16,7 +15,7 @@ var appConfig AppConfig
 
 func GetAppConfig(refresh ...bool) AppConfig {
 
-	if nil != refresh {
+	if (nil != refresh || AppConfig{} == appConfig) {
 		filename := "application.conf"
 		p := properties.MustLoadFile(filename, properties.UTF8)
 

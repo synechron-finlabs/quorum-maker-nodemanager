@@ -12,7 +12,6 @@ func TestGetAppConfig(t *testing.T) {
 	}
 }
 
-
 func TestGetSetupConfig(t *testing.T) {
 	setupConfig := GetSetupConf(true)
 

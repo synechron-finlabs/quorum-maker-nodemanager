@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/synechron-finlabs/quorum-maker-nodemanager/contractcompiler"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -153,13 +154,7 @@ type JoinNetworkResponse struct {
 	Status  string `json:"status"`
 }
 
-type ContractJson struct {
-	Filename        string `json:"filename"`
-	Interface       string `json:"interface"`
-	Bytecode        string `json:"bytecode"`
-	ContractAddress string `json:"address"`
-	Json            string `json:"json"`
-}
+
 
 type CreateNetworkScriptArgs struct {
 	Nodename          string `json:"nodename,omitempty"`
@@ -698,10 +693,13 @@ func (nsi *NodeServiceImpl) joinRequestResponse(enode string, status string) Suc
 	return successResponse
 }
 
-func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, private bool, url string) []ContractJson {
+func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, private bool, url string) []contractcompiler.ContractJson {
 	var nodeUrl = url
 	ethClient := client.EthClient{nodeUrl}
 	fromAddress := ethClient.Coinbase()
+
+
+	contractJsons := make([]contractcompiler.ContractJson, 0)
 
 	nms := contractclient.NetworkMapContractClient{client.EthClient{url}, contracthandler.ContractParam{fromAddress, env.GetSetupConf().ContractAdd, "", nil}}
 	if private == true && pubKeys[0] == "" {
@@ -716,162 +714,11 @@ func (nsi *NodeServiceImpl) deployContract(pubKeys []string, fileName []string, 
 		//pubKeys = []string{"R1fOFUfzBbSVaXEYecrlo9rENW0dam0kmaA2pasGM14=", "Er5J8G+jXQA9O2eu7YdhkraYM+j+O5ArnMSZ24PpLQY="}
 		pubKeys = publicKeys
 	}
-	var solc string
-	if solc == "" { //@TODO huh ???
-		solc = "solc"
+
+	for _, file := range fileName {
+		contractJsons = append(contractJsons, contractcompiler.Compile(file, pubKeys, ethClient, private, contNameMap, contTimeMap, abiMap)...)
 	}
-	fileNo := len(fileName)
-	var contractJsonArr []ContractJson
-	for i := 0; i < fileNo; i++ {
-		var binOut bytes.Buffer
-		var errorstring bytes.Buffer
-		cmd := exec.Command(solc, "-o", ".", "--overwrite", "--bin", fileName[i])
-		cmd = exec.Command(solc, "--bin", fileName[i])
-		cmd.Stdout = &binOut
-		cmd.Stderr = &errorstring
-		err := cmd.Run()
-		contractJsonError := make([]ContractJson, 1)
-		if err != nil {
-			fmt.Println(fmt.Sprint(err) + ": " + errorstring.String())
-			contractJsonError[0].Filename = strings.Replace(fileName[i], ".sol", "", -1)
-			contractJsonError[0].Json = "Compilation Failed: JSON could not be created"
-			contractJsonError[0].Bytecode = "Compilation Failed: " + errorstring.String()
-		}
-		var abiOut bytes.Buffer
-		cmd = exec.Command(solc, "-o", ".", "--overwrite", "--abi", fileName[i])
-		cmd = exec.Command(solc, "--abi", fileName[i])
-		cmd.Stdout = &abiOut
-		cmd.Stderr = &errorstring
-		err = cmd.Run()
-		if err != nil {
-			fmt.Println(fmt.Sprint(err) + ": " + errorstring.String())
-			contractJsonError[0].Interface = "Compilation Failed: " + errorstring.String()
-			contractJsonError[0].ContractAddress = "0x"
-			contractJsonArr = append(contractJsonArr, contractJsonError...)
-			continue
-		}
-
-		bytecode := binOut.String()
-		var contractNames []string
-
-		reStart := regexp.MustCompile("Binary?")
-		reEnd := regexp.MustCompile("=======")
-		reContName := regexp.MustCompile(`.sol:(.+)?=======`)
-
-		res := reContName.FindStringSubmatch(bytecode)
-		contractNames = append(contractNames, strings.Split(res[1], " ")[0])
-		delimiterFirst := reEnd.FindStringIndex(bytecode)
-		bytecode = bytecode[delimiterFirst[1]:]
-		delimiterSecond := reEnd.FindStringIndex(bytecode)
-		bytecode = bytecode[delimiterSecond[1]:]
-		contractBytecodesAll := reStart.FindAllStringIndex(bytecode, -1)
-		contractJsonArrInternal := make([]ContractJson, len(contractBytecodesAll))
-
-		for j := 0; j < len(contractBytecodesAll); j++ {
-			var thisContractBytecode string
-			contractBytecodes := reStart.FindStringIndex(bytecode)
-			start := contractBytecodes[1]
-			start = start + 2
-			if j != (len(contractBytecodesAll) - 1) {
-				delimiter := reEnd.FindStringIndex(bytecode)
-				thisContractBytecode = bytecode[start : delimiter[1]-1]
-			} else {
-				thisContractBytecode = bytecode[start:]
-			}
-			thisContractBytecode = "0x" + thisContractBytecode
-			thisContractBytecode = strings.Replace(thisContractBytecode, " ", "", -1)
-			thisContractBytecode = strings.Replace(thisContractBytecode, "=", "", -1)
-			thisContractBytecode = strings.Replace(thisContractBytecode, "\n", "", -1)
-			contractJsonArrInternal[j].Bytecode = thisContractBytecode
-			reg, _ := regexp.Compile("[^a-zA-Z0-9]+")
-			byteCodeSanitized := reg.ReplaceAllString(thisContractBytecode, "")
-
-			contractAddress := ethClient.DeployContracts(byteCodeSanitized, pubKeys, private)
-			contractJsonArrInternal[j].ContractAddress = contractAddress
-
-			path := "./contracts"
-			if _, err := os.Stat(path); os.IsNotExist(err) {
-				os.Mkdir(path, 0775)
-			}
-			bytecode = bytecode[start:]
-
-			if j != (len(contractBytecodesAll) - 1) {
-				delimiterFirst := reEnd.FindStringIndex(bytecode)
-				bytecode = bytecode[delimiterFirst[1]:]
-				res := reContName.FindStringSubmatch(bytecode)
-				contractNames = append(contractNames, strings.Split(res[1], " ")[0])
-				delimiterSecond := reEnd.FindStringIndex(bytecode)
-				bytecode = bytecode[delimiterSecond[1]:]
-			}
-
-			path = "./contracts/" + contractAddress + "_" + contractNames[j]
-			if _, err := os.Stat(path); os.IsNotExist(err) {
-				os.Mkdir(path, 0775)
-			}
-			contractJsonArrInternal[j].Filename = contractNames[j]
-		}
-
-		abiString := abiOut.String()
-		reStartABI := regexp.MustCompile("ABI?")
-		delimiterFirst = reEnd.FindStringIndex(abiString)
-		abiString = abiString[delimiterFirst[1]:]
-		delimiterSecond = reEnd.FindStringIndex(abiString)
-		abiString = abiString[delimiterSecond[1]:]
-		contractABIAll := reStartABI.FindAllStringIndex(abiString, -1)
-		for j := 0; j < len(contractABIAll); j++ {
-			var thisContractABI string
-			contractABIs := reStartABI.FindStringIndex(abiString)
-			start := contractABIs[1]
-			start = start + 2
-			if j != (len(contractABIAll) - 1) {
-				delimiter := reEnd.FindStringIndex(abiString)
-				thisContractABI = abiString[start : delimiter[1]-1]
-			} else {
-				thisContractABI = abiString[start:]
-			}
-			thisContractABI = strings.Replace(thisContractABI, " ", "", -1)
-			thisContractABI = strings.Replace(thisContractABI, "=", "", -1)
-			thisContractABI = strings.Replace(thisContractABI, "\n", "", -1)
-			contractJsonArrInternal[j].Interface = thisContractABI
-			if j != (len(contractABIAll) - 1) {
-				abiString = abiString[start:]
-				delimiterFirst := reEnd.FindStringIndex(abiString)
-				abiString = abiString[delimiterFirst[1]:]
-				delimiterSecond := reEnd.FindStringIndex(abiString)
-				abiString = abiString[delimiterSecond[1]:]
-			}
-		}
-
-		for j := 0; j < len(contractJsonArrInternal); j++ {
-			js := util.ComposeJSON(contractJsonArrInternal[j].Interface, contractJsonArrInternal[j].Bytecode, contractJsonArrInternal[j].ContractAddress)
-			contractJsonArrInternal[j].Json = strings.Replace(strings.Replace(js, "\n", "", -1), "\\", "", -1)
-
-			path := "./contracts/" + contractJsonArrInternal[j].ContractAddress + "_" + contractJsonArrInternal[j].Filename
-
-			filePath := path + "/" + contractJsonArrInternal[j].Filename + ".json"
-			jsByte := []byte(js)
-			err = ioutil.WriteFile(filePath, jsByte, 0775)
-			if err != nil {
-				fmt.Println(err)
-			}
-			abi := []byte(contractJsonArrInternal[j].Interface)
-			err = ioutil.WriteFile(path+"/ABI", abi, 0775)
-			if err != nil {
-				fmt.Println(err)
-			}
-			bin := []byte(contractJsonArrInternal[j].Bytecode)
-			err = ioutil.WriteFile(path+"/BIN", bin, 0775)
-			if err != nil {
-				fmt.Println(err)
-			}
-			contNameMap[contractJsonArrInternal[j].ContractAddress] = contractJsonArrInternal[j].Filename
-			contTimeMap[contractJsonArrInternal[j].ContractAddress] = strconv.Itoa(int(time.Now().Unix()))
-			abiMap[contractJsonArrInternal[j].ContractAddress] = contractJsonArrInternal[j].Interface
-		}
-
-		contractJsonArr = append(contractJsonArr, contractJsonArrInternal...)
-	}
-	return contractJsonArr
+	return contractJsons
 }
 
 func (nsi *NodeServiceImpl) createNetworkScriptCall(nodename string, currentIP string, rpcPort string, whisperPort string, constellationPort string, raftPort string, nodeManagerPort string) SuccessResponse {
