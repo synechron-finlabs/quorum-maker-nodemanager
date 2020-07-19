@@ -942,7 +942,7 @@ func (nsi *NodeServiceImpl) healthCheck(url string) {
 				recipientList := util.MustGetString("RECIPIENTLIST", p)
 				recipients := strings.Split(recipientList, ",")
 
-				b, err := ioutil.ReadFile("/root/quorum-maker/NodeUnavailableTemplate.txt")
+				b, err := ioutil.ReadFile(env.GetAppConfig().RootDir +"/NodeUnavailableTemplate.txt")
 
 				if err != nil {
 					log.Println(err)
@@ -968,7 +968,7 @@ func (nsi *NodeServiceImpl) sendTestMail() {
 		nodename := util.MustGetString("NODENAME", p)
 		recipientList := util.MustGetString("RECIPIENTLIST", p)
 		recipients := strings.Split(recipientList, ",")
-		b, err := ioutil.ReadFile("/root/quorum-maker/TestMailTemplate.txt")
+		b, err := ioutil.ReadFile(env.GetAppConfig().RootDir + "/TestMailTemplate.txt")
 		if err != nil {
 			log.Println(err)
 		}
@@ -1240,7 +1240,7 @@ func (nsi *NodeServiceImpl) getContracts(url string) {
 }
 
 func (nsi *NodeServiceImpl) attachModeRegisterDetails(url string, contractAdd string) {
-	nmcBytecode, err := ioutil.ReadFile("/root/quorum-maker/nmcBytecode")
+	nmcBytecode, err := ioutil.ReadFile(env.GetAppConfig().RootDir + "/nmcBytecode")
 	if err != nil {
 		log.Println(err)
 	}
@@ -1455,7 +1455,7 @@ func (nsi *NodeServiceImpl) writeContractDetailsToDisk(data string, bytecodeData
 }
 
 func getLastCheckedTime() int64 {
-	fileBytes, err := ioutil.ReadFile("/root/quorum-maker/contracts/.lastCheckedTime")
+	fileBytes, err := ioutil.ReadFile(env.GetAppConfig().ContractsDir + "/.lastCheckedTime")
 	if err != nil {
 		log.Println(err)
 	}
@@ -1466,9 +1466,9 @@ func getLastCheckedTime() int64 {
 }
 
 func updateLastCheckedTime(timeVal string) {
-	util.DeleteFile("/root/quorum-maker/contracts/.lastCheckedTime")
-	util.CreateFile("/root/quorum-maker/contracts/.lastCheckedTime")
-	util.WriteFile("/root/quorum-maker/contracts/.lastCheckedTime", timeVal)
+	util.DeleteFile(env.GetAppConfig().ContractsDir + "/.lastCheckedTime")
+	util.CreateFile(env.GetAppConfig().ContractsDir + "/.lastCheckedTime")
+	util.WriteFile(env.GetAppConfig().ContractsDir + "/.lastCheckedTime", timeVal)
 }
 
 func (nsi *NodeServiceImpl) createAccount(password string, url string) SuccessResponse {
@@ -1525,10 +1525,10 @@ func (nsi *NodeServiceImpl) getNodeIPs(url string) []connectedIP {
 
 func (nsi *NodeServiceImpl) updateWhitelist(ipList []string) SuccessResponse {
 	var update SuccessResponse
-	util.DeleteFile("/root/quorum-maker/contracts/.whiteList")
-	util.CreateFile("/root/quorum-maker/contracts/.whiteList")
+	util.DeleteFile(env.GetAppConfig().ContractsDir + "/.whiteList")
+	util.CreateFile(env.GetAppConfig().ContractsDir + "/.whiteList")
 	for _, ip := range ipList {
-		util.AppendStringToFile("/root/quorum-maker/contracts/.whiteList", fmt.Sprint(ip, "\n"))
+		util.AppendStringToFile(env.GetAppConfig().ContractsDir + "/.whiteList", fmt.Sprint(ip, "\n"))
 	}
 	update.Status = "IP Whitelist has been updated successfully"
 	return update

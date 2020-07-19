@@ -138,10 +138,9 @@ func (nsi *NodeServiceImpl) GetGenesisHandler(w http.ResponseWriter, r *http.Req
 	nodename := request.Nodename
 	//recipients := strings.Split(mailServerConfig.RecipientList, ",")
 
-	//@TODO: Auto accepting for k8s. Fix in a better way
-	// if allowedIPs[foreignIP] {
 
-	if true {
+	if allowedIPs[foreignIP] || "YES" == env.GetSetupConf().AutoAcceptJoinRequest {
+
 		peerMap[enode] = "YES"
 
 		if env.GetSetupConf().RecipientList != "" {

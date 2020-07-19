@@ -1,10 +1,12 @@
 package env
 
-import "github.com/magiconair/properties"
+import (
+	"github.com/magiconair/properties"
+)
 
 type AppConfig struct {
 	HomeDir      string `properties:"homeDir,default=/home"`
-	RootDir      string `properties:"rootDir,default="`
+	RootDir      string `properties:"rootDir,default=/root/quorum-maker"`
 	NodeDir      string `properties:"nodeDir,default=/home/node"`
 	ContractsDir string `properties:"contractsDir,default=/root/quorum-maker/contracts"`
 	GethLogs     string `properties:"gethLogs,default=/home/node/qdata/gethLogs"`
@@ -45,12 +47,13 @@ type SetupConf struct {
 	Registered          string `properties:"REGISTERED,default="`
 	Role                string `properties:"ROLE,default="`
 	RecipientList       string `properties:"RECIPIENTLIST,default="`
+	AutoAcceptJoinRequest       string `properties:"AUTO_ACCEPT_JOIN_REQUEST,default="`
 }
 
 var setupConf SetupConf
 
 func GetSetupConf(refresh ...bool) SetupConf {
-	if nil != refresh {
+	if (nil != refresh || SetupConf{} == setupConf ){
 		filename := GetAppConfig().HomeDir + "/setup.conf"
 		p := properties.MustLoadFile(filename, properties.UTF8)
 
