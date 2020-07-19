@@ -19,7 +19,11 @@ func GetAppConfig(refresh ...bool) AppConfig {
 
 	if (nil != refresh || AppConfig{} == appConfig) {
 		filename := "application.conf"
-		p := properties.MustLoadFile(filename, properties.UTF8)
+		p, err := properties.LoadFile(filename, properties.UTF8)
+
+		if err != nil {
+			p, _ = properties.Load([]byte{}, properties.UTF8)
+		}
 
 		p.Decode(&appConfig)
 	}
