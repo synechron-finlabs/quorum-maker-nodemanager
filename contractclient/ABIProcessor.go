@@ -31,7 +31,7 @@ func ABIParser(contractAdd string, abiContent string, payload string) ([]ParamTa
 		var keccakHashes []string
 		i := 1
 		for key := range methodMap {
-			if !methodMap[key].Const {
+			if !methodMap[key].Constant {
 				var funcSig string
 				var params string
 				for _, elem := range methodMap[key].Inputs {
