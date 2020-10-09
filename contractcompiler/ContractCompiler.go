@@ -95,7 +95,7 @@ func saveContract(contractJson ContractJson, fileName string) {
 	path := env.GetAppConfig().ContractsDir + "/" + contractJson.ContractAddress + "_" + fileName
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.Mkdir(path, 0775)
+		os.MkdirAll(path, 0775)
 	}
 
 	filePath := path + "/" + contractJson.Filename + ".json"

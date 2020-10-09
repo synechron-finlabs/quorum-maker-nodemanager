@@ -8,7 +8,7 @@ type AppConfig struct {
 	HomeDir      string `properties:"homeDir,default=/home"`
 	RootDir      string `properties:"rootDir,default=/root/quorum-maker"`
 	NodeDir      string `properties:"nodeDir,default=/home/node"`
-	ContractsDir string `properties:"contractsDir,default=/root/quorum-maker/contracts"`
+	ContractsDir string `properties:"contractsDir,default=/home/node/contracts"`
 	GethLogs     string `properties:"gethLogs,default=/home/node/qdata/gethLogs"`
 	PrivacyLogs  string `properties:"privacyLogs,default=/home/node/qdata/constellationLogs"`
 }

@@ -245,10 +245,12 @@ type CrawledABI struct {
 }
 
 type contractJSONTruffle struct {
-	Abi          []interface{} `json:"abi"`
-	Interface    []interface{} `json:"interface"`
-	Bytecode     string        `json:"bytecode"`
-	ContractName string        `json:"contractName"`
+	Abi             []interface{} `json:"abi"`
+	Interface       []interface{} `json:"interface"`
+	Bytecode        string        `json:"bytecode"`
+	ContractName    string        `json:"contractName"`
+	Address         string        `json:"address"`
+
 }
 
 type ethAccount struct {
@@ -1337,7 +1339,7 @@ func (nsi *NodeServiceImpl) ABICrawler(url string) {
 
 func (nsi *NodeServiceImpl) DirectoryCrawl() {
 	abiCrawlerMutex = 1
-	ABIList := getFilesFromDirectory("/root/quorum-maker/contracts")
+	ABIList := getFilesFromDirectory(env.GetAppConfig().ContractsDir)
 	nsi.populateABIMap(ABIList)
 	abiCrawlerMutex = 0
 	updateLastCheckedTime(strconv.Itoa(int(time.Now().Unix())))
@@ -1366,7 +1368,7 @@ func getABIsFromDirectory(searchDir string) []CrawledABI {
 		var crawledABI CrawledABI
 		if r.MatchString(file.Name()) && !file.IsDir() {
 			crawledABI.Filename = searchDir + "/" + file.Name()
-			crawledABI.Contractname = file.Name()
+			crawledABI.Contractname = strings.Split(file.Name(), ".")[0]
 			crawledABI.ModificationTime = file.ModTime().Unix()
 			if crawledABI.ModificationTime < getLastCheckedTime() {
 				continue
@@ -1392,6 +1394,7 @@ func (nsi *NodeServiceImpl) parseABIJson(file CrawledABI) {
 	if err != nil {
 		log.Println(err)
 	}
+
 	jsonContent := string(fileBytes)
 	jsonContent = strings.Replace(jsonContent, "\n", "", -1)
 	json.Unmarshal([]byte(jsonContent), &contractJSONContent)
@@ -1410,6 +1413,8 @@ func (nsi *NodeServiceImpl) parseABIJson(file CrawledABI) {
 	interfaceData := fmt.Sprint(strings.Join(interfaceString, ""))
 	bytecodeData := contractJSONContent.Bytecode
 	contractName := contractJSONContent.ContractName
+	contractAddress := contractJSONContent.Address
+
 	var data string
 	if len(abiData) != 4 {
 		data = abiData
@@ -1419,11 +1424,7 @@ func (nsi *NodeServiceImpl) parseABIJson(file CrawledABI) {
 		data = jsonContent
 		data = strings.Replace(data, "\n", "", -1)
 	}
-	filename := file.Filename
-	command := fmt.Sprint("grep  \"\\\"address\\\":\" ", filename, " | awk -F \\\" '{print $4}'")
-	out, _ := exec.Command("bash", "-c", command).Output()
-	contractAddress := string(out)
-	contractAddress = strings.Replace(contractAddress, "\n", "", -1)
+
 	if contractAddress != "" && contractName != "" {
 		nsi.writeContractDetailsToDisk(data, bytecodeData, contractAddress, contractName)
 		nsi.updateContractDetails(contractAddress, contractName, data, "default")
@@ -1436,14 +1437,11 @@ func (nsi *NodeServiceImpl) parseABIJson(file CrawledABI) {
 
 func (nsi *NodeServiceImpl) writeContractDetailsToDisk(data string, bytecodeData string, contractAddress string, contractName string) {
 	jsonString := util.ComposeJSON(data, bytecodeData, contractAddress)
-	path := "./contracts"
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.Mkdir(path, 0775)
-	}
-	path = "./contracts/" + contractAddress + "_" + contractName
+
+	path := env.GetAppConfig().ContractsDir + "/" + contractAddress + "_" + contractName
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.Mkdir(path, 0775)
+		os.MkdirAll(path, 0775)
 	}
 
 	filePath := path + "/" + contractName + ".json"

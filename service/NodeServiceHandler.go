@@ -543,14 +543,11 @@ func (nsi *NodeServiceImpl) ContractDetailsUpdateHandler(w http.ResponseWriter, 
 
 	jsonString := util.ComposeJSON(data, bytecodeData, contractAddress)
 
-	path := "./contracts"
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.Mkdir(path, 0775)
-	}
-	path = "./contracts/" + contractAddress + "_" + name[0]
+
+	path := env.GetAppConfig().ContractsDir + "/" + contractAddress + "_" + name[0]
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		os.Mkdir(path, 0775)
+		os.MkdirAll(path, 0775)
 	}
 
 	filePath := path + "/" + name[0] + ".json"
@@ -580,7 +577,7 @@ func (nsi *NodeServiceImpl) AttachedNodeDetailsHandler(w http.ResponseWriter, r 
 	io.Copy(&Buf, file)
 	content := Buf.String()
 
-	filePath := "/home/node/genesis.json"
+	filePath := env.GetAppConfig().NodeDir +  "/genesis.json"
 	jsByte := []byte(content)
 	err = ioutil.WriteFile(filePath, jsByte, 0775)
 	if err != nil {
@@ -590,17 +587,17 @@ func (nsi *NodeServiceImpl) AttachedNodeDetailsHandler(w http.ResponseWriter, r 
 	var jsonContent genesisJSON
 	json.Unmarshal([]byte(content), &jsonContent)
 	chainIdAppend := fmt.Sprint("NETWORK_ID=", jsonContent.Config.ChainId, "\n")
-	util.AppendStringToFile("/home/setup.conf", chainIdAppend)
-	util.InsertStringToFile("/home/start.sh", "	   -v "+gethLogsDirectory+":/home/node/qdata/gethLogs \\\n", 13)
-	util.InsertStringToFile("/home/start.sh", "	   -v "+constellationLogsDirectory+":/home/node/qdata/constellationLogs \\\n", 13)
+	util.AppendStringToFile(env.GetAppConfig().HomeDir + "/setup.conf", chainIdAppend)
+	util.InsertStringToFile(env.GetAppConfig().HomeDir + "/start.sh", "	   -v " + gethLogsDirectory + ":" + env.GetAppConfig().GethLogs + " \\\n", 13)
+	util.InsertStringToFile(env.GetAppConfig().HomeDir + "/start.sh", "	   -v " + constellationLogsDirectory + ":" + env.GetAppConfig().PrivacyLogs + " \\\n", 13)
 
 	Buf.Reset()
 	fmt.Println("Updates have been saved. Please press Ctrl+C to exit from this container and run start.sh to apply changes")
 	state := currentState()
 	if state == "NI" {
-		util.DeleteProperty("STATE=NI", "/home/setup.conf")
+		util.DeleteProperty("STATE=NI", env.GetAppConfig().HomeDir + "/setup.conf")
 		stateInitialized := fmt.Sprint("STATE=I\n")
-		util.AppendStringToFile("/home/setup.conf", stateInitialized)
+		util.AppendStringToFile(env.GetAppConfig().HomeDir + "/setup.conf", stateInitialized)
 	}
 	successResponse.Status = "Updates have been saved. Please press Ctrl+C from CLI to exit from this container and run start.sh to apply changes"
 	w.Header().Set("Access-Control-Allow-Origin", "*")
