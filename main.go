@@ -105,6 +105,17 @@ func main() {
 	router.HandleFunc(env.GetSetupConf().ContextPath+"/updateWhitelist", nodeService.UpdateWhitelistHandler).Methods("POST")
 	router.HandleFunc(env.GetSetupConf().ContextPath+"/updateWhitelist", nodeService.OptionsHandler).Methods("OPTIONS")
 
+	redirectPaths := []string{"/", "/index.html", "/index.htm" , "/qm/dashboard"}
+	
+	for _, path := range redirectPaths {
+		router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+			fmt.Printf("http://%s/qm/", r.Host)
+			http.Redirect(w, r, fmt.Sprintf("http://%s/qm/", r.Host), http.StatusPermanentRedirect)
+		})
+	}
+
+
+
 	router.PathPrefix(env.GetSetupConf().ContextPath + "/contracts").Handler(http.StripPrefix(env.GetSetupConf().ContextPath+"/contracts", http.FileServer(http.Dir(env.GetAppConfig().ContractsDir))))
 	router.PathPrefix(env.GetSetupConf().ContextPath + "/geth").Handler(http.StripPrefix(env.GetSetupConf().ContextPath+"/geth", http.FileServer(http.Dir(env.GetAppConfig().GethLogs))))
 	router.PathPrefix(env.GetSetupConf().ContextPath + "/constellation").Handler(http.StripPrefix(env.GetSetupConf().ContextPath+"/constellation", http.FileServer(http.Dir(env.GetAppConfig().PrivacyLogs))))
