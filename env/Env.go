@@ -33,7 +33,7 @@ func GetAppConfig(refresh ...bool) AppConfig {
 }
 
 type SetupConf struct {
-	ContextPath         string `properties:"CONTEXT_PATH,default="`
+	ContextPath         string `properties:"CONTEXT_PATH,default=/qm"`
 	CurrentIp           string `properties:"CURRENT_IP,default="`
 	RpcPort             string `properties:"RPC_PORT,default="`
 	WhisperPort         string `properties:"WHISPER_PORT,default="`

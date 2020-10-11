@@ -106,7 +106,7 @@ func main() {
 	router.HandleFunc(env.GetSetupConf().ContextPath+"/updateWhitelist", nodeService.OptionsHandler).Methods("OPTIONS")
 
 	redirectPaths := []string{"/", "/index.html", "/index.htm" , "/qm/dashboard"}
-	
+
 	for _, path := range redirectPaths {
 		router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 			fmt.Printf("http://%s/qm/", r.Host)
